@@ -23,7 +23,7 @@ interface TeacherDashboardProps {
 
 export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMember, setNewMember] = useState<NewMemberForm>({
     name: "",
