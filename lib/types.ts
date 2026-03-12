@@ -43,6 +43,6 @@ export const calculateMonthlyFee = (dateOfBirth: string | undefined, paymentType
   if (age < 16) {
     return paymentType === 'Direct Debit' ? 65 : 70;
   } else {
-    return paymentType === 'Direct Debit' ? 70 : 75;
+    return paymentType === 'Direct Debit' ? 75 : 80;
   }
 };
