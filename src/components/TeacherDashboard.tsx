@@ -23,7 +23,6 @@ interface TeacherDashboardProps {
 
 export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [members, setMembers] = useState<Member[]>([]);
-  const [_loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newMember, setNewMember] = useState<NewMemberForm>({
     name: "",
@@ -63,8 +62,6 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       setMembers(formattedMembers);
     } catch (error) {
       console.error('Error loading members:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

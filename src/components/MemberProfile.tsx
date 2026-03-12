@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Member } from "../../lib/types";
 import { getAttendanceForMember, getNotesForMember, createNote, setAttendance } from "../../lib/database";
 
@@ -34,11 +34,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     setData({ ...member });
   }, [member]);
 
-  useEffect(() => {
-    loadMemberData();
-  }, [member.id]);
-
-  const loadMemberData = async () => {
+  const loadMemberData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -65,7 +61,13 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     } finally {
       setLoading(false);
     }
-  };
+  }, [member.id]);
+
+  useEffect(() => {
+    loadMemberData();
+  }, [loadMemberData]);
+
+
 
   // Auto-scroll to bottom when new comments are added
   useEffect(() => {

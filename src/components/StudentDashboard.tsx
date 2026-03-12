@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getAttendanceForMember, getNotesForMember } from "../../lib/database";
 
 interface StudentDashboardProps {
@@ -36,31 +36,25 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
 
-  useEffect(() => {
-    loadStudentData();
-  }, [studentId]);
-
-  const loadStudentData = async () => {
+  const loadStudentData = useCallback(async () => {
     try {
       setLoading(true);
 
       // Load student profile from Supabase using the studentId
       // For now, we'll fetch all members and find by ID
       // In production, you'd query by ID directly
-      const { data: members } = await (
-        await import("../../lib/supabase")
-      ).supabase.from("members").select("*").eq("id", studentId);
+      const { data: members } = await (await import("../../lib/supabase")).supabase.from("members").select("*").eq("id", studentId);
 
       if (members && members.length > 0) {
         setStudent(members[0]);
 
         // Load attendance data
         const attendanceData = await getAttendanceForMember(studentId);
-        const attendanceMap: { [date: string]: boolean } = {};
+        const attendanceMapLocal: { [date: string]: boolean } = {};
         attendanceData.forEach(att => {
-          attendanceMap[att.date] = att.attended;
+          attendanceMapLocal[att.date] = att.attended;
         });
-        setAttendance(attendanceMap);
+        setAttendance(attendanceMapLocal);
 
         // Load notes
         const notesData = await getNotesForMember(studentId);
@@ -71,7 +65,11 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
     } finally {
       setLoading(false);
     }
-  };
+  }, [studentId]);
+
+  useEffect(() => {
+    loadStudentData();
+  }, [loadStudentData]);
 
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate();

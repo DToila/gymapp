@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getMemberByEmail } from "../../lib/database";
+import GBLogo from "@/components/GBLogo";
 
 type UserType = "teacher" | "student" | null;
 
@@ -63,250 +64,513 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
   if (userType === null) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-6xl">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            {/* Left Side - Branding */}
-            <div className="hidden md:flex flex-col justify-center items-start space-y-8">
-              <div>
-                <h1 className="text-5xl font-bold text-white mb-2">
-                  GymApp
-                </h1>
-                <p className="text-xl text-dark-300">
-                  Professional Membership Management System
-                </p>
-              </div>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 1fr', 
+        minHeight: '100vh',
+        background: 'var(--bg)'
+      }}>
+        {/* LEFT COLUMN */}
+        <div style={{
+          backgroundImage: 'url(/jiu-jitsu-bg.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '64px 56px'
+        }}>
+          {/* Overlay */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(160deg, rgba(204,0,0,0.1), rgba(0,0,0,0.95))'
+          }} />
 
-              <div className="space-y-4">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">✓</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-white">
-                      Easy Management
-                    </h3>
-                    <p className="text-dark-400">
-                      Manage gym memberships with ease and efficiency
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">✓</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-white">
-                      Dual Access
-                    </h3>
-                    <p className="text-dark-400">
-                      Separate portals for teachers and students
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">✓</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-white">
-                      Secure & Reliable
-                    </h3>
-                    <p className="text-dark-400">
-                      Enterprise-grade security for your data
-                    </p>
-                  </div>
-                </div>
-              </div>
+          {/* Top: GBLogo + Branding */}
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            <div style={{ marginBottom: '16px' }}>
+              <GBLogo size={54} />
             </div>
-
-            {/* Right Side - Login Options */}
-            <div className="flex flex-col space-y-4">
-              <div className="text-center md:text-left mb-8">
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                  Welcome
-                </h2>
-                <p className="text-dark-300">
-                  Choose your role to get started
-                </p>
-              </div>
-
-              {/* Teacher Card */}
-              <button
-                onClick={() => handleSelectUserType("teacher")}
-                className="group relative overflow-hidden rounded-2xl border border-dark-700 bg-dark-800 hover:bg-dark-700 p-8 transition-all duration-300 hover:border-primary-600"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative z-10 flex items-center space-x-4">
-                  <div className="w-16 h-16 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-2xl">👨‍🏫</span>
-                  </div>
-                  <div className="text-left">
-                    <h3 className="text-xl font-bold text-white">
-                      Login as Teacher
-                    </h3>
-                    <p className="text-dark-400">
-                      Manage classes and member access
-                    </p>
-                  </div>
-                </div>
-              </button>
-
-              {/* Student Card */}
-              <button
-                onClick={() => handleSelectUserType("student")}
-                className="group relative overflow-hidden rounded-2xl border border-dark-700 bg-dark-800 hover:bg-dark-700 p-8 transition-all duration-300 hover:border-primary-600"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative z-10 flex items-center space-x-4">
-                  <div className="w-16 h-16 rounded-xl bg-primary-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-2xl">👤</span>
-                  </div>
-                  <div className="text-left">
-                    <h3 className="text-xl font-bold text-white">
-                      Login as Student
-                    </h3>
-                    <p className="text-dark-400">
-                      View your membership details
-                    </p>
-                  </div>
-                </div>
-              </button>
-
-              <div className="pt-4 text-center text-sm text-dark-400">
-                <p>Need help? Contact support@gymapp.com</p>
-              </div>
+            <div style={{ 
+              fontFamily: 'var(--font-display)',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: 'white',
+              letterSpacing: '4px',
+              marginBottom: '8px'
+            }}>
+              GRACIE BARRA
+            </div>
+            <div style={{
+              fontSize: '11px',
+              letterSpacing: '3px',
+              color: 'rgba(255, 255, 255, 0.35)'
+            }}>
+              CARNAXIDE & QUEIJAS
             </div>
           </div>
+
+          {/* Bottom: Big Tagline */}
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '76px',
+              fontWeight: 900,
+              lineHeight: 1.1,
+              color: 'white',
+              letterSpacing: '-2px',
+              marginBottom: '24px'
+            }}>
+              JIU JITSU<br />
+              <span style={{ color: '#CC0000' }}>PARA</span><br />
+              TODOS.
+            </div>
+            <div style={{
+              fontSize: '11px',
+              letterSpacing: '4px',
+              color: 'rgba(255, 255, 255, 0.3)'
+            }}>
+              ARTES MARCIAIS · CARNAXIDE · EST. 2010
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div style={{
+          background: 'var(--bg)',
+          borderLeft: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '64px 56px'
+        }}>
+          {/* Header */}
+          <div style={{ marginBottom: '48px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <GBLogo size={46} />
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '15px',
+              fontWeight: 800,
+              letterSpacing: '4px',
+              color: 'var(--text)',
+              marginBottom: '4px'
+            }}>
+              GRACIE BARRA / CARNAXIDE & QUEIJAS
+            </div>
+            <div style={{
+              fontSize: '10px',
+              color: 'var(--text-dim)',
+              letterSpacing: '2px'
+            }}>
+              GYMAPP · SISTEMA DE GESTÃO
+            </div>
+          </div>
+
+          {/* Heading */}
+          <div style={{ marginBottom: '32px' }}>
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '44px',
+              fontWeight: 900,
+              letterSpacing: '4px',
+              color: 'var(--text)',
+              marginBottom: '8px'
+            }}>
+              ACESSO
+            </div>
+            <div style={{
+              fontSize: '13px',
+              color: 'var(--text-muted)'
+            }}>
+              Introduz as tuas credenciais para entrar
+            </div>
+          </div>
+
+          {/* Role Selector */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '12px',
+            marginBottom: '32px'
+          }}>
+            <button
+              onClick={() => handleSelectUserType("teacher")}
+              style={{
+                padding: '14px 16px',
+                background: 'white',
+                border: '1px solid var(--border)',
+                fontFamily: 'var(--font-display)',
+                fontSize: '13px',
+                fontWeight: 700,
+                letterSpacing: '3px',
+                color: '#0a0a0a',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#CC0000';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'white';
+                e.currentTarget.style.color = '#0a0a0a';
+              }}
+            >
+              Professor
+            </button>
+            <button
+              onClick={() => handleSelectUserType("student")}
+              style={{
+                padding: '14px 16px',
+                background: 'white',
+                border: '1px solid var(--border)',
+                fontFamily: 'var(--font-display)',
+                fontSize: '13px',
+                fontWeight: 700,
+                letterSpacing: '3px',
+                color: '#0a0a0a',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#CC0000';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'white';
+                e.currentTarget.style.color = '#0a0a0a';
+              }}
+            >
+              Aluno
+            </button>
+          </div>
+
+          {/* Email Input */}
+          <input
+            type="email"
+            value="Please select a role first"
+            disabled
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              background: 'var(--bg3)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              fontSize: '15px',
+              marginBottom: '16px',
+              cursor: 'not-allowed',
+              opacity: 0.5,
+              fontFamily: 'var(--font-body)'
+            }}
+          />
+
+          {/* Password Input */}
+          <input
+            type="password"
+            value="Please select a role first"
+            disabled
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              background: 'var(--bg3)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              fontSize: '15px',
+              marginBottom: '24px',
+              cursor: 'not-allowed',
+              opacity: 0.5,
+              fontFamily: 'var(--font-body)'
+            }}
+          />
+
+          {/* Submit Button */}
+          <button
+            disabled
+            style={{
+              width: '100%',
+              padding: '16px',
+              background: '#999999',
+              color: 'white',
+              fontFamily: 'var(--font-display)',
+              fontSize: '15px',
+              fontWeight: 900,
+              letterSpacing: '5px',
+              textTransform: 'uppercase',
+              cursor: 'not-allowed',
+              transition: 'all 0.3s',
+              opacity: 0.5
+            }}
+          >
+            Selecciona um Tipo de Conta
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header with Back Button */}
-        <div className="mb-8">
-          <button
-            onClick={handleBackClick}
-            className="inline-flex items-center space-x-2 text-primary-500 hover:text-primary-400 transition-colors mb-6"
-          >
-            <span className="text-xl">←</span>
-            <span>Back</span>
-          </button>
+    <div style={{ 
+      display: 'grid', 
+      gridTemplateColumns: '1fr 1fr', 
+      minHeight: '100vh',
+      background: 'var(--bg)'
+    }}>
+      {/* LEFT COLUMN */}
+      <div style={{
+        backgroundImage: 'url(/jiu-jitsu-bg.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: '64px 56px'
+      }}>
+        {/* Overlay */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(160deg, rgba(204,0,0,0.1), rgba(0,0,0,0.95))'
+        }} />
 
-          <h1 className="text-3xl font-bold text-white mb-2">
-            {userType === "teacher" ? "Teacher Login" : "Student Login"}
-          </h1>
-          <p className="text-dark-300">
-            Enter your credentials to access your account
-          </p>
+        {/* Top: GBLogo + Branding */}
+        <div style={{ position: 'relative', zIndex: 10 }}>
+          <div style={{ marginBottom: '16px' }}>
+            <GBLogo size={54} />
+          </div>
+          <div style={{ 
+            fontFamily: 'var(--font-display)',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: 'white',
+            letterSpacing: '4px',
+            marginBottom: '8px'
+          }}>
+            GRACIE BARRA
+          </div>
+          <div style={{
+            fontSize: '11px',
+            letterSpacing: '3px',
+            color: 'rgba(255, 255, 255, 0.35)'
+          }}>
+            CARNAXIDE & QUEIJAS
+          </div>
         </div>
 
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        {/* Bottom: Big Tagline */}
+        <div style={{ position: 'relative', zIndex: 10 }}>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '76px',
+            fontWeight: 900,
+            lineHeight: 1.1,
+            color: 'white',
+            letterSpacing: '-2px',
+            marginBottom: '24px'
+          }}>
+            JIU JITSU<br />
+            <span style={{ color: '#CC0000' }}>PARA</span><br />
+            TODOS.
+          </div>
+          <div style={{
+            fontSize: '11px',
+            letterSpacing: '4px',
+            color: 'rgba(255, 255, 255, 0.3)'
+          }}>
+            ARTES MARCIAIS · CARNAXIDE · EST. 2010
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN */}
+      <div style={{
+        background: 'var(--bg)',
+        borderLeft: '1px solid var(--border)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '64px 56px',
+        overflowY: 'auto'
+      }}>
+        {/* Back Button */}
+        <button
+          onClick={handleBackClick}
+          style={{
+            alignSelf: 'flex-start',
+            background: 'none',
+            border: 'none',
+            color: '#CC0000',
+            fontSize: '14px',
+            cursor: 'pointer',
+            marginBottom: '32px',
+            transition: 'color 0.3s',
+            fontFamily: 'var(--font-body)'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#990000'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#CC0000'}
+        >
+          ← VOLTAR
+        </button>
+
+        {/* Header */}
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <GBLogo size={46} />
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '15px',
+            fontWeight: 800,
+            letterSpacing: '4px',
+            color: 'var(--text)',
+            marginBottom: '4px'
+          }}>
+            GRACIE BARRA / CARNAXIDE & QUEIJAS
+          </div>
+          <div style={{
+            fontSize: '10px',
+            color: 'var(--text-dim)',
+            letterSpacing: '2px'
+          }}>
+            GYMAPP · SISTEMA DE GESTÃO
+          </div>
+        </div>
+
+        {/* Heading */}
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '44px',
+            fontWeight: 900,
+            letterSpacing: '4px',
+            color: 'var(--text)',
+            marginBottom: '8px'
+          }}>
+            ACESSO
+          </div>
+          <div style={{
+            fontSize: '13px',
+            color: 'var(--text-muted)'
+          }}>
+            {userType === "teacher" ? "Introduz as tuas credenciais de professor" : "Introduz o teu email de aluno"}
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column' }}>
           {/* Error Message */}
           {error && (
-            <div className="p-4 rounded-lg bg-red-600/20 border border-red-600/30 text-red-400 text-sm">
+            <div style={{
+              padding: '14px 16px',
+              background: 'rgba(204, 0, 0, 0.1)',
+              border: '1px solid rgba(204, 0, 0, 0.3)',
+              color: '#FF6666',
+              fontSize: '13px',
+              marginBottom: '24px',
+              fontFamily: 'var(--font-body)'
+            }}>
               {error}
             </div>
           )}
 
           {/* Email Input */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-dark-200 mb-2"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              className="w-full px-4 py-3 rounded-lg border border-dark-600 bg-dark-800 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300"
-            />
-          </div>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={userType === "teacher" ? "professor@gymapp.com" : "aluno@gymapp.com"}
+            required
+            style={{
+              width: '100%',
+              padding: '14px 16px',
+              background: 'var(--bg3)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              fontSize: '15px',
+              marginBottom: '16px',
+              fontFamily: 'var(--font-body)',
+              transition: 'border-color 0.3s'
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = '#CC0000'}
+            onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+          />
 
           {/* Password Input - Only for Teacher */}
           {userType === "teacher" && (
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-dark-200 mb-2"
+            <div style={{ position: 'relative', marginBottom: '16px' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Introduz a tua password"
+                required
+                style={{
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'var(--bg3)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text)',
+                  fontSize: '15px',
+                  fontFamily: 'var(--font-body)',
+                  transition: 'border-color 0.3s',
+                  paddingRight: '40px'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#CC0000'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-dim)',
+                  fontSize: '16px'
+                }}
               >
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  required
-                  className="w-full px-4 py-3 rounded-lg border border-dark-600 bg-dark-800 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all duration-300"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-200 transition-colors"
-                >
-                  {showPassword ? "👁️" : "👁️‍🗨️"}
-                </button>
-              </div>
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
             </div>
           )}
 
-          {/* Remember Me & Forgot Password - Only for Teacher */}
-          {userType === "teacher" && (
-            <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-0"
-                />
-                <span className="text-sm text-dark-300">Remember me</span>
-              </label>
-              <a
-                href="#"
-                className="text-sm text-primary-500 hover:text-primary-400 transition-colors"
-              >
-                Forgot password?
-              </a>
-            </div>
-          )}
-
-          {/* Login Button */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 mt-6"
+            style={{
+              width: '100%',
+              padding: '16px',
+              background: isLoading ? '#888888' : '#CC0000',
+              color: 'white',
+              fontFamily: 'var(--font-display)',
+              fontSize: '15px',
+              fontWeight: 900,
+              letterSpacing: '5px',
+              textTransform: 'uppercase',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.3s',
+              border: 'none',
+              marginTop: '24px'
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading) e.currentTarget.style.background = '#990000';
+            }}
+            onMouseLeave={(e) => {
+              if (!isLoading) e.currentTarget.style.background = '#CC0000';
+            }}
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading ? "A Entrar..." : "Entrar"}
           </button>
         </form>
-
-
-
-        {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-dark-700 text-center text-sm text-dark-400 space-y-2">
-          <p>GymApp © 2024 All rights reserved</p>
-          <div className="flex justify-center space-x-4">
-            <a href="#" className="hover:text-primary-500 transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="hover:text-primary-500 transition-colors">
-              Terms of Service
-            </a>
-          </div>
-        </div>
       </div>
     </div>
   );
