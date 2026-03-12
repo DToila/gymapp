@@ -589,9 +589,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         borderRadius: '3px',
                         textTransform: 'uppercase',
                         letterSpacing: '1px',
-                        color: member.status === 'Active' ? '#22C55E' : member.status === 'Paused' ? '#FBBF24' : '#FF6B6B',
-                        background: member.status === 'Active' ? 'rgba(34, 197, 94, 0.1)' : member.status === 'Paused' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255, 107, 107, 0.1)',
-                        border: member.status === 'Active' ? '1px solid rgba(34, 197, 94, 0.3)' : member.status === 'Paused' ? '1px solid rgba(251, 191, 36, 0.3)' : '1px solid rgba(255, 107, 107, 0.3)'
+                        color: member.status === 'Active' ? '#CC0000' : member.status === 'Paused' ? '#888888' : '#ff4444',
+                        background: member.status === 'Active' ? 'rgba(204,0,0,0.15)' : member.status === 'Paused' ? 'rgba(255,255,255,0.05)' : 'rgba(255,50,50,0.1)',
+                        border: member.status === 'Active' ? '1px solid #CC0000' : member.status === 'Paused' ? '1px solid #444444' : '1px solid #ff4444'
                       }}>
                         {member.status}
                       </div>
