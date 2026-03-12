@@ -95,10 +95,10 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-dark-400">Loading your profile...</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0a0a0a' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3px solid #CC0000', borderTop: '3px solid transparent', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }}></div>
+          <p style={{ color: '#555555' }}>Loading your profile...</p>
         </div>
       </div>
     );
@@ -106,12 +106,22 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
 
   if (!student) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">Unable to load your profile</p>
+      <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: '#ff6666', marginBottom: '16px' }}>Unable to load your profile</p>
           <button
             onClick={onLogout}
-            className="px-6 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+            style={{
+              padding: '8px 24px',
+              background: '#CC0000',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '14px'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
           >
             Back to Login
           </button>
@@ -121,173 +131,230 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 text-white">
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', fontFamily: '"Barlow", sans-serif' }}>
       {/* Header */}
-      <header className="border-b border-dark-700 bg-dark-800/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header style={{ borderBottom: '1px solid #2a2a2a', background: 'rgba(17,17,17,0.8)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 className="text-3xl font-bold text-white">GymApp</h1>
-            <p className="text-dark-400 text-sm">Student Portal</p>
+            <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#f0f0f0', fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '4px' }}>GRACIE BARRA</h1>
+            <p style={{ color: '#888888', fontSize: '12px' }}>Student Portal</p>
           </div>
           <button
             onClick={onLogout}
-            className="px-6 py-2 rounded-lg border border-dark-600 text-dark-200 hover:text-white hover:border-primary-600 transition-all duration-300 hover:bg-dark-700"
+            style={{
+              padding: '8px 24px',
+              border: '1px solid #2a2a2a',
+              background: 'transparent',
+              color: '#888888',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#CC0000';
+              e.currentTarget.style.color = '#CC0000';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#2a2a2a';
+              e.currentTarget.style.color = '#888888';
+            }}
           >
             Logout
           </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
         {/* Profile Card */}
-        <div className="rounded-2xl border border-dark-700 bg-dark-800/50 backdrop-blur-sm p-8 mb-8">
-          <div className="flex items-start justify-between mb-6">
+        <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '32px', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
             <div>
-              <h2 className="text-3xl font-bold text-white mb-2">{student.name}</h2>
-              <p className="text-dark-400 text-sm">{student.email}</p>
+              <h2 style={{ fontSize: '24px', fontWeight: 900, fontFamily: '"Barlow Condensed", sans-serif', color: '#f0f0f0', marginBottom: '8px', letterSpacing: '2px', textTransform: 'uppercase' }}>{student.name}</h2>
+              <p style={{ color: '#555555', fontSize: '12px' }}>{student.email}</p>
             </div>
-            <div className="text-right">
-              <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-primary-600/20 border border-primary-600/30">
-                <span className="text-sm font-semibold text-primary-400">{student.status}</span>
-              </div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              background: 'rgba(204,0,0,0.1)',
+              border: '1px solid #CC0000'
+            }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#CC0000', textTransform: 'uppercase' }}>{student.status}</span>
             </div>
           </div>
 
           {/* Profile Details Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center space-x-2">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span>🥋</span>
               <div>
-                <p className="text-dark-400 text-xs">Belt Level</p>
-                <p className="font-semibold text-white">{student.belt_level}</p>
+                <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Belt Level</p>
+                <p style={{ fontWeight: 600, color: '#f0f0f0', fontSize: '14px' }}>{student.belt_level}</p>
               </div>
             </div>
 
             {student.payment_type && (
-              <div className="flex items-center space-x-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span>💳</span>
                 <div>
-                  <p className="text-dark-400 text-xs">Payment Type</p>
-                  <p className="font-semibold text-white">{student.payment_type}</p>
+                  <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Payment Type</p>
+                  <p style={{ fontWeight: 600, color: '#f0f0f0', fontSize: '14px' }}>{student.payment_type}</p>
                 </div>
               </div>
             )}
 
             {student.fee !== undefined && (
-              <div className="flex items-center space-x-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span>💲</span>
                 <div>
-                  <p className="text-dark-400 text-xs">Monthly Fee</p>
-                  <p className="font-semibold text-white">€{student.fee}</p>
+                  <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Monthly Fee</p>
+                  <p style={{ fontWeight: 600, color: '#f0f0f0', fontSize: '14px' }}>€{student.fee?.toFixed(2)}</p>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
           {/* Attendance Calendar */}
-          <div className="lg:col-span-2">
-            <div className="rounded-2xl border border-dark-700 bg-dark-800/50 backdrop-blur-sm p-6">
-              <h3 className="text-xl font-bold mb-6">Attendance - {new Date(year, selectedMonth).toLocaleString("default", { month: "long", year: "numeric" })}</h3>
+          <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '24px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '24px', letterSpacing: '3px', textTransform: 'uppercase' }}>
+              Attendance - {new Date(year, selectedMonth).toLocaleString("default", { month: "long", year: "numeric" })}
+            </h3>
 
-              {/* Month Selector */}
-              <div className="flex flex-wrap gap-1 overflow-x-auto mb-6 pb-2">
-                {months.map((m) => {
-                  const percent = getMonthAttendance(year, m);
+            {/* Month Selector */}
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '24px', paddingBottom: '8px' }}>
+              {months.map((m) => {
+                const percent = getMonthAttendance(year, m);
+                return (
+                  <button
+                    key={m}
+                    onClick={() => setSelectedMonth(m)}
+                    title={`${percent}% attendance`}
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '56px',
+                      height: '56px',
+                      background: selectedMonth === m ? '#CC0000' : '#1a1a1a',
+                      color: selectedMonth === m ? 'white' : '#555555',
+                      border: '1px solid #2a2a2a',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedMonth !== m) {
+                        e.currentTarget.style.background = '#222222';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedMonth !== m) {
+                        e.currentTarget.style.background = '#1a1a1a';
+                      }
+                    }}
+                  >
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#CC0000', width: `${percent}%` }}></div>
+                    <span>{new Date(year, m).toLocaleString("default", { month: "short" })}</span>
+                    <span style={{ fontSize: '10px', marginTop: '4px' }}>{percent}%</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Calendar Grid */}
+            <div style={{ background: '#1a1a1a', padding: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '16px' }}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                  <div key={d} style={{ textAlign: 'center', color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>{d}</div>
+                ))}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                {Array.from({ length: getFirstDay(year, selectedMonth) }).map((_, i) => (
+                  <div key={`empty-${i}`} />
+                ))}
+                {Array.from({ length: getDaysInMonth(year, selectedMonth) }, (_, d) => {
+                  const day = d + 1;
+                  const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const isAttended = attendance[dateStr];
                   return (
-                    <button
-                      key={m}
-                      onClick={() => setSelectedMonth(m)}
-                      title={`${percent}% attendance`}
-                      className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-md text-xs font-medium transition-colors ${
-                        selectedMonth === m
-                          ? "bg-primary-500 text-white shadow-lg"
-                          : "bg-dark-700 text-dark-300 hover:bg-dark-600"
-                      }`}
+                    <div
+                      key={dateStr}
+                      style={{
+                        height: '48px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: isAttended ? '#CC0000' : '#222222',
+                        color: isAttended ? 'white' : '#555555',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'default'
+                      }}
                     >
-                      <div
-                        className="absolute bottom-0 left-0 h-1 bg-green-400 transition-all"
-                        style={{ width: `${percent}%` }}
-                      />
-                      <span>{new Date(year, m).toLocaleString("default", { month: "short" })}</span>
-                      <span className="text-xs font-normal opacity-75">{percent}%</span>
-                    </button>
+                      {day}
+                    </div>
                   );
                 })}
               </div>
+            </div>
 
-              {/* Calendar Grid */}
-              <div className="bg-dark-700/50 rounded-lg p-4">
-                <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold mb-4">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                    <div key={d} className="text-dark-400">{d}</div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-7 gap-1">
-                  {Array.from({ length: getFirstDay(year, selectedMonth) }).map((_, i) => (
-                    <div key={`empty-${i}`} className="h-12" />
-                  ))}
-                  {Array.from({ length: getDaysInMonth(year, selectedMonth) }, (_, d) => {
-                    const day = d + 1;
-                    const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const isAttended = attendance[dateStr];
-                    return (
-                      <div
-                        key={dateStr}
-                        className={`h-12 rounded-md flex items-center justify-center text-sm font-medium ${
-                          isAttended ? 'bg-green-500 text-dark-900' : 'bg-dark-600 text-dark-400'
-                        }`}
-                      >
-                        {day}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Attendance Percentage */}
-              <div className="mt-6 p-4 rounded-lg bg-primary-600/10 border border-primary-600/20">
-                <div className="flex items-center justify-between">
-                  <span className="text-dark-300">Current Month Attendance</span>
-                  <span className="text-2xl font-bold text-primary-400">{currentMonthAttendance}%</span>
-                </div>
+            {/* Attendance Percentage */}
+            <div style={{ padding: '16px', background: 'rgba(204,0,0,0.1)', border: '1px solid #CC0000' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ color: '#888888', fontSize: '12px', fontWeight: 600 }}>Current Month Attendance</span>
+                <span style={{ fontSize: '24px', fontWeight: 900, color: '#CC0000' }}>{currentMonthAttendance}%</span>
               </div>
             </div>
           </div>
 
           {/* Teacher Notes */}
-          <div className="lg:col-span-1">
-            <div className="rounded-2xl border border-dark-700 bg-dark-800/50 backdrop-blur-sm p-6 h-full flex flex-col">
-              <h3 className="text-lg font-bold mb-4">Teacher Notes</h3>
+          <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '16px', letterSpacing: '2px', textTransform: 'uppercase' }}>TEACHER NOTES</h3>
 
-              <div className="flex-1 overflow-y-auto space-y-4">
-                {notes.length === 0 ? (
-                  <p className="text-dark-400 text-center py-8">No notes yet</p>
-                ) : (
-                  notes.map((note) => (
-                    <div key={note.id} className="space-y-1">
-                      <div className="text-dark-300 text-xs font-medium">
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {notes.length === 0 ? (
+                <p style={{ color: '#555555', textAlign: 'center', paddingTop: '32px' }}>No notes yet</p>
+              ) : (
+                notes.map((note, index) => (
+                  <div key={note.id}>
+                    <div>
+                      <div style={{ color: '#888888', fontSize: '11px', fontWeight: 700, marginBottom: '4px' }}>
                         {new Date(note.created_at).toLocaleDateString('en-GB')}
                       </div>
-                      <div className="text-dark-400 text-xs">
+                      <div style={{ color: '#555555', fontSize: '10px', marginBottom: '8px' }}>
                         {note.teacher_name}
                       </div>
-                      <div className="text-dark-100 text-sm leading-relaxed pl-2 border-l-2 border-dark-600">
+                      <div style={{ color: '#f0f0f0', fontSize: '12px', lineHeight: '1.5', paddingLeft: '12px', borderLeft: '2px solid #2a2a2a', marginBottom: '16px' }}>
                         {note.note_text}
                       </div>
-                      {notes.indexOf(note) < notes.length - 1 && (
-                        <div className="border-b border-dark-600 mt-3 opacity-30"></div>
-                      )}
                     </div>
-                  ))
-                )}
-              </div>
+                    {index < notes.length - 1 && (
+                      <div style={{ borderBottom: '1px solid #2a2a2a', marginBottom: '16px', opacity: 0.3 }}></div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
       </div>
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
