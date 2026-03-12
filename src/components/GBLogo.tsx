@@ -7,7 +7,7 @@ interface GBLogoProps {
 export default function GBLogo({ size = 40 }: GBLogoProps) {
   return (
     <Image
-      src="/gb-logo.png"
+      src="/Gracie Barra.png"
       alt="Gracie Barra Carnaxide e Queijas"
       width={size}
       height={size}
