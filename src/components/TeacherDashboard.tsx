@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import MemberProfile from "./MemberProfile";
+import GBLogo from "@/components/GBLogo";
 import { Member, calculateMonthlyFee } from "../../lib/types";
 import { createMember, updateMember as updateMemberDb, deleteMember, getMembers } from "../../lib/database";
 
@@ -192,186 +193,436 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     );
     setShowQuickModal(false);
   };
-  const getStatusColor = (
-    status: "Active" | "Paused" | "Unpaid"
-  ): string => {
-    switch (status) {
-      case "Active":
-        return "bg-green-600/20 text-green-400 border-green-600/30";
-      case "Paused":
-        return "bg-yellow-600/20 text-yellow-400 border-yellow-600/30";
-      case "Unpaid":
-        return "bg-red-600/20 text-red-400 border-red-600/30";
+  const getBeltColor = (belt: string): string => {
+    switch (belt) {
+      case "White Belt": return "#888888";
+      case "Blue Belt": return "#2596BE";
+      case "Purple Belt": return "#7D3C98";
+      case "Brown Belt": return "#8B4513";
+      case "Black Belt": return "#000000";
+      default: return "#888888";
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900">
-      {/* Header */}
-      <header className="border-b border-dark-700 bg-dark-800/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white">GymApp</h1>
-            <p className="text-dark-400 text-sm">Teacher Dashboard</p>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: '248px 1fr',
+      minHeight: '100vh',
+      background: '#0a0a0a',
+      color: '#f0f0f0',
+      fontFamily: '"Barlow", sans-serif'
+    }}>
+      {/* SIDEBAR */}
+      <div style={{
+        background: '#111111',
+        borderRight: '1px solid #2a2a2a',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        overflow: 'hidden'
+      }}>
+        {/* Sidebar Header */}
+        <div style={{
+          padding: '22px 20px',
+          borderBottom: '1px solid #2a2a2a'
+        }}>
+          <div style={{ marginBottom: '8px' }}>
+            <GBLogo size={36} />
           </div>
-          <div className="flex items-center space-x-4">
+          <div style={{
+            fontFamily: '"Barlow Condensed", sans-serif',
+            fontSize: '13px',
+            fontWeight: 800,
+            letterSpacing: '3px',
+            textTransform: 'uppercase',
+            color: '#f0f0f0',
+            marginBottom: '4px'
+          }}>
+            Gracie Barra
+          </div>
+          <div style={{
+            fontSize: '9px',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            color: '#555555'
+          }}>
+            Carnaxide & Queijas / GymApp
+          </div>
+        </div>
+
+        {/* Nav Items */}
+        <nav style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        }}>
+          {['Dashboard', 'Membros', 'Presenças', 'Export DD', 'Definições'].map((item, idx) => (
+            <div
+              key={item}
+              style={{
+                padding: '10px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                fontSize: '13px',
+                color: idx === 0 ? '#f0f0f0' : '#888888',
+                cursor: 'pointer',
+                borderLeft: idx === 0 ? '2px solid #CC0000' : '2px solid transparent',
+                background: idx === 0 ? 'rgba(204,0,0,0.07)' : 'transparent',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (idx !== 0) {
+                  (e.currentTarget as HTMLElement).style.color = '#f0f0f0';
+                  (e.currentTarget as HTMLElement).style.background = '#1a1a1a';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (idx !== 0) {
+                  (e.currentTarget as HTMLElement).style.color = '#888888';
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                }
+              }}
+            >
+              {item}
+            </div>
+          ))}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div style={{
+          padding: '16px 20px',
+          borderTop: '1px solid #2a2a2a',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            background: '#CC0000',
+            fontFamily: '"Barlow Condensed", sans-serif',
+            fontWeight: 900,
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '13px',
+            flexShrink: 0
+          }}>
+            P
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '12px', fontWeight: 500, color: '#f0f0f0' }}>Professor</div>
+            <div style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#CC0000' }}>Admin</div>
+          </div>
+          <button
+            onClick={onLogout}
+            style={{
+              background: 'none',
+              border: '1px solid #2a2a2a',
+              color: '#888888',
+              fontSize: '10px',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#f0f0f0';
+              e.currentTarget.style.color = '#f0f0f0';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#2a2a2a';
+              e.currentTarget.style.color = '#888888';
+            }}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
+        {/* Topbar */}
+        <div style={{
+          padding: '22px 40px',
+          borderBottom: '1px solid #2a2a2a',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div>
+            <div style={{
+              fontFamily: '"Barlow Condensed", sans-serif',
+              fontSize: '26px',
+              fontWeight: 900,
+              letterSpacing: '5px',
+              textTransform: 'uppercase',
+              color: '#f0f0f0',
+              marginBottom: '4px'
+            }}>
+              MEMBROS
+            </div>
+            <div style={{
+              fontSize: '10px',
+              color: '#888888',
+              letterSpacing: '2px',
+              textTransform: 'uppercase'
+            }}>
+              Gestão de alunos · GB Carnaxide & Queijas
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button
               onClick={openQuickModal}
-              className="px-6 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-all duration-300"
+              style={{
+                padding: '9px 16px',
+                fontFamily: '"Barlow Condensed", sans-serif',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '3px',
+                textTransform: 'uppercase',
+                border: '1px solid #2a2a2a',
+                background: 'transparent',
+                color: '#888888',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#f0f0f0';
+                e.currentTarget.style.borderColor = '#f0f0f0';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#888888';
+                e.currentTarget.style.borderColor = '#2a2a2a';
+              }}
             >
               Quick Attendance
             </button>
             <button
-              onClick={onLogout}
-              className="px-6 py-2 rounded-lg border border-dark-600 text-dark-200 hover:text-white hover:border-primary-600 transition-all duration-300 hover:bg-dark-700"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="rounded-lg border border-dark-700 bg-dark-800/50 p-6">
-            <p className="text-dark-400 text-sm font-medium">Total Members</p>
-            <p className="text-3xl font-bold text-white mt-2">{members.length}</p>
-          </div>
-          <div className="rounded-lg border border-dark-700 bg-dark-800/50 p-6">
-            <p className="text-dark-400 text-sm font-medium">Active</p>
-            <p className="text-3xl font-bold text-green-400 mt-2">
-              {members.filter((m) => m.status === "Active").length}
-            </p>
-          </div>
-          <div className="rounded-lg border border-dark-700 bg-dark-800/50 p-6">
-            <p className="text-dark-400 text-sm font-medium">Paused</p>
-            <p className="text-3xl font-bold text-yellow-400 mt-2">
-              {members.filter((m) => m.status === "Paused").length}
-            </p>
-          </div>
-          <div className="rounded-lg border border-dark-700 bg-dark-800/50 p-6">
-            <p className="text-dark-400 text-sm font-medium">Unpaid</p>
-            <p className="text-3xl font-bold text-red-400 mt-2">
-              {members.filter((m) => m.status === "Unpaid").length}
-            </p>
-          </div>
-        </div>
-
-        {/* Members Section */}
-        <div className="rounded-2xl border border-dark-700 bg-dark-800/50 backdrop-blur-sm">
-          {/* Section Header */}
-          <div className="border-b border-dark-700 px-6 py-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white">Members</h2>
-              <p className="text-dark-400 text-sm">Manage your gym members</p>
-            </div>
-            <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-all duration-300 font-medium flex items-center space-x-2"
+              style={{
+                padding: '9px 16px',
+                fontFamily: '"Barlow Condensed", sans-serif',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '3px',
+                textTransform: 'uppercase',
+                border: '1px solid #CC0000',
+                background: '#CC0000',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
             >
-              <span>+</span>
-              <span>Add Member</span>
+              + Add Member
             </button>
           </div>
+        </div>
 
-          {/* Members List */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        {/* Content - Scrollable */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {/* Stats Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '14px',
+            padding: '36px 40px 0'
+          }}>
+            {[
+              { label: 'Total Members', value: members.length, color: '#f0f0f0' },
+              { label: 'Active', value: members.filter((m) => m.status === "Active").length, color: '#22C55E' },
+              { label: 'Paused', value: members.filter((m) => m.status === "Paused").length, color: '#FBBF24' },
+              { label: 'Unpaid', value: members.filter((m) => m.status === "Unpaid").length, color: '#FF6B6B' }
+            ].map((stat, idx) => (
+              <div
+                key={idx}
+                style={{
+                  background: '#111111',
+                  border: '1px solid #2a2a2a',
+                  padding: '22px',
+                  position: 'relative'
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: '#CC0000'
+                }} />
+                <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#555555', marginBottom: '8px' }}>
+                  {stat.label}
+                </div>
+                <div style={{ fontSize: '28px', fontWeight: 900, color: stat.color }}>
+                  {stat.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Members Section */}
+          <div style={{ padding: '24px 40px 40px' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                fontFamily: '"Barlow Condensed", sans-serif',
+                fontSize: '16px',
+                fontWeight: 800,
+                letterSpacing: '4px',
+                textTransform: 'uppercase',
+                color: '#f0f0f0'
+              }}>
+                TODOS OS MEMBROS
+              </div>
+              <input
+                type="text"
+                placeholder="Search members..."
+                style={{
+                  background: '#1a1a1a',
+                  border: '1px solid #2a2a2a',
+                  color: '#f0f0f0',
+                  padding: '9px 16px',
+                  fontSize: '13px',
+                  width: '220px',
+                  fontFamily: '"Barlow", sans-serif'
+                }}
+              />
+            </div>
+
+            {/* Table */}
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr className="border-b border-dark-700">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Name
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Belt Level
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Phone
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Date of Birth
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Email
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Payment
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Fee
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Discount
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-dark-300">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-dark-300">
-                    Actions
-                  </th>
+                <tr style={{ borderBottom: '1px solid #2a2a2a' }}>
+                  {['Name', 'Belt', 'Phone', 'Email', 'Payment', 'Fee', 'Discount', 'Status', 'Actions'].map((col) => (
+                    <th
+                      key={col}
+                      style={{
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        letterSpacing: '3px',
+                        textTransform: 'uppercase',
+                        color: '#555555',
+                        padding: '10px 16px',
+                        borderBottom: '1px solid #2a2a2a',
+                        textAlign: 'left'
+                      }}
+                    >
+                      {col}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {members.map((member) => (
                   <tr
                     key={member.id}
-                    className="border-b border-dark-700 hover:bg-dark-700/30 transition-colors"
+                    style={{
+                      borderBottom: '1px solid #161616',
+                      transition: 'background 0.2s',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#131313'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    onClick={() => setSelectedMemberId(member.id)}
                   >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-bold text-white">
-                            {member.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .toUpperCase()}
-                          </span>
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          background: '#222222',
+                          border: '1px solid #2a2a2a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontFamily: '"Barlow Condensed", sans-serif',
+                          fontWeight: 900,
+                          fontSize: '13px',
+                          color: '#CC0000',
+                          flexShrink: 0
+                        }}>
+                          {member.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
                         </div>
-                        <button
-                          onClick={() => setSelectedMemberId(member.id)}
-                          className="font-medium text-white hover:underline"
-                        >
-                          {member.name}
-                        </button>
+                        <div style={{ color: '#f0f0f0', fontSize: '13px' }}>{member.name}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-dark-300">
-                      {(member as any).beltLevel}
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#f0f0f0' }}>
+                      <div style={{
+                        display: 'inline-block',
+                        background: getBeltColor((member as any).beltLevel),
+                        color: 'white',
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        borderRadius: '3px'
+                      }}>
+                        {(member as any).beltLevel}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-dark-300">
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
                       {(member as any).phone || "-"}
                     </td>
-                    <td className="px-6 py-4 text-dark-300">
-                      {(member as any).dateOfBirth ? new Date((member as any).dateOfBirth).toLocaleDateString('en-GB') : "-"}
-                    </td>
-                    <td className="px-6 py-4 text-dark-300">
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
                       {(member as any).email || "-"}
                     </td>
-                    <td className="px-6 py-4 text-dark-300">
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
                       {(member as any).paymentType || "-"}
                     </td>
-                    <td className="px-6 py-4 text-dark-300">
-                      {(member as any).monthlyFee ? `$${(member as any).monthlyFee.toFixed(2)}` : "-"}
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontFamily: '"Barlow Condensed", sans-serif', fontSize: '16px', color: '#f0f0f0', fontWeight: 900 }}>
+                      €{(member as any).monthlyFee ? (member as any).monthlyFee.toFixed(2) : "0.00"}
                     </td>
-                    <td className="px-6 py-4 text-dark-300">
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
                       {(member as any).familyDiscount ? "Yes" : "No"}
                     </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(
-                          member.status
-                        )}`}
-                      >
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle' }}>
+                      <div style={{
+                        display: 'inline-block',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '4px 8px',
+                        borderRadius: '3px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        color: member.status === 'Active' ? '#22C55E' : member.status === 'Paused' ? '#FBBF24' : '#FF6B6B',
+                        background: member.status === 'Active' ? 'rgba(34, 197, 94, 0.1)' : member.status === 'Paused' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(255, 107, 107, 0.1)',
+                        border: member.status === 'Active' ? '1px solid rgba(34, 197, 94, 0.3)' : member.status === 'Paused' ? '1px solid rgba(251, 191, 36, 0.3)' : '1px solid rgba(255, 107, 107, 0.3)'
+                      }}>
                         {member.status}
-                      </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
                       <button
-                        onClick={() => handleRemoveMember(member.id)}
-                        className="px-3 py-1 rounded text-sm bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-600/30 transition-all duration-300"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveMember(member.id);
+                        }}
+                        style={{
+                          background: 'rgba(255, 107, 107, 0.1)',
+                          border: '1px solid rgba(255, 107, 107, 0.3)',
+                          color: '#FF6B6B',
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 107, 107, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 107, 107, 0.1)';
+                        }}
                       >
                         Remove
                       </button>
@@ -382,54 +633,90 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             </table>
 
             {members.length === 0 && (
-              <div className="px-6 py-12 text-center">
-                <p className="text-dark-400">No members yet. Add your first member to get started!</p>
+              <div style={{ padding: '40px', textAlign: 'center', color: '#555555' }}>
+                No members yet. Add your first member to get started!
               </div>
             )}
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Add Member Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-dark-800 border border-dark-700 rounded-2xl p-8 max-w-md w-full">
-            <h3 className="text-2xl font-bold text-white mb-6">Add New Member</h3>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50
+        }}>
+          <div style={{
+            background: '#111111',
+            border: '1px solid #2a2a2a',
+            padding: '32px',
+            maxWidth: '400px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <h3 style={{
+              fontFamily: '"Barlow Condensed", sans-serif',
+              fontSize: '20px',
+              fontWeight: 900,
+              color: '#f0f0f0',
+              marginBottom: '24px'
+            }}>
+              ADD NEW MEMBER
+            </h3>
 
-            <form onSubmit={handleAddMember} className="space-y-4">
+            <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label className="block text-sm font-medium text-dark-200 mb-2">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
                   Name
                 </label>
                 <input
                   type="text"
                   value={newMember.name}
-                  onChange={(e) =>
-                    setNewMember({ ...newMember, name: e.target.value })
-                  }
+                  onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
                   placeholder="Member name"
-                  className="w-full px-4 py-2 rounded-lg border border-dark-600 bg-dark-700 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 transition-all"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-200 mb-2">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
                   Phone
                 </label>
                 <input
                   type="tel"
                   value={newMember.phone}
-                  onChange={(e) =>
-                    setNewMember({ ...newMember, phone: e.target.value })
-                  }
+                  onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
                   placeholder="(555) 123-4567"
-                  className="w-full px-4 py-2 rounded-lg border border-dark-600 bg-dark-700 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 transition-all"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-200 mb-2">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
                   Date of Birth
                 </label>
                 <input
@@ -439,40 +726,59 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                     setNewMember({ ...newMember, date_of_birth: e.target.value });
                     updateMemberFee(e.target.value, newMember.payment_type);
                   }}
-                  className="w-full px-4 py-2 rounded-lg border border-dark-600 bg-dark-700 text-white focus:outline-none focus:border-primary-500 transition-all"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-200 mb-2">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
                   Email
                 </label>
                 <input
                   type="email"
                   value={newMember.email}
-                  onChange={(e) =>
-                    setNewMember({ ...newMember, email: e.target.value })
-                  }
+                  onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
                   placeholder="member@example.com"
-                  className="w-full px-4 py-2 rounded-lg border border-dark-600 bg-dark-700 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 transition-all"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-200 mb-2">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
                   Payment Type
                 </label>
                 <select
                   value={newMember.payment_type}
                   onChange={(e) => {
                     const newPaymentType = e.target.value as "Direct Debit" | "Cash";
-                    setNewMember({
-                      ...newMember,
-                      payment_type: newPaymentType,
-                    });
+                    setNewMember({ ...newMember, payment_type: newPaymentType });
                     updateMemberFee(newMember.date_of_birth, newPaymentType);
                   }}
-                  className="w-full px-4 py-2 rounded-lg border border-dark-600 bg-dark-700 text-white focus:outline-none focus:border-primary-500 transition-all"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
                 >
                   <option>Direct Debit</option>
                   <option>Cash</option>
@@ -480,58 +786,56 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-200 mb-2">
-                  Monthly Fee (€) - Calculated Automatically
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Monthly Fee (€) - Auto-Calculated
                 </label>
                 <input
                   type="number"
                   value={newMember.fee}
                   readOnly
                   disabled
-                  className="w-full px-4 py-2 rounded-lg border border-dark-600 bg-dark-700/50 text-white placeholder-dark-400 focus:outline-none cursor-not-allowed"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#0a0a0a',
+                    border: '1px solid #2a2a2a',
+                    color: '#888888',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif',
+                    opacity: 0.6
+                  }}
                 />
-                {newMember.fee > 0 && (
-                  <p className="text-xs text-dark-400 mt-2">
-                    {newMember.date_of_birth ? (
-                      <>{new Date(newMember.date_of_birth).toLocaleDateString('en-GB')} • {newMember.payment_type}</>
-                    ) : (
-                      <>Select date of birth to calculate fee</>
-                    )}
-                  </p>
-                )}
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   id="familyDiscount"
                   type="checkbox"
                   checked={newMember.family_discount}
-                  onChange={(e) =>
-                    setNewMember({
-                      ...newMember,
-                      family_discount: e.target.checked,
-                    })
-                  }
-                  className="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-0"
+                  onChange={(e) => setNewMember({ ...newMember, family_discount: e.target.checked })}
+                  style={{ width: '16px', height: '16px', accentColor: '#CC0000' }}
                 />
-                <label
-                  htmlFor="familyDiscount"
-                  className="text-sm text-dark-300"
-                >
+                <label htmlFor="familyDiscount" style={{ fontSize: '12px', color: '#888888' }}>
                   Family discount
                 </label>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-200 mb-2">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
                   Belt Level
                 </label>
                 <select
                   value={newMember.belt_level}
-                  onChange={(e) =>
-                    setNewMember({ ...newMember, belt_level: e.target.value })
-                  }
-                  className="w-full px-4 py-2 rounded-lg border border-dark-600 bg-dark-700 text-white focus:outline-none focus:border-primary-500 transition-all"
+                  onChange={(e) => setNewMember({ ...newMember, belt_level: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
                 >
                   <option>White Belt</option>
                   <option>Blue Belt</option>
@@ -542,21 +846,21 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-dark-200 mb-2">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
                   Status
                 </label>
                 <select
                   value={newMember.status}
-                  onChange={(e) =>
-                    setNewMember({
-                      ...newMember,
-                      status: e.target.value as
-                        | "Active"
-                        | "Paused"
-                        | "Unpaid",
-                    })
-                  }
-                  className="w-full px-4 py-2 rounded-lg border border-dark-600 bg-dark-700 text-white focus:outline-none focus:border-primary-500 transition-all"
+                  onChange={(e) => setNewMember({ ...newMember, status: e.target.value as "Active" | "Paused" | "Unpaid" })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
                 >
                   <option>Active</option>
                   <option>Paused</option>
@@ -564,17 +868,47 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 </select>
               </div>
 
-              <div className="flex space-x-3 pt-4">
+              <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 rounded-lg border border-dark-600 text-dark-200 hover:bg-dark-700 transition-all"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: 'transparent',
+                    border: '1px solid #2a2a2a',
+                    color: '#888888',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#f0f0f0';
+                    e.currentTarget.style.color = '#f0f0f0';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#2a2a2a';
+                    e.currentTarget.style.color = '#888888';
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-all font-medium"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: '#CC0000',
+                    border: '1px solid #CC0000',
+                    color: 'white',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
                 >
                   Add Member
                 </button>
@@ -586,41 +920,100 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
       {/* Quick Attendance Modal */}
       {showQuickModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-dark-800 border border-dark-700 rounded-2xl p-8 max-w-lg w-full">
-            <h3 className="text-2xl font-bold text-white mb-6">Today's Attendance</h3>
-            <div className="max-h-80 overflow-y-auto mb-6">
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50
+        }}>
+          <div style={{
+            background: '#111111',
+            border: '1px solid #2a2a2a',
+            padding: '32px',
+            maxWidth: '450px',
+            width: '100%',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <h3 style={{
+              fontFamily: '"Barlow Condensed", sans-serif',
+              fontSize: '20px',
+              fontWeight: 900,
+              color: '#f0f0f0',
+              marginBottom: '24px'
+            }}>
+              TODAY'S ATTENDANCE
+            </h3>
+
+            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '24px' }}>
               {members.map((m) => (
                 <label
                   key={m.id}
-                  className="flex items-center justify-between mb-2"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 0',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid rgba(42,42,42,0.5)'
+                  }}
                 >
-                  <span className="text-white">{m.name}</span>
+                  <span style={{ color: '#f0f0f0', fontSize: '13px' }}>{m.name}</span>
                   <input
                     type="checkbox"
                     checked={!!quickSelection[m.id]}
-                    onChange={(e) =>
-                      setQuickSelection({
-                        ...quickSelection,
-                        [m.id]: e.target.checked,
-                      })
-                    }
-                    className="w-4 h-4 rounded border-dark-600 bg-dark-700 text-primary-600 focus:ring-0"
+                    onChange={(e) => setQuickSelection({ ...quickSelection, [m.id]: e.target.checked })}
+                    style={{ width: '16px', height: '16px', accentColor: '#CC0000' }}
                   />
                 </label>
               ))}
             </div>
-            <div className="flex space-x-3 pt-4">
+
+            <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 type="button"
                 onClick={() => setShowQuickModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-dark-600 text-dark-200 hover:bg-dark-700 transition-all"
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  background: 'transparent',
+                  border: '1px solid #2a2a2a',
+                  color: '#888888',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#f0f0f0';
+                  e.currentTarget.style.color = '#f0f0f0';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#2a2a2a';
+                  e.currentTarget.style.color = '#888888';
+                }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleQuickSave}
-                className="flex-1 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-all font-medium"
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  background: '#CC0000',
+                  border: '1px solid #CC0000',
+                  color: 'white',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
               >
                 Save
               </button>
