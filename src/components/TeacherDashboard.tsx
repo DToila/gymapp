@@ -230,7 +230,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           borderBottom: '1px solid #2a2a2a'
         }}>
           <div style={{ marginBottom: '8px' }}>
-            <GBLogo size={36} />
+            <GBLogo size={48} />
           </div>
           <div style={{
             fontFamily: '"Barlow Condensed", sans-serif',
@@ -443,9 +443,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           }}>
             {[
               { label: 'Total Members', value: members.length, color: '#f0f0f0' },
-              { label: 'Active', value: members.filter((m) => m.status === "Active").length, color: '#22C55E' },
-              { label: 'Paused', value: members.filter((m) => m.status === "Paused").length, color: '#FBBF24' },
-              { label: 'Unpaid', value: members.filter((m) => m.status === "Unpaid").length, color: '#FF6B6B' }
+              { label: 'Active', value: members.filter((m) => m.status === "Active").length, color: '#f0f0f0' },
+              { label: 'Paused', value: members.filter((m) => m.status === "Paused").length, color: '#f0f0f0' },
+              { label: 'Unpaid', value: members.filter((m) => m.status === "Unpaid").length, color: '#f0f0f0' }
             ].map((stat, idx) => (
               <div
                 key={idx}
@@ -506,7 +506,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #2a2a2a' }}>
-                  {['Name', 'Belt', 'Phone', 'Email', 'Payment', 'Fee', 'Discount', 'Status', 'Actions'].map((col) => (
+                  {['Name', 'Belt', 'Email', 'Payment', 'Fee', 'Status', 'Actions'].map((col) => (
                     <th
                       key={col}
                       style={{
@@ -572,9 +572,6 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                       </div>
                     </td>
                     <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
-                      {(member as any).phone || "-"}
-                    </td>
-                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
                       {(member as any).email || "-"}
                     </td>
                     <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
@@ -582,9 +579,6 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                     </td>
                     <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontFamily: '"Barlow Condensed", sans-serif', fontSize: '16px', color: '#f0f0f0', fontWeight: 900 }}>
                       €{(member as any).monthlyFee ? (member as any).monthlyFee.toFixed(2) : "0.00"}
-                    </td>
-                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
-                      {(member as any).familyDiscount ? "Yes" : "No"}
                     </td>
                     <td style={{ padding: '13px 16px', verticalAlign: 'middle' }}>
                       <div style={{
