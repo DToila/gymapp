@@ -156,223 +156,295 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 text-white">
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', fontFamily: '"Barlow", sans-serif', padding: '24px' }}>
       {loading ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-            <p className="text-dark-400">Loading member data...</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3px solid #CC0000', borderTop: '3px solid transparent', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }}></div>
+            <p style={{ color: '#555555' }}>Loading member data...</p>
           </div>
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto px-6 py-6">
-        <button
-          onClick={onBack}
-          className="text-primary-500 hover:text-primary-400 mb-4 inline-block"
-        >
-          ← Back
-        </button>
-        {/* profile header card */}
-        <div className="bg-dark-800 border border-dark-700 rounded-2xl p-6 mb-6 flex items-center space-x-6">
-          <div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center text-2xl font-bold text-white">
-            {data.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .toUpperCase()}
-          </div>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-1">{data.name}</h1>
-            <div className="grid grid-cols-2 gap-4 text-sm text-dark-300">
-              <div className="flex items-center space-x-2">
-                <span>🥋</span>
-                <span>{(data as any).beltLevel}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span>📌</span>
-                <span>{data.status}</span>
-              </div>
-              {data.phone && (
-                <div className="flex items-center space-x-2">
-                  <span>📞</span>
-                  <span>{data.phone}</span>
-                </div>
-              )}
-              {data.email && (
-                <div className="flex items-center space-x-2">
-                  <span>✉️</span>
-                  <span>{data.email}</span>
-                </div>
-              )}
-              {(data as any).paymentType && (
-                <div className="flex items-center space-x-2">
-                  <span>💳</span>
-                  <span>{(data as any).paymentType}</span>
-                </div>
-              )}
-              {(data as any).monthlyFee !== undefined && (
-                <div className="flex items-center space-x-2">
-                  <span>💲</span>
-                  <span>${(data as any).monthlyFee.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex items-center space-x-2">
-                <span>👪</span>
-                <span>{(data as any).familyDiscount ? "Yes" : "No"}</span>
-              </div>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <button
+            onClick={onBack}
+            style={{ background: 'none', border: 'none', color: '#CC0000', fontSize: '14px', fontWeight: 600, marginBottom: '24px', cursor: 'pointer', paddingBottom: '12px' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#ff6666'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#CC0000'}
+          >
+            ← Back
+          </button>
+
+          {/* Profile Header Card */}
+          <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#CC0000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 900, color: 'white', flexShrink: 0 }}>
+              {data.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
             </div>
-          </div>
-        </div>
-
-        {/* Month selector with toggle */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex flex-wrap gap-1 overflow-x-auto pb-2 flex-1">
-            {months.map((m) => {
-              const percent = getMonthAttendance(year, m);
-              const { attended, total } = getMonthAttendanceCount(year, m);
-              const displayValue = showPercentage ? `${percent}%` : `${attended}/${total}`;
-              return (
-                <button
-                  key={m}
-                  onClick={() => setSelectedMonth(m)}
-                  title={`${percent}% attendance`}
-                  className={`relative flex flex-col items-center justify-center w-16 h-16 rounded-md text-sm font-medium transition-colors ${
-                    selectedMonth === m
-                      ? "bg-primary-500 text-white shadow-lg"
-                      : "bg-dark-800 text-dark-300 hover:bg-dark-700"
-                  }`}
-                >
-                  <div
-                    className="absolute bottom-0 left-0 h-1 bg-green-400 transition-all"
-                    style={{ width: `${percent}%` }}
-                  />
-                  <span>{new Date(year, m).toLocaleString("default", { month: "short" })}</span>
-                  <span className="text-xs font-normal mt-1 opacity-75">
-                    {displayValue}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center space-x-2 ml-4">
-            <span className="text-sm text-dark-400">Days</span>
-            <button
-              onClick={() => setShowPercentage(!showPercentage)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                showPercentage ? 'bg-primary-600' : 'bg-dark-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  showPercentage ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className="text-sm text-dark-400">%</span>
-          </div>
-        </div>
-
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[500px]">
-          {/* Calendar Column */}
-          <div className="flex flex-col">
-            <h2 className="text-lg font-semibold mb-3">
-              {new Date(year, selectedMonth).toLocaleString("default", {
-                month: "long",
-              })}
-            </h2>
-            <div className="h-full bg-dark-800 border border-dark-700 rounded-2xl p-4 flex flex-col">
-              <div className="grid grid-cols-7 gap-0.5 text-center text-xs flex-1">
-                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
-                  <div key={d} className="font-semibold py-1">
-                    {d}
+            <div style={{ flex: 1 }}>
+              <h1 style={{ fontSize: '28px', fontWeight: 900, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '12px', letterSpacing: '2px', textTransform: 'uppercase' }}>{data.name}</h1>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px', color: '#888888' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🥋</span>
+                  <span>{(data as any).beltLevel || 'N/A'}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📌</span>
+                  <span>{data.status}</span>
+                </div>
+                {data.phone && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>📞</span>
+                    <span>{data.phone}</span>
                   </div>
-                ))}
-                {Array.from({ length: getFirstDay(year, selectedMonth) }).map((_, i) => (
-                  <div key={`empty-${i}`} className="py-1" />
-                ))}
-                {Array.from({ length: getDaysInMonth(year, selectedMonth) }, (_, d) => {
-                  const day = d + 1;
-                  const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                  const attended = attendanceMap[dateStr];
-                  const isToday = dateStr === new Date().toISOString().split('T')[0];
-                  return (
-                    <button
-                      key={dateStr}
-                      onClick={() => toggleDate(dateStr)}
-                      className={`flex-1 rounded-md flex items-center justify-center min-h-0 ${
-                        attended ? 'bg-green-500' : 'bg-dark-700'
-                      } ${isToday ? 'ring-2 ring-primary-500' : ''}`}
-                    >
-                      <span className={`${attended ? 'text-dark-900' : 'text-dark-400'} text-xs`}>{day}</span>
-                    </button>
-                  );
-                })}
-                {/* Fill remaining cells to make 6 rows total */}
-                {Array.from({ length: Math.max(0, 42 - getFirstDay(year, selectedMonth) - getDaysInMonth(year, selectedMonth)) }).map((_, i) => (
-                  <div key={`fill-${i}`} className="flex-1 min-h-0" />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Comments Column */}
-          <div className="flex flex-col">
-            <h3 className="text-lg font-semibold mb-3">Notes & Comments</h3>
-            <div className="h-full bg-dark-800 border border-dark-700 rounded-2xl p-4 flex flex-col">
-              <div className="h-[320px] overflow-y-auto mb-4">
-                {comments.length === 0 ? (
-                  <p className="text-dark-400 text-center py-8">No comments yet. Add the first note!</p>
-                ) : (
-                  <div className="space-y-4">
-                    {comments.map((comment, index) => (
-                      <div key={comment.id}>
-                        <div className="space-y-2">
-                          <div className="text-dark-300 text-sm font-medium">
-                            {comment.timestamp.toLocaleDateString('en-GB', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric'
-                            })}
-                          </div>
-                          <div className="text-dark-400 text-xs">
-                            {comment.teacherName}
-                          </div>
-                          <div className="text-dark-100 text-base leading-relaxed pl-2 border-l-2 border-dark-600">
-                            {comment.message}
-                          </div>
-                        </div>
-                        {index < comments.length - 1 && (
-                          <div className="border-b border-dark-600 mt-4 opacity-30"></div>
-                        )}
-                      </div>
-                    ))}
-                    <div ref={commentsEndRef} />
+                )}
+                {data.email && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>✉️</span>
+                    <span>{data.email}</span>
+                  </div>
+                )}
+                {(data as any).paymentType && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>💳</span>
+                    <span>{(data as any).paymentType}</span>
+                  </div>
+                )}
+                {(data as any).monthlyFee !== undefined && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>💲</span>
+                    <span>€{(data as any).monthlyFee.toFixed(2)}</span>
                   </div>
                 )}
               </div>
-              <div className="flex space-x-2 flex-shrink-0">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendComment()}
-                  placeholder="Add a note or comment..."
-                  className="flex-1 px-3 py-2 rounded-lg border border-dark-600 bg-dark-700 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 text-sm"
-                />
-                <button
-                  onClick={handleSendComment}
-                  disabled={!newComment.trim()}
-                  className="px-3 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                >
-                  Send
-                </button>
+            </div>
+          </div>
+
+          {/* Month Selector with Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '20px' }}>
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flex: 1, paddingBottom: '8px' }}>
+              {months.map((m) => {
+                const percent = getMonthAttendance(year, m);
+                const { attended, total } = getMonthAttendanceCount(year, m);
+                const displayValue = showPercentage ? `${percent}%` : `${attended}/${total}`;
+                return (
+                  <button
+                    key={m}
+                    onClick={() => setSelectedMonth(m)}
+                    title={`${percent}% attendance`}
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '64px',
+                      height: '64px',
+                      background: selectedMonth === m ? '#CC0000' : '#1a1a1a',
+                      color: selectedMonth === m ? 'white' : '#888888',
+                      border: '1px solid #2a2a2a',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedMonth !== m) {
+                        e.currentTarget.style.background = '#222222';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedMonth !== m) {
+                        e.currentTarget.style.background = '#1a1a1a';
+                      }
+                    }}
+                  >
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#CC0000', width: `${percent}%`, transition: 'all 0.2s' }}></div>
+                    <span>{new Date(year, m).toLocaleString("default", { month: "short" })}</span>
+                    <span style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '4px', opacity: 0.75 }}>{displayValue}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <span style={{ fontSize: '12px', color: '#888888' }}>Days</span>
+              <button
+                onClick={() => setShowPercentage(!showPercentage)}
+                style={{
+                  position: 'relative',
+                  display: 'inline-flex',
+                  height: '24px',
+                  width: '44px',
+                  alignItems: 'center',
+                  borderRadius: '12px',
+                  background: showPercentage ? '#CC0000' : '#333333',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <span style={{
+                  display: 'inline-block',
+                  height: '16px',
+                  width: '16px',
+                  borderRadius: '50%',
+                  background: 'white',
+                  transition: 'transform 0.2s',
+                  transform: showPercentage ? 'translateX(24px)' : 'translateX(4px)'
+                }} />
+              </button>
+              <span style={{ fontSize: '12px', color: '#888888' }}>%</span>
+            </div>
+          </div>
+
+          {/* Two-Column Layout */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', height: '500px' }}>
+            {/* Calendar Column */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '12px', color: '#f0f0f0', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                {new Date(year, selectedMonth).toLocaleString("default", { month: "long", year: 'numeric' })}
+              </h2>
+              <div style={{ flex: 1, background: '#111111', border: '1px solid #2a2a2a', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', flex: 1 }}>
+                  {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
+                    <div key={d} style={{ fontWeight: 700, fontSize: '11px', textAlign: 'center', color: '#555555', padding: '4px', textTransform: 'uppercase' }}>
+                      {d}
+                    </div>
+                  ))}
+                  {Array.from({ length: getFirstDay(year, selectedMonth) }).map((_, i) => (
+                    <div key={`empty-${i}`} />
+                  ))}
+                  {Array.from({ length: getDaysInMonth(year, selectedMonth) }, (_, d) => {
+                    const day = d + 1;
+                    const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const attended = attendanceMap[dateStr];
+                    const isToday = dateStr === new Date().toISOString().split('T')[0];
+                    return (
+                      <button
+                        key={dateStr}
+                        onClick={() => toggleDate(dateStr)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: attended ? '#CC0000' : '#1a1a1a',
+                          border: isToday ? '2px solid #CC0000' : '1px solid #2a2a2a',
+                          color: attended ? 'white' : '#555555',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!attended) {
+                            e.currentTarget.style.background = '#222222';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!attended) {
+                            e.currentTarget.style.background = '#1a1a1a';
+                          }
+                        }}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                  {Array.from({ length: Math.max(0, 42 - getFirstDay(year, selectedMonth) - getDaysInMonth(year, selectedMonth)) }).map((_, i) => (
+                    <div key={`fill-${i}`} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Comments Column */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '12px', color: '#f0f0f0', letterSpacing: '2px', textTransform: 'uppercase' }}>NOTES & COMMENTS</h3>
+              <div style={{ flex: 1, background: '#111111', border: '1px solid #2a2a2a', padding: '16px', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: '320px', overflowY: 'auto', marginBottom: '16px' }}>
+                  {comments.length === 0 ? (
+                    <p style={{ color: '#555555', textAlign: 'center', paddingTop: '32px' }}>No comments yet. Add the first note!</p>
+                  ) : (
+                    <div>
+                      {comments.map((comment, index) => (
+                        <div key={comment.id}>
+                          <div>
+                            <div style={{ color: '#888888', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                              {comment.timestamp.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </div>
+                            <div style={{ color: '#555555', fontSize: '11px', marginBottom: '8px' }}>
+                              {comment.teacherName}
+                            </div>
+                            <div style={{ color: '#f0f0f0', fontSize: '13px', lineHeight: '1.5', paddingLeft: '12px', borderLeft: '2px solid #2a2a2a', marginBottom: '16px' }}>
+                              {comment.message}
+                            </div>
+                          </div>
+                          {index < comments.length - 1 && (
+                            <div style={{ borderBottom: '1px solid #2a2a2a', marginBottom: '16px', opacity: 0.3 }}></div>
+                          )}
+                        </div>
+                      ))}
+                      <div ref={commentsEndRef} />
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendComment()}
+                    placeholder="Add a note or comment..."
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      background: '#1a1a1a',
+                      border: '1px solid #2a2a2a',
+                      color: '#f0f0f0',
+                      fontSize: '13px',
+                      fontFamily: '"Barlow", sans-serif'
+                    }}
+                  />
+                  <button
+                    onClick={handleSendComment}
+                    disabled={!newComment.trim()}
+                    style={{
+                      padding: '8px 16px',
+                      background: '#CC0000',
+                      border: 'none',
+                      color: 'white',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: newComment.trim() ? 'pointer' : 'not-allowed',
+                      opacity: newComment.trim() ? 1 : 0.5,
+                      textTransform: 'uppercase',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (newComment.trim()) {
+                        e.currentTarget.style.background = '#990000';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (newComment.trim()) {
+                        e.currentTarget.style.background = '#CC0000';
+                      }
+                    }}
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       )}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
