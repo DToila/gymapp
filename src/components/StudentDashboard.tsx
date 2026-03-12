@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import GBLogo from "@/components/GBLogo";
 import { getAttendanceForMember, getNotesForMember } from "../../lib/database";
 
 interface StudentDashboardProps {
@@ -135,9 +136,12 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
       {/* Header */}
       <header style={{ borderBottom: '1px solid #2a2a2a', background: 'rgba(17,17,17,0.8)', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#f0f0f0', fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '4px' }}>GRACIE BARRA</h1>
-            <p style={{ color: '#888888', fontSize: '12px' }}>Student Portal</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <GBLogo size={40} />
+            <div>
+              <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#f0f0f0', fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '4px' }}>GRACIE BARRA</h1>
+              <p style={{ color: '#888888', fontSize: '12px' }}>Student Portal</p>
+            </div>
           </div>
           <button
             onClick={onLogout}
