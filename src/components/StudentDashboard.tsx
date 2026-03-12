@@ -140,7 +140,7 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
             <GBLogo size={40} />
             <div>
               <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#f0f0f0', fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '4px' }}>GRACIE BARRA</h1>
-              <p style={{ color: '#888888', fontSize: '12px' }}>Student Portal</p>
+              <p style={{ color: '#888888', fontSize: '12px' }}>Carnaxide & Queijas / Student Portal</p>
             </div>
           </div>
           <button
