@@ -197,13 +197,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
       // Generate filename: DD_MMMM_GBCQ.txt where MMMM is Portuguese month name
       const today = new Date();
-      const monthNames = [
-        'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-      ];
+      const monthNames = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
       const monthName = monthNames[today.getMonth()];
-      const timestamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}_${String(today.getHours()).padStart(2, '0')}${String(today.getMinutes()).padStart(2, '0')}${String(today.getSeconds()).padStart(2, '0')}`;
-      const filename = `DD_FIX_${monthName}_GBCQ_${timestamp}.txt`;
+      const filename = `DD_${monthName}_GBCQ.txt`;
 
       // Create blob and download
       const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
