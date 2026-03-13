@@ -9,6 +9,9 @@ export interface Member {
   fee?: number;
   family_discount: boolean;
   date_of_birth?: string;
+  iban?: string;
+  nif?: string;
+  ref?: string;
   created_at: string;
 }
 

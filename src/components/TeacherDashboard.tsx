@@ -16,6 +16,9 @@ interface NewMemberForm {
   fee: number;
   family_discount: boolean;
   date_of_birth: string;
+  iban: string;
+  nif: string;
+  ref: string;
 }
 
 interface TeacherDashboardProps {
@@ -35,6 +38,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     fee: 0,
     family_discount: false,
     date_of_birth: "",
+    iban: "",
+    nif: "",
+    ref: "",
   });
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [showQuickModal, setShowQuickModal] = useState(false);
@@ -99,6 +105,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         fee: newMember.fee,
         family_discount: newMember.family_discount,
         date_of_birth: newMember.date_of_birth || undefined,
+        iban: newMember.iban || undefined,
+        nif: newMember.nif || undefined,
+        ref: newMember.ref || undefined,
       };
 
       const createdMember = await createMember(memberData);
@@ -129,6 +138,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         fee: 0,
         family_discount: false,
         date_of_birth: "",
+        iban: "",
+        nif: "",
+        ref: "",
       });
       setShowAddModal(false);
     } catch (error) {
@@ -673,7 +685,10 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 <input
                   type="text"
                   value={newMember.name}
-                  onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                  onChange={(e) => {
+                    const nextNum = (members.length + 1).toString().padStart(3, '0');
+                    setNewMember({ ...newMember, name: e.target.value, ref: `GBCQ${nextNum}` });
+                  }}
                   placeholder="Member name"
                   style={{
                     width: '100%',
@@ -685,6 +700,72 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                     fontFamily: '"Barlow", sans-serif'
                   }}
                   required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Student Number
+                </label>
+                <input
+                  type="text"
+                  value={newMember.ref}
+                  readOnly
+                  disabled
+                  placeholder="Auto-generated (GBCQ###)"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#0a0a0a',
+                    border: '1px solid #2a2a2a',
+                    color: '#888888',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif',
+                    opacity: 0.6,
+                    cursor: 'not-allowed'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  IBAN
+                </label>
+                <input
+                  type="text"
+                  value={newMember.iban}
+                  onChange={(e) => setNewMember({ ...newMember, iban: e.target.value })}
+                  placeholder="PT50 0002 0123 1234 5678 9015"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  NIF
+                </label>
+                <input
+                  type="text"
+                  value={newMember.nif}
+                  onChange={(e) => setNewMember({ ...newMember, nif: e.target.value })}
+                  placeholder="Portuguese tax ID"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
                 />
               </div>
 
