@@ -168,16 +168,22 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <button
             onClick={onBack}
-            style={{ background: 'none', border: 'none', color: '#CC0000', fontSize: '14px', fontWeight: 600, marginBottom: '24px', cursor: 'pointer', paddingBottom: '12px' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#ff6666'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#CC0000'}
+            style={{ background: 'transparent', border: '1px solid #2a2a2a', color: '#888', fontSize: '14px', fontWeight: 600, marginBottom: '24px', cursor: 'pointer', paddingBottom: '12px', padding: '8px 12px', borderRadius: '4px' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#444';
+              e.currentTarget.style.color = '#aaa';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#2a2a2a';
+              e.currentTarget.style.color = '#888';
+            }}
           >
             ← Back
           </button>
 
           {/* Profile Header Card */}
           <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#CC0000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 900, color: 'white', flexShrink: 0 }}>
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#222222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 900, color: '#CC0000', flexShrink: 0, border: '2px solid #CC0000' }}>
               {data.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
             </div>
             <div style={{ flex: 1 }}>
