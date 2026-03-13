@@ -65,14 +65,24 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       const formattedMembers: any[] = data.map(m => ({
         id: m.id,
         name: m.name,
+        belt_level: m.belt_level,
         beltLevel: m.belt_level,
         status: m.status,
         created_at: m.created_at,
         phone: m.phone,
         email: m.email,
+        payment_type: m.payment_type,
         paymentType: m.payment_type,
+        fee: m.fee,
         monthlyFee: m.fee,
+        family_discount: m.family_discount,
         familyDiscount: m.family_discount,
+        date_of_birth: m.date_of_birth,
+        iban: m.iban,
+        nif: m.nif,
+        ref: m.ref,
+        custom_fee: m.custom_fee,
+        custom_fee_amount: m.custom_fee_amount,
         attendance: {} // Will be loaded separately when needed
       }));
       setMembers(formattedMembers);
@@ -303,19 +313,29 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       const newMemberFormatted: any = {
         id: createdMember.id,
         name: createdMember.name,
+        belt_level: createdMember.belt_level,
         beltLevel: createdMember.belt_level,
         status: createdMember.status,
         phone: createdMember.phone,
         email: createdMember.email,
+        payment_type: createdMember.payment_type,
         paymentType: createdMember.payment_type,
+        fee: createdMember.fee,
         monthlyFee: createdMember.fee,
+        family_discount: createdMember.family_discount,
         familyDiscount: createdMember.family_discount,
         dateOfBirth: createdMember.date_of_birth,
+        date_of_birth: createdMember.date_of_birth,
         created_at: createdMember.created_at,
+        iban: createdMember.iban,
+        nif: createdMember.nif,
+        ref: createdMember.ref,
+        custom_fee: createdMember.custom_fee,
+        custom_fee_amount: createdMember.custom_fee_amount,
         attendance: {}
       };
 
-      setMembers([...members, newMemberFormatted]);
+      setMembers((prev) => [...prev, newMemberFormatted]);
       setNewMember({
         name: "",
         belt_level: "White Belt",
@@ -358,19 +378,26 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     try {
       const updates = {
         name: updated.name,
-        belt_level: updated.beltLevel,
+        belt_level: updated.belt_level || updated.beltLevel,
         status: updated.status,
         phone: updated.phone || undefined,
         email: updated.email || undefined,
-        payment_type: updated.paymentType,
-        fee: updated.monthlyFee,
-        family_discount: updated.familyDiscount,
+        payment_type: updated.payment_type || updated.paymentType,
+        fee: updated.fee ?? updated.monthlyFee,
+        family_discount: updated.family_discount ?? updated.familyDiscount ?? false,
+        date_of_birth: updated.date_of_birth || updated.dateOfBirth || undefined,
+        iban: updated.iban || undefined,
+        nif: updated.nif || undefined,
+        ref: updated.ref || undefined,
+        custom_fee: updated.custom_fee ?? undefined,
+        custom_fee_amount: updated.custom_fee_amount ?? undefined,
       };
 
       await updateMemberDb(updated.id, updates);
-      setMembers(members.map((m) => (m.id === updated.id ? updated : m)));
+      await loadMembers();
     } catch (error) {
       console.error('Error updating member:', error);
+      throw error;
     }
   };
 

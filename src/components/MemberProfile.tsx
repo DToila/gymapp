@@ -11,17 +11,50 @@ interface Comment {
   message: string;
 }
 
+interface MemberEditForm {
+  name: string;
+  email: string;
+  phone: string;
+  belt_level: string;
+  payment_type: 'Direct Debit' | 'Cash';
+  fee: string;
+  status: 'Active' | 'Paused' | 'Unpaid';
+  iban: string;
+  nif: string;
+}
+
 interface MemberProfileProps {
   member: MemberDetail;
   onBack: () => void;
-  onUpdate: (updatedMember: MemberDetail) => void;
+  onUpdate: (updatedMember: MemberDetail) => Promise<void> | void;
 }
 
 // Because Member is defined in TeacherDashboard, we can re-declare necessary parts here to avoid circular import.
-interface MemberDetail extends Member {}
+interface MemberDetail extends Member {
+  beltLevel?: string;
+  paymentType?: 'Direct Debit' | 'Cash';
+  monthlyFee?: number;
+  familyDiscount?: boolean;
+  attendance?: { [date: string]: boolean };
+}
+
+const createEditForm = (member: MemberDetail): MemberEditForm => ({
+  name: member.name || '',
+  email: member.email || '',
+  phone: member.phone || '',
+  belt_level: member.beltLevel || member.belt_level || 'White Belt',
+  payment_type: (member.paymentType || member.payment_type || 'Direct Debit') as 'Direct Debit' | 'Cash',
+  fee: String(member.monthlyFee ?? member.fee ?? 0),
+  status: member.status,
+  iban: member.iban || '',
+  nif: member.nif || '',
+});
 
 export default function MemberProfile({ member, onBack, onUpdate }: MemberProfileProps) {
   const [data, setData] = useState<MemberDetail>({ ...member });
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState<MemberEditForm>(() => createEditForm(member));
   const [attendanceMap, setAttendanceMap] = useState<{ [date: string]: boolean }>({});
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [showPercentage, setShowPercentage] = useState<boolean>(true);
@@ -31,7 +64,10 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setData({ ...member });
+    const nextData = { ...member };
+    setData(nextData);
+    setEditForm(createEditForm(nextData));
+    setIsEditing(false);
   }, [member]);
 
   const loadMemberData = useCallback(async () => {
@@ -87,10 +123,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         [date]: newAttended
       }));
 
-      // Update the member data for the parent component
       const updated = { ...data, attendance: { ...attendanceMap, [date]: newAttended } };
       setData(updated);
-      onUpdate(updated);
     } catch (error) {
       console.error('Error updating attendance:', error);
     }
@@ -147,12 +181,93 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     }
   };
 
+  const handleEditFieldChange = <K extends keyof MemberEditForm>(field: K, value: MemberEditForm[K]) => {
+    setEditForm(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleEditCancel = () => {
+    setEditForm(createEditForm(data));
+    setIsEditing(false);
+  };
+
+  const handleEditSave = async () => {
+    if (!editForm.name.trim()) {
+      console.error('Member profile save blocked: name is required.');
+      return;
+    }
+
+    const parsedFee = Number.parseFloat(editForm.fee);
+    const nextFee = Number.isFinite(parsedFee) ? parsedFee : 0;
+    const updatedMember: MemberDetail = {
+      ...data,
+      name: editForm.name.trim(),
+      email: editForm.email.trim() || undefined,
+      phone: editForm.phone.trim() || undefined,
+      belt_level: editForm.belt_level,
+      beltLevel: editForm.belt_level,
+      payment_type: editForm.payment_type,
+      paymentType: editForm.payment_type,
+      fee: nextFee,
+      monthlyFee: nextFee,
+      status: editForm.status,
+      iban: editForm.iban.trim() || undefined,
+      nif: editForm.nif.trim() || undefined,
+    };
+
+    setIsSaving(true);
+    try {
+      await onUpdate(updatedMember);
+      setData(updatedMember);
+      setEditForm(createEditForm(updatedMember));
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving member profile:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate();
   };
 
   const getFirstDay = (year: number, month: number) => {
     return new Date(year, month, 1).getDay();
+  };
+
+  const profileName = isEditing ? editForm.name : data.name;
+  const profileInitials = profileName.trim()
+    ? profileName.split(' ').filter(Boolean).map((namePart) => namePart[0]).join('').toUpperCase()
+    : '?';
+  const profileFieldStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    background: '#1a1a1a',
+    border: '1px solid #2a2a2a',
+    color: '#f0f0f0',
+    fontSize: '13px',
+    fontFamily: '"Barlow", sans-serif'
+  };
+  const profileCardStyle: React.CSSProperties = {
+    background: '#161616',
+    border: '1px solid #2a2a2a',
+    padding: '12px'
+  };
+  const profileLabelStyle: React.CSSProperties = {
+    fontSize: '10px',
+    fontWeight: 700,
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    color: '#555555',
+    marginBottom: '8px'
+  };
+  const profileValueStyle: React.CSSProperties = {
+    fontSize: '13px',
+    color: '#f0f0f0',
+    wordBreak: 'break-word'
   };
 
   return (
@@ -184,43 +299,206 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           {/* Profile Header Card */}
           <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
             <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#222222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 900, color: '#CC0000', flexShrink: 0, border: '2px solid #CC0000' }}>
-              {data.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+              {profileInitials}
             </div>
             <div style={{ flex: 1 }}>
-              <h1 style={{ fontSize: '28px', fontWeight: 900, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '12px', letterSpacing: '2px', textTransform: 'uppercase' }}>{data.name}</h1>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px', color: '#888888' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>🥋</span>
-                  <span>{(data as any).beltLevel || 'N/A'}</span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ flex: 1 }}>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => handleEditFieldChange('name', e.target.value)}
+                      style={{
+                        ...profileFieldStyle,
+                        fontSize: '24px',
+                        fontWeight: 900,
+                        fontFamily: '"Barlow Condensed", sans-serif',
+                        letterSpacing: '2px',
+                        textTransform: 'uppercase',
+                        padding: '8px 12px'
+                      }}
+                    />
+                  ) : (
+                    <h1 style={{ fontSize: '28px', fontWeight: 900, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: 0, letterSpacing: '2px', textTransform: 'uppercase' }}>{data.name}</h1>
+                  )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>📌</span>
-                  <span>{data.status}</span>
+                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={handleEditCancel}
+                        disabled={isSaving}
+                        style={{
+                          padding: '8px 12px',
+                          background: 'transparent',
+                          border: '1px solid #2a2a2a',
+                          color: '#888888',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: isSaving ? 'not-allowed' : 'pointer',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px',
+                          opacity: isSaving ? 0.6 : 1
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleEditSave}
+                        disabled={isSaving}
+                        style={{
+                          padding: '8px 14px',
+                          background: '#CC0000',
+                          border: '1px solid #CC0000',
+                          color: '#ffffff',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: isSaving ? 'not-allowed' : 'pointer',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px',
+                          opacity: isSaving ? 0.7 : 1
+                        }}
+                      >
+                        {isSaving ? 'Saving...' : 'Save'}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      style={{
+                        padding: '8px 14px',
+                        background: 'transparent',
+                        border: '1px solid #CC0000',
+                        color: '#CC0000',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                      }}
+                    >
+                      Edit
+                    </button>
+                  )}
                 </div>
-                {data.phone && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>📞</span>
-                    <span>{data.phone}</span>
-                  </div>
-                )}
-                {data.email && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>✉️</span>
-                    <span>{data.email}</span>
-                  </div>
-                )}
-                {(data as any).paymentType && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>💳</span>
-                    <span>{(data as any).paymentType}</span>
-                  </div>
-                )}
-                {(data as any).monthlyFee !== undefined && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>💲</span>
-                    <span>€{(data as any).monthlyFee.toFixed(2)}</span>
-                  </div>
-                )}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
+                <div style={profileCardStyle}>
+                  <div style={profileLabelStyle}>Email</div>
+                  {isEditing ? (
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => handleEditFieldChange('email', e.target.value)}
+                      style={profileFieldStyle}
+                    />
+                  ) : (
+                    <div style={profileValueStyle}>{data.email || 'N/A'}</div>
+                  )}
+                </div>
+                <div style={profileCardStyle}>
+                  <div style={profileLabelStyle}>Phone</div>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editForm.phone}
+                      onChange={(e) => handleEditFieldChange('phone', e.target.value)}
+                      style={profileFieldStyle}
+                    />
+                  ) : (
+                    <div style={profileValueStyle}>{data.phone || 'N/A'}</div>
+                  )}
+                </div>
+                <div style={profileCardStyle}>
+                  <div style={profileLabelStyle}>Belt Level</div>
+                  {isEditing ? (
+                    <select
+                      value={editForm.belt_level}
+                      onChange={(e) => handleEditFieldChange('belt_level', e.target.value)}
+                      style={profileFieldStyle}
+                    >
+                      <option>White Belt</option>
+                      <option>Blue Belt</option>
+                      <option>Purple Belt</option>
+                      <option>Brown Belt</option>
+                      <option>Black Belt</option>
+                    </select>
+                  ) : (
+                    <div style={profileValueStyle}>{data.beltLevel || data.belt_level || 'N/A'}</div>
+                  )}
+                </div>
+                <div style={profileCardStyle}>
+                  <div style={profileLabelStyle}>Status</div>
+                  {isEditing ? (
+                    <select
+                      value={editForm.status}
+                      onChange={(e) => handleEditFieldChange('status', e.target.value as MemberEditForm['status'])}
+                      style={profileFieldStyle}
+                    >
+                      <option>Active</option>
+                      <option>Paused</option>
+                      <option>Unpaid</option>
+                    </select>
+                  ) : (
+                    <div style={profileValueStyle}>{data.status}</div>
+                  )}
+                </div>
+                <div style={profileCardStyle}>
+                  <div style={profileLabelStyle}>Payment Type</div>
+                  {isEditing ? (
+                    <select
+                      value={editForm.payment_type}
+                      onChange={(e) => handleEditFieldChange('payment_type', e.target.value as MemberEditForm['payment_type'])}
+                      style={profileFieldStyle}
+                    >
+                      <option>Direct Debit</option>
+                      <option>Cash</option>
+                    </select>
+                  ) : (
+                    <div style={profileValueStyle}>{data.paymentType || data.payment_type || 'N/A'}</div>
+                  )}
+                </div>
+                <div style={profileCardStyle}>
+                  <div style={profileLabelStyle}>Monthly Fee</div>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editForm.fee}
+                      onChange={(e) => handleEditFieldChange('fee', e.target.value)}
+                      style={profileFieldStyle}
+                    />
+                  ) : (
+                    <div style={profileValueStyle}>€{(data.monthlyFee ?? data.fee ?? 0).toFixed(2)}</div>
+                  )}
+                </div>
+                <div style={profileCardStyle}>
+                  <div style={profileLabelStyle}>IBAN</div>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editForm.iban}
+                      onChange={(e) => handleEditFieldChange('iban', e.target.value)}
+                      style={profileFieldStyle}
+                    />
+                  ) : (
+                    <div style={profileValueStyle}>{data.iban || 'N/A'}</div>
+                  )}
+                </div>
+                <div style={profileCardStyle}>
+                  <div style={profileLabelStyle}>NIF</div>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editForm.nif}
+                      onChange={(e) => handleEditFieldChange('nif', e.target.value)}
+                      style={profileFieldStyle}
+                    />
+                  ) : (
+                    <div style={profileValueStyle}>{data.nif || 'N/A'}</div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
