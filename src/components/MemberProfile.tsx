@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Member, getBeltOptions } from "../../lib/types";
+import { Member, calculateMonthlyFee, getBeltOptions } from "../../lib/types";
 import { getAttendanceForMember, getNotesForMember, createNote, setAttendance } from "../../lib/database";
 
 interface Comment {
@@ -197,8 +197,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         ...prev,
         date_of_birth: dateOfBirth,
         belt_level: beltOptions.includes(prev.belt_level) ? prev.belt_level : beltOptions[0],
+        fee: String(calculateMonthlyFee(dateOfBirth, prev.payment_type)),
       };
     });
+  };
+
+  const handleEditPaymentTypeChange = (paymentType: MemberEditForm['payment_type']) => {
+    setEditForm(prev => ({
+      ...prev,
+      payment_type: paymentType,
+      fee: String(calculateMonthlyFee(prev.date_of_birth, paymentType)),
+    }));
   };
 
   const handleEditCancel = () => {
@@ -471,7 +480,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   {isEditing ? (
                     <select
                       value={editForm.payment_type}
-                      onChange={(e) => handleEditFieldChange('payment_type', e.target.value as MemberEditForm['payment_type'])}
+                      onChange={(e) => handleEditPaymentTypeChange(e.target.value as MemberEditForm['payment_type'])}
                       style={profileFieldStyle}
                     >
                       <option>Direct Debit</option>
