@@ -149,6 +149,23 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     return (fee || 0).toFixed(2).replace('.', ',');
   };
 
+  const padColumn = (value: string, width: number): string => {
+    return String(value || '').slice(0, width).padEnd(width, ' ');
+  };
+
+  const formatDdTxtRow = (columns: string[], widths: number[]): string => {
+    const [iban, bank, amount, rcur, ref, date, name] = columns;
+    return [
+      padColumn(iban, widths[0]),
+      padColumn(bank, widths[1]),
+      padColumn(amount, widths[2]),
+      padColumn(rcur, widths[3]),
+      padColumn(ref, widths[4]),
+      padColumn(date, widths[5]),
+      name,
+    ].join('');
+  };
+
   const formatDateFromIso = (isoDate?: string | null): string => {
     const raw = typeof isoDate === 'string' ? isoDate.trim() : '';
     const datePart = raw.split('T')[0] || '';
@@ -173,6 +190,16 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     return ibanString.replace(/\s+/gu, '');
   };
 
+  const isEligibleDirectDebitMember = (member: Member): boolean => {
+    return (
+      String(member.payment_type || '').trim().toLowerCase() === 'direct debit' &&
+      String(member.status || '').trim().toLowerCase() === 'active' &&
+      Boolean(member.iban) &&
+      typeof member.fee === 'number' &&
+      member.fee > 0
+    );
+  };
+
   // Export DD function
   const handleExportDD = async () => {
     try {
@@ -181,17 +208,17 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       console.log('member data:', JSON.stringify(members[0]));
 
       // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
-      const ddMembers = (members as any[]).filter(m => m.payment_type === 'Direct Debit' && m.status === 'active' && m.iban && m.fee > 0);
+      const ddMembers = members.filter(isEligibleDirectDebitMember);
       console.log('DD members found:', ddMembers.length);
 
       // Build tab-separated rows (7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME)
-      const rows = ddMembers.map(m => {
+      const rowColumns = ddMembers.map(m => {
         const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
         const exportDate = new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-');
         if (ddMembers[0]?.id === m.id) {
           console.log('DD date debug:', { created_at: m.created_at, exportDate });
         }
-        const columns = [
+        return [
           sanitizeIban(m.iban),
           'CGDIPTL', // Fixed value as per DD standard
           formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
@@ -200,17 +227,33 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           exportDate, // DD-MM-AAAA (registration date)
           normalizeText(m.name) // Name without accents, max 70 chars
         ];
-        return columns.join('\t');
       });
+
+      const ddColumnWidths = [0, 1, 2, 3, 4, 5].map(index => {
+        const maxLength = rowColumns.reduce((longest, columns) => {
+          return Math.max(longest, String(columns[index] || '').length);
+        }, 0);
+        return maxLength + 2;
+      });
+
+      const rows = rowColumns.map(columns => formatDdTxtRow(columns, ddColumnWidths));
 
       // Create file content (no header row, just data rows)
       const fileContent = rows.join('\n');
 
-      // Generate filename: DD_MMMM_GBCQ.txt where MMMM is Portuguese month name
+      // Generate filename with timestamp so each export is a distinct file
       const today = new Date();
       const monthNames = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
       const monthName = monthNames[today.getMonth()];
-      const filename = `DD_${monthName}_GBCQ.txt`;
+      const timestamp = [
+        String(today.getFullYear()),
+        String(today.getMonth() + 1).padStart(2, '0'),
+        String(today.getDate()).padStart(2, '0'),
+        String(today.getHours()).padStart(2, '0'),
+        String(today.getMinutes()).padStart(2, '0'),
+        String(today.getSeconds()).padStart(2, '0'),
+      ].join('');
+      const filename = `DD_FIXED_${monthName}_GBCQ_${timestamp}.txt`;
 
       // Create blob and download
       const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
@@ -220,6 +263,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      console.log('DD TXT exported as:', filename);
+      alert(`DD TXT exported as ${filename}`);
       URL.revokeObjectURL(link.href);
     } catch (error) {
       console.error('Error exporting DD file:', error);
@@ -234,14 +279,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       const allMembers = await getMembers();
 
       // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
-      const ddMembers = allMembers.filter(m =>
-        String(m.status || '').trim().toLowerCase() === 'active' &&
-        String(m.payment_type || '').trim().toLowerCase() === 'direct debit' &&
-        m.iban &&
-        m.nif &&
-        m.fee &&
-        m.fee > 0
-      );
+      const ddMembers = allMembers.filter(isEligibleDirectDebitMember);
       console.log('DD Excel export filtered members count:', ddMembers.length);
 
       // Build data for Excel - 7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME (no headers)
