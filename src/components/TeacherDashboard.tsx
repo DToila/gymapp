@@ -5,6 +5,7 @@ import MemberProfile from "./MemberProfile";
 import GBLogo from "@/components/GBLogo";
 import { Member, calculateMonthlyFee } from "../../lib/types";
 import { createMember, updateMember as updateMemberDb, deleteMember, getMembers } from "../../lib/database";
+import * as XLSX from 'xlsx';
 
 interface NewMemberForm {
   name: string;
@@ -49,6 +50,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [showQuickModal, setShowQuickModal] = useState(false);
   const [quickSelection, setQuickSelection] = useState<{ [id: string]: boolean }>({});
+  const [showDDDropdown, setShowDDDropdown] = useState(false);
 
   useEffect(() => {
     loadMembers();
@@ -193,6 +195,59 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     } catch (error) {
       console.error('Error exporting DD file:', error);
       alert('Error exporting DD file. Please try again.');
+    }
+  };
+
+  // Export DD to Excel
+  const handleExportDDExcel = async () => {
+    try {
+      // Get fresh data from database to ensure all fields are present
+      const allMembers = await getMembers();
+
+      // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
+      const ddMembers = allMembers.filter(m =>
+        m.status === 'Active' &&
+        m.payment_type === 'Direct Debit' &&
+        m.iban &&
+        m.nif &&
+        m.fee &&
+        m.fee > 0
+      );
+
+      // Build data for Excel
+      const excelData = ddMembers.map(m => {
+        const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
+        return {
+          'IBAN': m.iban || '',
+          'SWIFT': 'CGDIPTL', // Fixed value as per DD standard
+          'VALOR': formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
+          'TIPO': 'RCUR', // Fixed value as per DD standard
+          'REF': m.ref || '', // Student number
+          'DATA INICIO': formatDate(m.created_at), // DD-MM-AAAA format
+          'NOME': normalizeText(m.name), // Name without accents, max 70 chars
+          'NIF': m.nif || '' // NIF
+        };
+      });
+
+      // Create worksheet and workbook
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'DD Export');
+
+      // Generate filename: DD_MMMM_GBCQ.xlsx where MMMM is Portuguese month name
+      const today = new Date();
+      const monthNames = [
+        'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      const monthName = monthNames[today.getMonth()];
+      const filename = `DD_${monthName}_GBCQ.xlsx`;
+
+      // Generate and download Excel file
+      XLSX.writeFile(workbook, filename);
+    } catch (error) {
+      console.error('Error exporting DD Excel file:', error);
+      alert('Error exporting DD Excel file. Please try again.');
     }
   };
 
@@ -531,32 +586,121 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             >
               Quick Attendance
             </button>
-            <button
-              onClick={handleExportDD}
-              style={{
-                padding: '9px 16px',
-                fontFamily: '"Barlow Condensed", sans-serif',
-                fontSize: '11px',
-                fontWeight: 700,
-                letterSpacing: '3px',
-                textTransform: 'uppercase',
-                border: '1px solid #2a2a2a',
-                background: 'transparent',
-                color: '#888888',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#f0f0f0';
-                e.currentTarget.style.borderColor = '#f0f0f0';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#888888';
-                e.currentTarget.style.borderColor = '#2a2a2a';
-              }}
-            >
-              Export DD
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowDDDropdown(!showDDDropdown)}
+                style={{
+                  padding: '9px 16px',
+                  fontFamily: '"Barlow Condensed", sans-serif',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  letterSpacing: '3px',
+                  textTransform: 'uppercase',
+                  border: '1px solid #2a2a2a',
+                  background: 'transparent',
+                  color: '#888888',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#f0f0f0';
+                  e.currentTarget.style.borderColor = '#f0f0f0';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#888888';
+                  e.currentTarget.style.borderColor = '#2a2a2a';
+                }}
+              >
+                Export DD ▾
+              </button>
+              {showDDDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '4px',
+                  background: '#111111',
+                  border: '1px solid #2a2a2a',
+                  borderRadius: '4px',
+                  zIndex: 1000,
+                  minWidth: '180px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
+                }}>
+                  <button
+                    onClick={() => {
+                      handleExportDD();
+                      setShowDDDropdown(false);
+                    }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '10px 14px',
+                      textAlign: 'left',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#888888',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      borderBottom: '1px solid #2a2a2a'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#1a1a1a';
+                      e.currentTarget.style.color = '#f0f0f0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#888888';
+                    }}
+                  >
+                    Exportar TXT (CGD)
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleExportDDExcel();
+                      setShowDDDropdown(false);
+                    }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '10px 14px',
+                      textAlign: 'left',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#888888',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#1a1a1a';
+                      e.currentTarget.style.color = '#f0f0f0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#888888';
+                    }}
+                  >
+                    Exportar Excel
+                  </button>
+                </div>
+              )}
+            </div>
+            {showDDDropdown && (
+              <div
+                onClick={() => setShowDDDropdown(false)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 999
+                }}
+              />
+            )}
             <button
               onClick={() => setShowAddModal(true)}
               style={{
