@@ -181,14 +181,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       console.log('member data:', JSON.stringify(members[0]));
 
       // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
-      const ddMembers = members.filter(m =>
-        m.status === 'Active' &&
-        m.payment_type === 'Direct Debit' &&
-        m.iban &&
-        m.nif &&
-        m.fee &&
-        m.fee > 0
-      );
+      const ddMembers = (members as any[]).filter(m => m.payment_type === 'Direct Debit' && m.status === 'active' && m.iban && m.fee > 0);
+      console.log('DD members found:', ddMembers.length);
 
       // Build tab-separated rows (7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME)
       const rows = ddMembers.map(m => {
@@ -241,13 +235,14 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
       // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
       const ddMembers = allMembers.filter(m =>
-        m.status === 'Active' &&
-        m.payment_type === 'Direct Debit' &&
+        String(m.status || '').trim().toLowerCase() === 'active' &&
+        String(m.payment_type || '').trim().toLowerCase() === 'direct debit' &&
         m.iban &&
         m.nif &&
         m.fee &&
         m.fee > 0
       );
+      console.log('DD Excel export filtered members count:', ddMembers.length);
 
       // Build data for Excel - 7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME (no headers)
       const excelData = ddMembers.map(m => {
