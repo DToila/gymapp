@@ -185,27 +185,28 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               fontSize: '13px',
               color: 'var(--text-muted)'
             }}>
-              Introduz as tuas credenciais para entrar
+              Seleciona o teu tipo de conta para continuar
             </div>
           </div>
 
           {/* Role Selector */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '12px',
-            marginBottom: '32px'
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            maxWidth: '420px'
           }}>
             <button
               onClick={() => handleSelectUserType("teacher")}
               style={{
-                padding: '14px 16px',
+                width: '100%',
+                padding: '22px 24px',
                 background: 'white',
                 border: '1px solid var(--border)',
                 fontFamily: 'var(--font-display)',
-                fontSize: '13px',
+                fontSize: '16px',
                 fontWeight: 700,
-                letterSpacing: '3px',
+                letterSpacing: '4px',
                 color: '#0a0a0a',
                 textTransform: 'uppercase',
                 cursor: 'pointer',
@@ -225,13 +226,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             <button
               onClick={() => handleSelectUserType("student")}
               style={{
-                padding: '14px 16px',
+                width: '100%',
+                padding: '22px 24px',
                 background: 'white',
                 border: '1px solid var(--border)',
                 fontFamily: 'var(--font-display)',
-                fontSize: '13px',
+                fontSize: '16px',
                 fontWeight: 700,
-                letterSpacing: '3px',
+                letterSpacing: '4px',
                 color: '#0a0a0a',
                 textTransform: 'uppercase',
                 cursor: 'pointer',
@@ -249,65 +251,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               Aluno
             </button>
           </div>
-
-          {/* Email Input */}
-          <input
-            type="email"
-            value="Please select a role first"
-            disabled
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              background: 'var(--bg3)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              fontSize: '15px',
-              marginBottom: '16px',
-              cursor: 'not-allowed',
-              opacity: 0.5,
-              fontFamily: 'var(--font-body)'
-            }}
-          />
-
-          {/* Password Input */}
-          <input
-            type="password"
-            value="Please select a role first"
-            disabled
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              background: 'var(--bg3)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              fontSize: '15px',
-              marginBottom: '24px',
-              cursor: 'not-allowed',
-              opacity: 0.5,
-              fontFamily: 'var(--font-body)'
-            }}
-          />
-
-          {/* Submit Button */}
-          <button
-            disabled
-            style={{
-              width: '100%',
-              padding: '16px',
-              background: '#999999',
-              color: 'white',
-              fontFamily: 'var(--font-display)',
-              fontSize: '15px',
-              fontWeight: 900,
-              letterSpacing: '5px',
-              textTransform: 'uppercase',
-              cursor: 'not-allowed',
-              transition: 'all 0.3s',
-              opacity: 0.5
-            }}
-          >
-            Selecciona um Tipo de Conta
-          </button>
         </div>
       </div>
     );
