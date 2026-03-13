@@ -244,28 +244,24 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     : '?';
   const profileFieldStyle: React.CSSProperties = {
     width: '100%',
-    padding: '10px 12px',
-    background: '#1a1a1a',
-    border: '1px solid #2a2a2a',
+    padding: '6px 0 8px',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid #2a2a2a',
     color: '#f0f0f0',
-    fontSize: '13px',
+    fontSize: '14px',
     fontFamily: '"Barlow", sans-serif'
   };
-  const profileCardStyle: React.CSSProperties = {
-    background: '#161616',
-    border: '1px solid #2a2a2a',
-    padding: '12px'
-  };
   const profileLabelStyle: React.CSSProperties = {
-    fontSize: '10px',
+    fontSize: '9px',
     fontWeight: 700,
     letterSpacing: '2px',
     textTransform: 'uppercase',
     color: '#555555',
-    marginBottom: '8px'
+    marginBottom: '6px'
   };
   const profileValueStyle: React.CSSProperties = {
-    fontSize: '13px',
+    fontSize: '14px',
     color: '#f0f0f0',
     wordBreak: 'break-word'
   };
@@ -316,7 +312,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                         fontFamily: '"Barlow Condensed", sans-serif',
                         letterSpacing: '2px',
                         textTransform: 'uppercase',
-                        padding: '8px 12px'
+                        padding: '4px 0 8px'
                       }}
                     />
                   ) : (
@@ -383,8 +379,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   )}
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
-                <div style={profileCardStyle}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', columnGap: '36px', rowGap: '24px' }}>
+                <div>
                   <div style={profileLabelStyle}>Email</div>
                   {isEditing ? (
                     <input
@@ -397,7 +393,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     <div style={profileValueStyle}>{data.email || 'N/A'}</div>
                   )}
                 </div>
-                <div style={profileCardStyle}>
+                <div>
                   <div style={profileLabelStyle}>Phone</div>
                   {isEditing ? (
                     <input
@@ -410,7 +406,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     <div style={profileValueStyle}>{data.phone || 'N/A'}</div>
                   )}
                 </div>
-                <div style={profileCardStyle}>
+                <div>
                   <div style={profileLabelStyle}>Belt Level</div>
                   {isEditing ? (
                     <select
@@ -428,7 +424,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     <div style={profileValueStyle}>{data.beltLevel || data.belt_level || 'N/A'}</div>
                   )}
                 </div>
-                <div style={profileCardStyle}>
+                <div>
                   <div style={profileLabelStyle}>Status</div>
                   {isEditing ? (
                     <select
@@ -444,7 +440,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     <div style={profileValueStyle}>{data.status}</div>
                   )}
                 </div>
-                <div style={profileCardStyle}>
+                <div>
                   <div style={profileLabelStyle}>Payment Type</div>
                   {isEditing ? (
                     <select
@@ -459,7 +455,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     <div style={profileValueStyle}>{data.paymentType || data.payment_type || 'N/A'}</div>
                   )}
                 </div>
-                <div style={profileCardStyle}>
+                <div>
                   <div style={profileLabelStyle}>Monthly Fee</div>
                   {isEditing ? (
                     <input
@@ -473,7 +469,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     <div style={profileValueStyle}>€{(data.monthlyFee ?? data.fee ?? 0).toFixed(2)}</div>
                   )}
                 </div>
-                <div style={profileCardStyle}>
+                <div>
                   <div style={profileLabelStyle}>IBAN</div>
                   {isEditing ? (
                     <input
@@ -486,7 +482,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     <div style={profileValueStyle}>{data.iban || 'N/A'}</div>
                   )}
                 </div>
-                <div style={profileCardStyle}>
+                <div>
                   <div style={profileLabelStyle}>NIF</div>
                   {isEditing ? (
                     <input
