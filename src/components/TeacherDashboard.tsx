@@ -92,6 +92,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         ref: m.ref,
         custom_fee: m.custom_fee,
         custom_fee_amount: m.custom_fee_amount,
+        attendance_mood: (m as any).attendance_mood || {},
         attendance: {} // Will be loaded separately when needed
       }));
       setMembers(formattedMembers);
@@ -103,10 +104,16 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const openQuickModal = () => {
     const today = new Date().toISOString().split("T")[0];
     const sel: { [id: string]: boolean } = {};
+    const moodSel: { [id: string]: MoodOption } = {};
     members.forEach((m: any) => {
       sel[m.id] = !!m.attendance?.[today];
+      const todayMood = m.attendance_mood?.[today] as MoodOption | undefined;
+      if (todayMood) {
+        moodSel[m.id] = todayMood;
+      }
     });
     setQuickSelection(sel);
+    setUnder16MoodByMemberId(moodSel);
     setShowQuickModal(true);
   };
 
@@ -460,13 +467,35 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     setMembers((prev) =>
       prev.map((m: any) => {
         const chosen = quickSelection[m.id];
+        const selectedMood = under16MoodByMemberId[m.id];
         if (!m.attendance) m.attendance = {};
         if (chosen) m.attendance[today] = true;
         else delete m.attendance[today];
+
+        if (isUnder16Member(m as Member)) {
+          if (!m.attendance_mood) m.attendance_mood = {};
+          if (selectedMood) m.attendance_mood[today] = selectedMood;
+          else delete m.attendance_mood[today];
+        }
+
         return { ...m };
       })
     );
     setShowQuickModal(false);
+  };
+
+  const setMoodForToday = (memberId: string, mood: MoodOption) => {
+    const today = new Date().toISOString().split("T")[0];
+
+    setUnder16MoodByMemberId((prev) => ({ ...prev, [memberId]: mood }));
+
+    setMembers((prev) =>
+      prev.map((member: any) => {
+        if (member.id !== memberId) return member;
+        const nextMoodByDate = { ...(member.attendance_mood || {}), [today]: mood };
+        return { ...member, attendance_mood: nextMoodByDate };
+      })
+    );
   };
 
   const getAgeFromDateOfBirth = (dateOfBirth?: string): number | null => {
@@ -504,7 +533,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             title={option.label}
             onClick={(e) => {
               e.stopPropagation();
-              setUnder16MoodByMemberId((prev) => ({ ...prev, [memberId]: option.value }));
+              setMoodForToday(memberId, option.value);
             }}
             style={{
               width: '28px',

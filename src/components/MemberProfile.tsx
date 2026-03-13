@@ -30,6 +30,14 @@ interface MemberProfileProps {
   onUpdate: (updatedMember: MemberDetail) => Promise<void> | void;
 }
 
+type MoodOption = "happy" | "neutral" | "sad";
+
+const MOOD_ICONS: Record<MoodOption, string> = {
+  happy: "😊",
+  neutral: "😐",
+  sad: "☹️",
+};
+
 // Because Member is defined in TeacherDashboard, we can re-declare necessary parts here to avoid circular import.
 interface MemberDetail extends Member {
   beltLevel?: string;
@@ -37,6 +45,7 @@ interface MemberDetail extends Member {
   monthlyFee?: number;
   familyDiscount?: boolean;
   attendance?: { [date: string]: boolean };
+  attendance_mood?: { [date: string]: MoodOption };
 }
 
 const createEditForm = (member: MemberDetail): MemberEditForm => ({
@@ -58,6 +67,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState<MemberEditForm>(() => createEditForm(member));
   const [attendanceMap, setAttendanceMap] = useState<{ [date: string]: boolean }>({});
+  const [attendanceMoodMap, setAttendanceMoodMap] = useState<{ [date: string]: MoodOption }>({});
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [showPercentage, setShowPercentage] = useState<boolean>(true);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -69,6 +79,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     const nextData = { ...member };
     setData(nextData);
     setEditForm(createEditForm(nextData));
+    setAttendanceMoodMap(nextData.attendance_mood || {});
     setIsEditing(false);
   }, [member]);
 
@@ -79,10 +90,16 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       // Load attendance
       const attendanceData = await getAttendanceForMember(member.id);
       const attendanceMapLocal: { [date: string]: boolean } = {};
+      const moodMapLocal: { [date: string]: MoodOption } = {};
       attendanceData.forEach(att => {
         attendanceMapLocal[att.date] = att.attended;
+        const mood = (att as any).mood as MoodOption | undefined;
+        if (mood) {
+          moodMapLocal[att.date] = mood;
+        }
       });
       setAttendanceMap(attendanceMapLocal);
+      setAttendanceMoodMap((prev) => ({ ...prev, ...moodMapLocal }));
 
       // Load notes
       const notesData = await getNotesForMember(member.id);
@@ -633,12 +650,14 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     const day = d + 1;
                     const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const attended = attendanceMap[dateStr];
+                    const dayMood = attendanceMoodMap[dateStr];
                     const isToday = dateStr === new Date().toISOString().split('T')[0];
                     return (
                       <button
                         key={dateStr}
                         onClick={() => toggleDate(dateStr)}
                         style={{
+                          position: 'relative',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -662,6 +681,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                         }}
                       >
                         {day}
+                        {dayMood && (
+                          <span style={{
+                            position: 'absolute',
+                            right: '4px',
+                            bottom: '2px',
+                            fontSize: '11px',
+                            lineHeight: 1
+                          }}>
+                            {MOOD_ICONS[dayMood]}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
