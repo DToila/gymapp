@@ -155,7 +155,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         m.fee > 0
       );
 
-      // Build tab-separated rows
+      // Build tab-separated rows (7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME)
       const rows = ddMembers.map(m => {
         const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
         const columns = [
@@ -165,8 +165,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           'RCUR', // Fixed value as per DD standard
           m.ref || '', // Student number
           formatDate(m.created_at), // DD-MM-AAAA format
-          normalizeText(m.name), // Name without accents, max 70 chars
-          m.nif || '' // NIF
+          normalizeText(m.name) // Name without accents, max 70 chars
         ];
         return columns.join('\t');
       });
@@ -214,23 +213,22 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         m.fee > 0
       );
 
-      // Build data for Excel
+      // Build data for Excel - 7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME (no headers)
       const excelData = ddMembers.map(m => {
         const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
-        return {
-          'IBAN': m.iban || '',
-          'SWIFT': 'CGDIPTL', // Fixed value as per DD standard
-          'VALOR': formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
-          'TIPO': 'RCUR', // Fixed value as per DD standard
-          'REF': m.ref || '', // Student number
-          'DATA INICIO': formatDate(m.created_at), // DD-MM-AAAA format
-          'NOME': normalizeText(m.name), // Name without accents, max 70 chars
-          'NIF': m.nif || '' // NIF
-        };
+        return [
+          m.iban || '',
+          'CGDIPTL', // Fixed value as per DD standard
+          formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
+          'RCUR', // Fixed value as per DD standard
+          m.ref || '', // Student number
+          formatDate(m.created_at), // DD-MM-AAAA format
+          normalizeText(m.name) // Name without accents, max 70 chars
+        ];
       });
 
-      // Create worksheet and workbook
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      // Create worksheet from array of arrays (no header row)
+      const worksheet = XLSX.utils.aoa_to_sheet(excelData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'DD Export');
 
