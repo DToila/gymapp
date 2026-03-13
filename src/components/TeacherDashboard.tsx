@@ -90,6 +90,85 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     }));
   };
 
+  // Utility function to normalize text (remove accents and special chars)
+  const normalizeText = (text: string): string => {
+    if (!text) return '';
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+      .replace(/[^\w\s]/g, '') // Remove special characters
+      .substring(0, 70); // Max 70 chars
+  };
+
+  // Format fee as European format (comma decimal)
+  const formatFee = (fee: number): string => {
+    return (fee || 0).toFixed(2).replace('.', ',');
+  };
+
+  // Format date as DD-MM-AAAA
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString + 'T00:00:00Z');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const year = date.getUTCFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Export DD function
+  const handleExportDD = async () => {
+    try {
+      // Get fresh data from database to ensure all fields are present
+      const allMembers = await getMembers();
+
+      // Filter: Active, Direct Debit, with IBAN and NIF
+      const ddMembers = allMembers.filter(m =>
+        m.status === 'Active' &&
+        m.payment_type === 'Direct Debit' &&
+        m.iban &&
+        m.nif
+      );
+
+      // Build tab-separated rows
+      const rows = ddMembers.map(m => {
+        const columns = [
+          m.iban || '',
+          'CGDIPTL', // Fixed value as per DD standard
+          formatFee(m.fee || 75), // Use member's fee or default to 75
+          'RCUR', // Fixed value as per DD standard
+          m.ref || '', // Student number
+          formatDate(m.created_at), // DD-MM-AAAA format
+          normalizeText(m.name), // Name without accents, max 70 chars
+          m.nif || '' // NIF
+        ];
+        return columns.join('\t');
+      });
+
+      // Create file content (no header row, just data rows)
+      const fileContent = rows.join('\n');
+
+      // Generate filename: DD-AAAA-MM-DD.txt
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const filename = `DD-${year}-${month}-${day}.txt`;
+
+      // Create blob and download
+      const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch (error) {
+      console.error('Error exporting DD file:', error);
+      alert('Error exporting DD file. Please try again.');
+    }
+  };
+
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMember.name.trim()) return;
@@ -420,6 +499,32 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               }}
             >
               Quick Attendance
+            </button>
+            <button
+              onClick={handleExportDD}
+              style={{
+                padding: '9px 16px',
+                fontFamily: '"Barlow Condensed", sans-serif',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '3px',
+                textTransform: 'uppercase',
+                border: '1px solid #2a2a2a',
+                background: 'transparent',
+                color: '#888888',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#f0f0f0';
+                e.currentTarget.style.borderColor = '#f0f0f0';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#888888';
+                e.currentTarget.style.borderColor = '#2a2a2a';
+              }}
+            >
+              Export DD
             </button>
             <button
               onClick={() => setShowAddModal(true)}
