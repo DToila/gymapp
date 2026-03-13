@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Member } from "../../lib/types";
+import { Member, getBeltOptions } from "../../lib/types";
 import { getAttendanceForMember, getNotesForMember, createNote, setAttendance } from "../../lib/database";
 
 interface Comment {
@@ -15,6 +15,7 @@ interface MemberEditForm {
   name: string;
   email: string;
   phone: string;
+  date_of_birth: string;
   belt_level: string;
   payment_type: 'Direct Debit' | 'Cash';
   fee: string;
@@ -42,6 +43,7 @@ const createEditForm = (member: MemberDetail): MemberEditForm => ({
   name: member.name || '',
   email: member.email || '',
   phone: member.phone || '',
+  date_of_birth: member.date_of_birth || '',
   belt_level: member.beltLevel || member.belt_level || 'White Belt',
   payment_type: (member.paymentType || member.payment_type || 'Direct Debit') as 'Direct Debit' | 'Cash',
   fee: String(member.monthlyFee ?? member.fee ?? 0),
@@ -188,6 +190,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     }));
   };
 
+  const handleEditDateOfBirthChange = (dateOfBirth: string) => {
+    setEditForm(prev => {
+      const beltOptions = getBeltOptions(dateOfBirth, prev.belt_level);
+      return {
+        ...prev,
+        date_of_birth: dateOfBirth,
+        belt_level: beltOptions.includes(prev.belt_level) ? prev.belt_level : beltOptions[0],
+      };
+    });
+  };
+
   const handleEditCancel = () => {
     setEditForm(createEditForm(data));
     setIsEditing(false);
@@ -206,6 +219,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       name: editForm.name.trim(),
       email: editForm.email.trim() || undefined,
       phone: editForm.phone.trim() || undefined,
+      date_of_birth: editForm.date_of_birth || undefined,
       belt_level: editForm.belt_level,
       beltLevel: editForm.belt_level,
       payment_type: editForm.payment_type,
@@ -239,6 +253,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   };
 
   const profileName = isEditing ? editForm.name : data.name;
+  const editBeltOptions = getBeltOptions(editForm.date_of_birth, editForm.belt_level);
   const profileInitials = profileName.trim()
     ? profileName.split(' ').filter(Boolean).map((namePart) => namePart[0]).join('').toUpperCase()
     : '?';
@@ -407,6 +422,19 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   )}
                 </div>
                 <div>
+                  <div style={profileLabelStyle}>Date of Birth</div>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      value={editForm.date_of_birth}
+                      onChange={(e) => handleEditDateOfBirthChange(e.target.value)}
+                      style={profileFieldStyle}
+                    />
+                  ) : (
+                    <div style={profileValueStyle}>{data.date_of_birth || 'N/A'}</div>
+                  )}
+                </div>
+                <div>
                   <div style={profileLabelStyle}>Belt Level</div>
                   {isEditing ? (
                     <select
@@ -414,11 +442,9 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                       onChange={(e) => handleEditFieldChange('belt_level', e.target.value)}
                       style={profileFieldStyle}
                     >
-                      <option>White Belt</option>
-                      <option>Blue Belt</option>
-                      <option>Purple Belt</option>
-                      <option>Brown Belt</option>
-                      <option>Black Belt</option>
+                      {editBeltOptions.map((beltOption) => (
+                        <option key={beltOption} value={beltOption}>{beltOption}</option>
+                      ))}
                     </select>
                   ) : (
                     <div style={profileValueStyle}>{data.beltLevel || data.belt_level || 'N/A'}</div>

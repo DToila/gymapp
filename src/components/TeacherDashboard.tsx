@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import MemberProfile from "./MemberProfile";
 import GBLogo from "@/components/GBLogo";
-import { Member, calculateMonthlyFee } from "../../lib/types";
+import { Member, calculateMonthlyFee, getBeltOptions } from "../../lib/types";
 import { createMember, updateMember as updateMemberDb, deleteMember, getMembers } from "../../lib/database";
 import * as XLSX from 'xlsx';
 
@@ -101,13 +101,20 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     setShowQuickModal(true);
   };
 
-  const updateMemberFee = (dateOfBirth: string, paymentType: string) => {
-    const calculatedFee = calculateMonthlyFee(dateOfBirth, paymentType);
-    setNewMember(prev => ({
-      ...prev,
-      fee: calculatedFee
-    }));
+  const updateNewMemberForDateOfBirth = (dateOfBirth: string) => {
+    setNewMember(prev => {
+      const beltOptions = getBeltOptions(dateOfBirth, prev.belt_level);
+      const nextBeltLevel = beltOptions.includes(prev.belt_level) ? prev.belt_level : beltOptions[0];
+      return {
+        ...prev,
+        date_of_birth: dateOfBirth,
+        fee: calculateMonthlyFee(dateOfBirth, prev.payment_type),
+        belt_level: nextBeltLevel,
+      };
+    });
   };
+
+  const addMemberBeltOptions = getBeltOptions(newMember.date_of_birth, newMember.belt_level);
 
   // Utility function to normalize text - remove Portuguese accents and special chars
   const normalizeText = (text: string): string => {
@@ -1160,10 +1167,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 <input
                   type="date"
                   value={newMember.date_of_birth}
-                  onChange={(e) => {
-                    setNewMember({ ...newMember, date_of_birth: e.target.value });
-                    updateMemberFee(e.target.value, newMember.payment_type);
-                  }}
+                  onChange={(e) => updateNewMemberForDateOfBirth(e.target.value)}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -1205,8 +1209,11 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                   value={newMember.payment_type}
                   onChange={(e) => {
                     const newPaymentType = e.target.value as "Direct Debit" | "Cash";
-                    setNewMember({ ...newMember, payment_type: newPaymentType });
-                    updateMemberFee(newMember.date_of_birth, newPaymentType);
+                    setNewMember(prev => ({
+                      ...prev,
+                      payment_type: newPaymentType,
+                      fee: calculateMonthlyFee(prev.date_of_birth, newPaymentType),
+                    }));
                   }}
                   style={{
                     width: '100%',
@@ -1312,11 +1319,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                     fontFamily: '"Barlow", sans-serif'
                   }}
                 >
-                  <option>White Belt</option>
-                  <option>Blue Belt</option>
-                  <option>Purple Belt</option>
-                  <option>Brown Belt</option>
-                  <option>Black Belt</option>
+                  {addMemberBeltOptions.map((beltOption) => (
+                    <option key={beltOption} value={beltOption}>{beltOption}</option>
+                  ))}
                 </select>
               </div>
 

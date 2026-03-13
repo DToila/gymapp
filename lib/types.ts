@@ -34,16 +34,64 @@ export interface Note {
   created_at: string;
 }
 
-export const calculateMonthlyFee = (dateOfBirth: string | undefined, paymentType: string | undefined): number => {
-  if (!dateOfBirth || !paymentType) return 0;
-  
+export const KIDS_BELT_OPTIONS = [
+  'White',
+  'Grey/White',
+  'Grey',
+  'Grey/Black',
+  'Yellow/White',
+  'Yellow',
+  'Yellow/Black',
+  'Orange/White',
+  'Orange',
+  'Orange/Black',
+  'Green/White',
+  'Green',
+  'Green/Black'
+] as const;
+
+export const ADULT_BELT_OPTIONS = [
+  'White Belt',
+  'Blue Belt',
+  'Purple Belt',
+  'Brown Belt',
+  'Black Belt'
+] as const;
+
+export const getAgeFromDateOfBirth = (dateOfBirth?: string): number | null => {
+  if (!dateOfBirth) return null;
+
   const birthDate = new Date(dateOfBirth);
+  if (Number.isNaN(birthDate.getTime())) return null;
+
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDiff = today.getMonth() - birthDate.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
     age--;
   }
+
+  return age;
+};
+
+export const getBeltOptions = (dateOfBirth?: string, currentBelt?: string): string[] => {
+  const age = getAgeFromDateOfBirth(dateOfBirth);
+  if (age !== null) {
+    return age < 16 ? [...KIDS_BELT_OPTIONS] : [...ADULT_BELT_OPTIONS];
+  }
+
+  if (currentBelt && KIDS_BELT_OPTIONS.includes(currentBelt as typeof KIDS_BELT_OPTIONS[number])) {
+    return [...KIDS_BELT_OPTIONS];
+  }
+
+  return [...ADULT_BELT_OPTIONS];
+};
+
+export const calculateMonthlyFee = (dateOfBirth: string | undefined, paymentType: string | undefined): number => {
+  if (!dateOfBirth || !paymentType) return 0;
+  
+  const age = getAgeFromDateOfBirth(dateOfBirth);
+  if (age === null) return 0;
   
   if (age < 16) {
     return paymentType === 'Direct Debit' ? 65 : 70;
