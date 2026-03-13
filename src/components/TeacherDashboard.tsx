@@ -19,6 +19,8 @@ interface NewMemberForm {
   iban: string;
   nif: string;
   ref: string;
+  custom_fee: boolean;
+  custom_fee_amount: number;
 }
 
 interface TeacherDashboardProps {
@@ -41,6 +43,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     iban: "",
     nif: "",
     ref: "",
+    custom_fee: false,
+    custom_fee_amount: 0,
   });
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [showQuickModal, setShowQuickModal] = useState(false);
@@ -90,13 +94,31 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     }));
   };
 
-  // Utility function to normalize text (remove accents and special chars)
+  // Utility function to normalize text - remove Portuguese accents and special chars
   const normalizeText = (text: string): string => {
     if (!text) return '';
-    return text
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-      .replace(/[^\w\s]/g, '') // Remove special characters
+    const accentMap: { [key: string]: string } = {
+      'ã': 'a', 'á': 'a', 'à': 'a', 'â': 'a',
+      'é': 'e', 'ê': 'e',
+      'í': 'i',
+      'ó': 'o', 'ô': 'o', 'õ': 'o',
+      'ú': 'u',
+      'ç': 'c',
+      'ñ': 'n',
+      'Ã': 'A', 'Á': 'A', 'À': 'A', 'Â': 'A',
+      'É': 'E', 'Ê': 'E',
+      'Í': 'I',
+      'Ó': 'O', 'Ô': 'O', 'Õ': 'O',
+      'Ú': 'U',
+      'Ç': 'C',
+      'Ñ': 'N'
+    };
+    let result = '';
+    for (const char of text) {
+      result += accentMap[char] || char;
+    }
+    return result
+      .replace(/[^\w\s]/g, '') // Remove remaining special characters
       .substring(0, 70); // Max 70 chars
   };
 
@@ -121,20 +143,23 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       // Get fresh data from database to ensure all fields are present
       const allMembers = await getMembers();
 
-      // Filter: Active, Direct Debit, with IBAN and NIF
+      // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
       const ddMembers = allMembers.filter(m =>
         m.status === 'Active' &&
         m.payment_type === 'Direct Debit' &&
         m.iban &&
-        m.nif
+        m.nif &&
+        m.fee &&
+        m.fee > 0
       );
 
       // Build tab-separated rows
       const rows = ddMembers.map(m => {
+        const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
         const columns = [
           m.iban || '',
           'CGDIPTL', // Fixed value as per DD standard
-          formatFee(m.fee || 75), // Use member's fee or default to 75
+          formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
           'RCUR', // Fixed value as per DD standard
           m.ref || '', // Student number
           formatDate(m.created_at), // DD-MM-AAAA format
@@ -147,12 +172,14 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       // Create file content (no header row, just data rows)
       const fileContent = rows.join('\n');
 
-      // Generate filename: DD-AAAA-MM-DD.txt
+      // Generate filename: DD_MMMM_GBCQ.txt where MMMM is Portuguese month name
       const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const filename = `DD-${year}-${month}-${day}.txt`;
+      const monthNames = [
+        'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      const monthName = monthNames[today.getMonth()];
+      const filename = `DD_${monthName}_GBCQ.txt`;
 
       // Create blob and download
       const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
@@ -187,6 +214,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         iban: newMember.iban || undefined,
         nif: newMember.nif || undefined,
         ref: newMember.ref || undefined,
+        custom_fee: newMember.custom_fee || undefined,
+        custom_fee_amount: newMember.custom_fee_amount || undefined,
       };
 
       const createdMember = await createMember(memberData);
@@ -220,6 +249,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         iban: "",
         nif: "",
         ref: "",
+        custom_fee: false,
+        custom_fee_amount: 0,
       });
       setShowAddModal(false);
     } catch (error) {
@@ -999,6 +1030,43 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                   Family discount
                 </label>
               </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="customFee"
+                  type="checkbox"
+                  checked={newMember.custom_fee}
+                  onChange={(e) => setNewMember({ ...newMember, custom_fee: e.target.checked })}
+                  style={{ width: '16px', height: '16px', accentColor: '#CC0000' }}
+                />
+                <label htmlFor="customFee" style={{ fontSize: '12px', color: '#888888' }}>
+                  Custom Fee
+                </label>
+              </div>
+
+              {newMember.custom_fee && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                    Custom Fee Amount (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newMember.custom_fee_amount}
+                    onChange={(e) => setNewMember({ ...newMember, custom_fee_amount: parseFloat(e.target.value) || 0 })}
+                    placeholder="Enter custom fee amount"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: '#1a1a1a',
+                      border: '1px solid #2a2a2a',
+                      color: '#f0f0f0',
+                      fontSize: '13px',
+                      fontFamily: '"Barlow", sans-serif'
+                    }}
+                  />
+                </div>
+              )}
 
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>

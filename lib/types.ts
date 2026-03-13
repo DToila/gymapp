@@ -12,6 +12,8 @@ export interface Member {
   iban?: string;
   nif?: string;
   ref?: string;
+  custom_fee?: boolean;
+  custom_fee_amount?: number;
   created_at: string;
 }
 
