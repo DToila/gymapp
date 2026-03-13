@@ -28,6 +28,14 @@ interface TeacherDashboardProps {
   onLogout: () => void;
 }
 
+type MoodOption = "happy" | "neutral" | "sad";
+
+const MOOD_OPTIONS: Array<{ value: MoodOption; icon: string; label: string }> = [
+  { value: "happy", icon: "😊", label: "Happy" },
+  { value: "neutral", icon: "😐", label: "Neutral" },
+  { value: "sad", icon: "☹️", label: "Sad" },
+];
+
 export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -52,6 +60,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [showQuickModal, setShowQuickModal] = useState(false);
   const [quickSelection, setQuickSelection] = useState<{ [id: string]: boolean }>({});
+  const [under16MoodByMemberId, setUnder16MoodByMemberId] = useState<{ [id: string]: MoodOption }>({});
   const [showDDDropdown, setShowDDDropdown] = useState(false);
 
   useEffect(() => {
@@ -459,6 +468,66 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     );
     setShowQuickModal(false);
   };
+
+  const getAgeFromDateOfBirth = (dateOfBirth?: string): number | null => {
+    if (!dateOfBirth) return null;
+    const birthDate = new Date(dateOfBirth);
+    if (Number.isNaN(birthDate.getTime())) return null;
+
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age -= 1;
+    }
+
+    return age;
+  };
+
+  const isUnder16Member = (member: Member): boolean => {
+    const age = getAgeFromDateOfBirth(member.date_of_birth);
+    return age !== null && age < 16;
+  };
+
+  const under16Members = members.filter(isUnder16Member);
+
+  const renderMoodSelector = (memberId: string) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      {MOOD_OPTIONS.map((option) => {
+        const isSelected = under16MoodByMemberId[memberId] === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-label={option.label}
+            title={option.label}
+            onClick={(e) => {
+              e.stopPropagation();
+              setUnder16MoodByMemberId((prev) => ({ ...prev, [memberId]: option.value }));
+            }}
+            style={{
+              width: '28px',
+              height: '28px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: isSelected ? 'rgba(204,0,0,0.18)' : '#1a1a1a',
+              border: isSelected ? '1px solid #CC0000' : '1px solid #2a2a2a',
+              cursor: 'pointer',
+              fontSize: '14px',
+              lineHeight: 1,
+              borderRadius: '4px',
+              transition: 'all 0.2s'
+            }}
+          >
+            {option.icon}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   const getBeltColor = (belt: string): string => {
     switch (belt) {
       case "White Belt": return "#888888";
@@ -1018,6 +1087,47 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 No members yet. Add your first member to get started!
               </div>
             )}
+
+            <div style={{ marginTop: '32px' }}>
+              <div style={{
+                fontFamily: '"Barlow Condensed", sans-serif',
+                fontSize: '16px',
+                fontWeight: 800,
+                letterSpacing: '4px',
+                textTransform: 'uppercase',
+                color: '#f0f0f0',
+                marginBottom: '12px'
+              }}>
+                UNDER 16 MEMBERS
+              </div>
+
+              <div style={{
+                border: '1px solid #2a2a2a',
+                background: '#111111'
+              }}>
+                {under16Members.length === 0 ? (
+                  <div style={{ padding: '16px', fontSize: '12px', color: '#888888' }}>
+                    No under 16 members found.
+                  </div>
+                ) : (
+                  under16Members.map((member) => (
+                    <div
+                      key={member.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 14px',
+                        borderBottom: '1px solid #1b1b1b'
+                      }}
+                    >
+                      <span style={{ color: '#f0f0f0', fontSize: '13px' }}>{member.name}</span>
+                      {renderMoodSelector(member.id)}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1457,25 +1567,27 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
             <div style={{ flex: 1, overflowY: 'auto', marginBottom: '24px' }}>
               {members.map((m) => (
-                <label
+                <div
                   key={m.id}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '10px 0',
-                    cursor: 'pointer',
                     borderBottom: '1px solid rgba(42,42,42,0.5)'
                   }}
                 >
                   <span style={{ color: '#f0f0f0', fontSize: '13px' }}>{m.name}</span>
-                  <input
-                    type="checkbox"
-                    checked={!!quickSelection[m.id]}
-                    onChange={(e) => setQuickSelection({ ...quickSelection, [m.id]: e.target.checked })}
-                    style={{ width: '16px', height: '16px', accentColor: '#CC0000' }}
-                  />
-                </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    {isUnder16Member(m) && renderMoodSelector(m.id)}
+                    <input
+                      type="checkbox"
+                      checked={!!quickSelection[m.id]}
+                      onChange={(e) => setQuickSelection({ ...quickSelection, [m.id]: e.target.checked })}
+                      style={{ width: '16px', height: '16px', accentColor: '#CC0000' }}
+                    />
+                  </div>
+                </div>
               ))}
             </div>
 
