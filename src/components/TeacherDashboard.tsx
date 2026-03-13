@@ -31,6 +31,8 @@ interface TeacherDashboardProps {
 export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [enrollmentTimestamp, setEnrollmentTimestamp] = useState<string>(new Date().toISOString());
+  const [isSubmittingMember, setIsSubmittingMember] = useState(false);
   const [newMember, setNewMember] = useState<NewMemberForm>({
     name: "",
     belt_level: "White Belt",
@@ -65,6 +67,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         name: m.name,
         beltLevel: m.belt_level,
         status: m.status,
+        created_at: m.created_at,
         phone: m.phone,
         email: m.email,
         paymentType: m.payment_type,
@@ -129,24 +132,39 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     return (fee || 0).toFixed(2).replace('.', ',');
   };
 
-  // Format date as DD-MM-AAAA
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return '';
-    const date = new Date(dateString + 'T00:00:00Z');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const year = date.getUTCFullYear();
+  const formatDateFromIso = (isoDate?: string | null): string => {
+    const raw = typeof isoDate === 'string' ? isoDate.trim() : '';
+    const datePart = raw.split('T')[0] || '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      const [year, month, day] = datePart.split('-');
+      return `${day}-${month}-${year}`;
+    }
+
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = String(now.getFullYear());
     return `${day}-${month}-${year}`;
+  };
+
+  const formatEnrollmentDate = (createdAt?: string | null): string => {
+    return formatDateFromIso(createdAt);
+  };
+
+  const sanitizeIban = (iban?: string | null): string => {
+    const ibanString = String(iban || '');
+    return ibanString.replace(/\s+/gu, '');
   };
 
   // Export DD function
   const handleExportDD = async () => {
     try {
       // Get fresh data from database to ensure all fields are present
-      const allMembers = await getMembers();
+      const members = await getMembers();
+      console.log('member data:', JSON.stringify(members[0]));
 
       // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
-      const ddMembers = allMembers.filter(m =>
+      const ddMembers = members.filter(m =>
         m.status === 'Active' &&
         m.payment_type === 'Direct Debit' &&
         m.iban &&
@@ -158,13 +176,17 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       // Build tab-separated rows (7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME)
       const rows = ddMembers.map(m => {
         const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
+        const exportDate = new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-');
+        if (ddMembers[0]?.id === m.id) {
+          console.log('DD date debug:', { created_at: m.created_at, exportDate });
+        }
         const columns = [
-          m.iban || '',
+          sanitizeIban(m.iban),
           'CGDIPTL', // Fixed value as per DD standard
           formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
           'RCUR', // Fixed value as per DD standard
           m.ref || '', // Student number
-          formatDate(m.created_at), // DD-MM-AAAA format
+          exportDate, // DD-MM-AAAA (registration date)
           normalizeText(m.name) // Name without accents, max 70 chars
         ];
         return columns.join('\t');
@@ -180,7 +202,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
       ];
       const monthName = monthNames[today.getMonth()];
-      const filename = `DD_${monthName}_GBCQ.txt`;
+      const timestamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}_${String(today.getHours()).padStart(2, '0')}${String(today.getMinutes()).padStart(2, '0')}${String(today.getSeconds()).padStart(2, '0')}`;
+      const filename = `DD_FIX_${monthName}_GBCQ_${timestamp}.txt`;
 
       // Create blob and download
       const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
@@ -216,13 +239,14 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       // Build data for Excel - 7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME (no headers)
       const excelData = ddMembers.map(m => {
         const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
+        const exportDate = new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-');
         return [
-          m.iban || '',
+          sanitizeIban(m.iban),
           'CGDIPTL', // Fixed value as per DD standard
           formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
           'RCUR', // Fixed value as per DD standard
           m.ref || '', // Student number
-          formatDate(m.created_at), // DD-MM-AAAA format
+          exportDate, // DD-MM-AAAA (registration date)
           normalizeText(m.name) // Name without accents, max 70 chars
         ];
       });
@@ -251,13 +275,19 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMember.name.trim()) return;
+    if (isSubmittingMember) return;
+    if (!newMember.name.trim()) {
+      console.error('Add member blocked: name is required.');
+      return;
+    }
 
+    setIsSubmittingMember(true);
     try {
       const memberData = {
         name: newMember.name,
         belt_level: newMember.belt_level,
         status: newMember.status,
+        created_at: enrollmentTimestamp,
         phone: newMember.phone || undefined,
         email: newMember.email || undefined,
         payment_type: newMember.payment_type,
@@ -285,6 +315,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         monthlyFee: createdMember.fee,
         familyDiscount: createdMember.family_discount,
         dateOfBirth: createdMember.date_of_birth,
+        created_at: createdMember.created_at,
         attendance: {}
       };
 
@@ -305,10 +336,17 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         custom_fee: false,
         custom_fee_amount: 0,
       });
+      setEnrollmentTimestamp(new Date().toISOString());
       setShowAddModal(false);
     } catch (error) {
-      console.error('Error creating member:', error);
+      console.error('Error creating member in handleAddMember:', error);
+    } finally {
+      setIsSubmittingMember(false);
     }
+  };
+
+  const handleAddMemberButtonClick = () => {
+    console.log('Add Member submit button clicked');
   };
 
   const handleRemoveMember = async (id: string) => {
@@ -700,7 +738,10 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               />
             )}
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => {
+                setEnrollmentTimestamp(new Date().toISOString());
+                setShowAddModal(true);
+              }}
               style={{
                 padding: '9px 16px',
                 fontFamily: '"Barlow Condensed", sans-serif',
@@ -796,7 +837,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #2a2a2a' }}>
-                  {['Name', 'Belt', 'Email', 'Payment', 'Fee', 'Status', 'Actions'].map((col) => (
+                  {['Name', 'Belt', 'Email', 'Enrolled', 'Payment', 'Fee', 'Status', 'Actions'].map((col) => (
                     <th
                       key={col}
                       style={{
@@ -863,6 +904,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                     </td>
                     <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
                       {(member as any).email || "-"}
+                    </td>
+                    <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#AAAAAA' }}>
+                      {formatEnrollmentDate((member as any).created_at)}
                     </td>
                     <td style={{ padding: '13px 16px', verticalAlign: 'middle', fontSize: '13px', color: '#888888' }}>
                       {(member as any).paymentType || "-"}
@@ -945,15 +989,33 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             maxHeight: '90vh',
             overflowY: 'auto'
           }}>
-            <h3 style={{
-              fontFamily: '"Barlow Condensed", sans-serif',
-              fontSize: '20px',
-              fontWeight: 900,
-              color: '#f0f0f0',
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
               marginBottom: '24px'
             }}>
-              ADD NEW MEMBER
-            </h3>
+              <h3 style={{
+                fontFamily: '"Barlow Condensed", sans-serif',
+                fontSize: '20px',
+                fontWeight: 900,
+                color: '#f0f0f0',
+                margin: 0
+              }}>
+                ADD NEW MEMBER
+              </h3>
+              <div style={{
+                fontSize: '10px',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                color: '#555555',
+                fontFamily: '"Barlow Condensed", sans-serif',
+                textAlign: 'right',
+                marginTop: '2px'
+              }}>
+                Enrollment: {new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-')}
+              </div>
+            </div>
 
             <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
@@ -1286,6 +1348,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 </button>
                 <button
                   type="submit"
+                  onClick={handleAddMemberButtonClick}
+                  disabled={isSubmittingMember}
                   style={{
                     flex: 1,
                     padding: '8px 12px',
@@ -1295,12 +1359,13 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                     fontSize: '12px',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    opacity: isSubmittingMember ? 0.7 : 1
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
                   onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
                 >
-                  Add Member
+                  {isSubmittingMember ? 'Adding...' : 'Add Member'}
                 </button>
               </div>
             </form>

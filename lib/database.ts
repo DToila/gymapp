@@ -15,11 +15,26 @@ export const getMembers = async (): Promise<Member[]> => {
 export const createMember = async (member: Omit<Member, 'id' | 'created_at'>): Promise<Member> => {
   const { data, error } = await supabase
     .from('members')
-    .insert(member)
+    .insert([member])
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Supabase createMember insert failed', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      payload: member,
+    })
+    throw error
+  }
+
+  if (!data) {
+    console.error('Supabase createMember insert returned no data', { payload: member })
+    throw new Error('Failed to create member: no data returned from Supabase insert.')
+  }
+
   return data
 }
 
