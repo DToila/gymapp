@@ -86,25 +86,31 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
+      const registrationNotes = [
+        `Sexo: ${formData.sexo}`,
+        `Morada: ${formData.morada.trim() || '-'}`,
+        `Código Postal: ${formData.codigoPostal.trim() || '-'}`,
+        `Contacto de Emergência: ${formData.contactoEmergencia.trim() || '-'}`,
+        `Como soube da GBCQ: ${formData.comoSoube || '-'}`,
+        formData.comoSoube === "Outro" ? `Como soube (outro): ${formData.comoSoubeOutro.trim() || '-'}` : null,
+        isUnder18 ? `Nome do Pai: ${formData.nomePai.trim() || '-'}` : null,
+        isUnder18 ? `Nome da Mãe: ${formData.nomeMae.trim() || '-'}` : null,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+
       const payload: any = {
         name: formData.nome.trim(),
         date_of_birth: formData.dataNascimento || null,
         nif: formData.nif.trim() || null,
         email: formData.email.trim(),
         phone: formData.telemovel.trim() || null,
-        address: formData.morada.trim() || null,
-        postal_code: formData.codigoPostal.trim() || null,
-        emergency_contact: formData.contactoEmergencia.trim() || null,
-        gender: formData.sexo,
-        heard_about_gbcq: formData.comoSoube || null,
-        heard_about_gbcq_other: formData.comoSoube === "Outro" ? formData.comoSoubeOutro.trim() || null : null,
-        father_name: isUnder18 ? formData.nomePai.trim() || null : null,
-        mother_name: isUnder18 ? formData.nomeMae.trim() || null : null,
         status: "pending",
         belt_level: "White Belt",
         family_discount: false,
         fee: 0,
         payment_type: "Cash",
+        ref: registrationNotes || null,
       };
 
       const { error: insertError } = await supabase.from("members").insert([payload]);
