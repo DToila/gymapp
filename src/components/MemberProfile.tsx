@@ -551,6 +551,23 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
             </div>
           </div>
 
+          {/* Month Selector + Calendar/Comments — wrapped for pending overlay */}
+          <div style={{ position: 'relative' }}>
+            {(data.status as unknown as string) === 'pending' && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(10, 10, 10, 0.72)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+                backdropFilter: 'blur(4px)',
+              }}>
+                <img src="/lock.png" alt="Locked" style={{ width: '140px', height: '140px', objectFit: 'contain', opacity: 0.95 }} />
+              </div>
+            )}
+
           {/* Month Selector with Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '20px' }}>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flex: 1, paddingBottom: '8px' }}>
@@ -630,21 +647,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           </div>
 
           {/* Two-Column Layout */}
-          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', height: '500px' }}>
-            {(data.status as unknown as string) === 'pending' && (
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(10, 10, 10, 0.68)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10,
-                backdropFilter: 'blur(3px)',
-              }}>
-                <img src="/lock.png" alt="Locked" style={{ width: '140px', height: '140px', objectFit: 'contain', opacity: 0.92 }} />
-              </div>
-            )}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', height: '500px' }}>
             {/* Calendar Column */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '12px', color: '#f0f0f0', letterSpacing: '2px', textTransform: 'uppercase' }}>
@@ -796,6 +799,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
               </div>
             </div>
           </div>
+          </div>{/* end pending overlay wrapper */}
         </div>
       )}
       <style>{`
