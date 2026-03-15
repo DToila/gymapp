@@ -140,6 +140,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       const todayMood = m.attendance_mood?.[today] as MoodOption | undefined;
       if (todayMood) {
         moodSel[m.id] = todayMood;
+        sel[m.id] = true;
       }
     });
     setQuickSelection(sel);
@@ -562,7 +563,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         const chosen = quickSelection[m.id];
         const selectedMood = under16MoodByMemberId[m.id];
         if (!m.attendance) m.attendance = {};
-        if (chosen) m.attendance[today] = true;
+        if (chosen || selectedMood) m.attendance[today] = true;
         else delete m.attendance[today];
 
         if (isUnder16Member(m as Member)) {
@@ -581,12 +582,14 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     const today = new Date().toISOString().split("T")[0];
 
     setUnder16MoodByMemberId((prev) => ({ ...prev, [memberId]: mood }));
+    setQuickSelection((prev) => ({ ...prev, [memberId]: true }));
 
     setMembers((prev) =>
       prev.map((member: any) => {
         if (member.id !== memberId) return member;
         const nextMoodByDate = { ...(member.attendance_mood || {}), [today]: mood };
-        return { ...member, attendance_mood: nextMoodByDate };
+        const nextAttendance = { ...(member.attendance || {}), [today]: true };
+        return { ...member, attendance_mood: nextMoodByDate, attendance: nextAttendance };
       })
     );
   };
