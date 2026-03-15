@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import MemberProfile from "./MemberProfile";
 import GBLogo from "@/components/GBLogo";
 import { Member, calculateMonthlyFee, getBeltOptions } from "../../lib/types";
 import { createMember, updateMember as updateMemberDb, deleteMember, getMembers } from "../../lib/database";
+import { supabase } from "../../lib/supabase";
 import * as XLSX from 'xlsx';
 
 interface NewMemberForm {
@@ -38,6 +39,7 @@ const MOOD_OPTIONS: Array<{ value: MoodOption; icon: string; label: string }> = 
 
 export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [members, setMembers] = useState<Member[]>([]);
+  const [pendingMembers, setPendingMembers] = useState<Member[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [enrollmentTimestamp, setEnrollmentTimestamp] = useState<string>(new Date().toISOString());
   const [isSubmittingMember, setIsSubmittingMember] = useState(false);
@@ -62,44 +64,72 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [quickSelection, setQuickSelection] = useState<{ [id: string]: boolean }>({});
   const [under16MoodByMemberId, setUnder16MoodByMemberId] = useState<{ [id: string]: MoodOption }>({});
   const [showDDDropdown, setShowDDDropdown] = useState(false);
+  const [acceptingPendingMemberId, setAcceptingPendingMemberId] = useState<string | null>(null);
+  const [acceptForm, setAcceptForm] = useState<{ belt_level: string; payment_type: "Direct Debit" | "Cash"; fee: string }>({
+    belt_level: "White Belt",
+    payment_type: "Direct Debit",
+    fee: "0",
+  });
 
-  useEffect(() => {
-    loadMembers();
-  }, []);
+  const mapMemberForDashboard = (m: Member) => ({
+    id: m.id,
+    name: m.name,
+    belt_level: (m as any).belt_level,
+    beltLevel: (m as any).belt_level,
+    status: (m as any).status,
+    created_at: m.created_at,
+    phone: (m as any).phone,
+    email: (m as any).email,
+    payment_type: (m as any).payment_type,
+    paymentType: (m as any).payment_type,
+    fee: (m as any).fee,
+    monthlyFee: (m as any).fee,
+    family_discount: (m as any).family_discount,
+    familyDiscount: (m as any).family_discount,
+    date_of_birth: (m as any).date_of_birth,
+    iban: (m as any).iban,
+    nif: (m as any).nif,
+    ref: (m as any).ref,
+    custom_fee: (m as any).custom_fee,
+    custom_fee_amount: (m as any).custom_fee_amount,
+    attendance_mood: (m as any).attendance_mood || {},
+    attendance: {}
+  });
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const data = await getMembers();
-      // Convert database format to component format
-      const formattedMembers: any[] = data.map(m => ({
-        id: m.id,
-        name: m.name,
-        belt_level: m.belt_level,
-        beltLevel: m.belt_level,
-        status: m.status,
-        created_at: m.created_at,
-        phone: m.phone,
-        email: m.email,
-        payment_type: m.payment_type,
-        paymentType: m.payment_type,
-        fee: m.fee,
-        monthlyFee: m.fee,
-        family_discount: m.family_discount,
-        familyDiscount: m.family_discount,
-        date_of_birth: m.date_of_birth,
-        iban: m.iban,
-        nif: m.nif,
-        ref: m.ref,
-        custom_fee: m.custom_fee,
-        custom_fee_amount: m.custom_fee_amount,
-        attendance_mood: (m as any).attendance_mood || {},
-        attendance: {} // Will be loaded separately when needed
-      }));
+      const formattedMembers: any[] = data.map(mapMemberForDashboard);
       setMembers(formattedMembers);
     } catch (error) {
       console.error('Error loading members:', error);
     }
-  };
+  }, []);
+
+  const loadPendingMembers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const pendingFormatted: any[] = (data || []).map((member) => mapMemberForDashboard(member as Member));
+      setPendingMembers(pendingFormatted);
+    } catch (error) {
+      console.error('Error loading pending members:', error);
+    }
+  }, []);
+
+  const loadDashboardData = useCallback(async () => {
+    await Promise.all([loadMembers(), loadPendingMembers()]);
+  }, [loadMembers, loadPendingMembers]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const openQuickModal = () => {
     const today = new Date().toISOString().split("T")[0];
@@ -440,10 +470,73 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       };
 
       await updateMemberDb(updated.id, updates);
-      await loadMembers();
+      await loadDashboardData();
     } catch (error) {
       console.error('Error updating member:', error);
       throw error;
+    }
+  };
+
+  const openAcceptPendingForm = (member: any) => {
+    const nextPaymentType = member.payment_type === 'Cash' ? 'Cash' : 'Direct Debit';
+    setAcceptingPendingMemberId(member.id);
+    setAcceptForm({
+      belt_level: member.belt_level || 'White Belt',
+      payment_type: nextPaymentType,
+      fee: String(member.fee ?? calculateMonthlyFee(member.date_of_birth, nextPaymentType) ?? 0),
+    });
+  };
+
+  const confirmAcceptPendingMember = async (memberId: string) => {
+    try {
+      const parsedFee = Number.parseFloat(acceptForm.fee);
+      const safeFee = Number.isFinite(parsedFee) ? parsedFee : 0;
+
+      await updateMemberDb(memberId, {
+        status: 'active' as any,
+        belt_level: acceptForm.belt_level,
+        payment_type: acceptForm.payment_type,
+        fee: safeFee,
+      } as any);
+
+      setAcceptingPendingMemberId(null);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error accepting pending member:', error);
+    }
+  };
+
+  const markPendingMemberAsUnknown = async (memberId: string) => {
+    const expiresAt = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ status: 'unknown', unknown_expiry_at: expiresAt } as any)
+        .eq('id', memberId);
+
+      if (error) {
+        const fallback = await supabase
+          .from('members')
+          .update({ status: 'unknown' } as any)
+          .eq('id', memberId);
+        if (fallback.error) throw fallback.error;
+      }
+
+      setAcceptingPendingMemberId(null);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error marking member as unknown:', error);
+    }
+  };
+
+  const rejectPendingMember = async (memberId: string) => {
+    try {
+      await deleteMember(memberId);
+      setAcceptingPendingMemberId(null);
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error rejecting pending member:', error);
     }
   };
 
@@ -631,6 +724,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 padding: '10px 20px',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'space-between',
                 gap: '12px',
                 fontSize: '13px',
                 color: idx === 0 ? '#f0f0f0' : '#888888',
@@ -652,7 +746,24 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 }
               }}
             >
-              {item}
+              <span>{item}</span>
+              {idx === 0 && pendingMembers.length > 0 && (
+                <span style={{
+                  minWidth: '18px',
+                  height: '18px',
+                  padding: '0 5px',
+                  borderRadius: '9px',
+                  background: '#CC0000',
+                  color: '#ffffff',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {pendingMembers.length}
+                </span>
+              )}
             </div>
           ))}
         </nav>
@@ -958,6 +1069,181 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
           {/* Members Section */}
           <div style={{ padding: '24px 40px 40px' }}>
+            {pendingMembers.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{
+                  marginBottom: '14px',
+                  fontFamily: '"Barlow Condensed", sans-serif',
+                  fontSize: '16px',
+                  fontWeight: 800,
+                  letterSpacing: '4px',
+                  textTransform: 'uppercase',
+                  color: '#f0f0f0'
+                }}>
+                  NOVOS PEDIDOS
+                </div>
+
+                <div style={{ border: '1px solid #2a2a2a', background: '#111111' }}>
+                  {pendingMembers.map((member: any) => (
+                    <div key={member.id} style={{ padding: '14px 16px', borderBottom: '1px solid #1b1b1b' }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1.2fr 1fr 1fr 0.8fr auto',
+                        gap: '12px',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{ color: '#f0f0f0', fontSize: '13px', fontWeight: 600 }}>{member.name}</div>
+                        <div style={{ color: '#888888', fontSize: '12px' }}>{member.email || '-'}</div>
+                        <div style={{ color: '#888888', fontSize: '12px' }}>{member.phone || '-'}</div>
+                        <div style={{ color: '#AAAAAA', fontSize: '12px' }}>{formatEnrollmentDate(member.date_of_birth)}</div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => openAcceptPendingForm(member)}
+                            style={{
+                              padding: '6px 10px',
+                              background: '#CC0000',
+                              border: '1px solid #CC0000',
+                              color: '#fff',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => markPendingMemberAsUnknown(member.id)}
+                            style={{
+                              padding: '6px 10px',
+                              background: 'transparent',
+                              border: '1px solid #444',
+                              color: '#ccc',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Unknown
+                          </button>
+                          <button
+                            onClick={() => rejectPendingMember(member.id)}
+                            style={{
+                              padding: '6px 10px',
+                              background: 'transparent',
+                              border: '1px solid #553333',
+                              color: '#ff8a8a',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+
+                      {acceptingPendingMemberId === member.id && (
+                        <div style={{
+                          marginTop: '12px',
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr 0.8fr auto auto',
+                          gap: '8px',
+                          alignItems: 'end'
+                        }}>
+                          <div>
+                            <div style={{ fontSize: '10px', color: '#777', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Belt</div>
+                            <select
+                              value={acceptForm.belt_level}
+                              onChange={(e) => setAcceptForm((prev) => ({ ...prev, belt_level: e.target.value }))}
+                              style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                background: '#1a1a1a',
+                                border: '1px solid #2a2a2a',
+                                color: '#f0f0f0',
+                                fontSize: '12px'
+                              }}
+                            >
+                              {getBeltOptions(member.date_of_birth, acceptForm.belt_level).map((beltOption) => (
+                                <option key={beltOption} value={beltOption}>{beltOption}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <div style={{ fontSize: '10px', color: '#777', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Payment</div>
+                            <select
+                              value={acceptForm.payment_type}
+                              onChange={(e) => setAcceptForm((prev) => ({ ...prev, payment_type: e.target.value as "Direct Debit" | "Cash" }))}
+                              style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                background: '#1a1a1a',
+                                border: '1px solid #2a2a2a',
+                                color: '#f0f0f0',
+                                fontSize: '12px'
+                              }}
+                            >
+                              <option value="Direct Debit">Direct Debit</option>
+                              <option value="Cash">Cash</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <div style={{ fontSize: '10px', color: '#777', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Fee</div>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={acceptForm.fee}
+                              onChange={(e) => setAcceptForm((prev) => ({ ...prev, fee: e.target.value }))}
+                              style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                background: '#1a1a1a',
+                                border: '1px solid #2a2a2a',
+                                color: '#f0f0f0',
+                                fontSize: '12px'
+                              }}
+                            />
+                          </div>
+
+                          <button
+                            onClick={() => confirmAcceptPendingMember(member.id)}
+                            style={{
+                              padding: '8px 10px',
+                              background: '#CC0000',
+                              border: '1px solid #CC0000',
+                              color: '#fff',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Confirm
+                          </button>
+
+                          <button
+                            onClick={() => setAcceptingPendingMemberId(null)}
+                            style={{
+                              padding: '8px 10px',
+                              background: 'transparent',
+                              border: '1px solid #444',
+                              color: '#bbb',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{
                 fontFamily: '"Barlow Condensed", sans-serif',
