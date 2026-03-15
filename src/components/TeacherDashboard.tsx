@@ -547,7 +547,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   // const todayStr = new Date().toISOString().split("T")[0];
 
   if (selectedMemberId) {
-    const member = members.find((m) => m.id === selectedMemberId);
+    const member = [...members, ...pendingMembers].find((m) => m.id === selectedMemberId);
     if (member) {
       return (
         <MemberProfile
@@ -1098,25 +1098,16 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         gap: '12px',
                         alignItems: 'center'
                       }}>
-                        <div style={{ color: '#f0f0f0', fontSize: '13px', fontWeight: 600 }}>{member.name}</div>
+                        <div
+                          onClick={() => setSelectedMemberId(member.id)}
+                          style={{ color: '#f0f0f0', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          {member.name}
+                        </div>
                         <div style={{ color: '#888888', fontSize: '12px' }}>{member.email || '-'}</div>
                         <div style={{ color: '#888888', fontSize: '12px' }}>{member.phone || '-'}</div>
                         <div style={{ color: '#AAAAAA', fontSize: '12px' }}>{formatEnrollmentDate(member.date_of_birth)}</div>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={() => setSelectedMemberId(member.id)}
-                            style={{
-                              padding: '6px 10px',
-                              background: 'transparent',
-                              border: '1px solid #2a2a2a',
-                              color: '#cccccc',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Inspect
-                          </button>
                           <button
                             onClick={() => openAcceptPendingForm(member)}
                             style={{
