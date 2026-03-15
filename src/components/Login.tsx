@@ -444,36 +444,38 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
           />
 
-          <button
-            type="button"
-            onClick={() => router.push('/register')}
-            style={{
-              width: '100%',
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              fontSize: '13px',
-              color: '#555',
-              textAlign: 'center',
-              marginTop: '12px',
-              marginBottom: '16px',
-              letterSpacing: '1px',
-              fontFamily: 'var(--font-body)',
-              textDecoration: 'none',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#777';
-              e.currentTarget.style.textDecoration = 'underline';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#555';
-              e.currentTarget.style.textDecoration = 'none';
-            }}
-          >
-            Não tem conta? Criar conta
-          </button>
+          {userType === "student" && (
+            <button
+              type="button"
+              onClick={() => router.push('/register')}
+              style={{
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: '#555',
+                textAlign: 'center',
+                marginTop: '12px',
+                marginBottom: '16px',
+                letterSpacing: '1px',
+                fontFamily: 'var(--font-body)',
+                textDecoration: 'none',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#777';
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#555';
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              Não tem conta? Criar conta
+            </button>
+          )}
 
           {/* Password Input - Only for Teacher */}
           {userType === "teacher" && (
