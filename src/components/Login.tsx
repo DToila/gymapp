@@ -459,7 +459,17 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               marginTop: '12px',
               marginBottom: '16px',
               letterSpacing: '1px',
-              fontFamily: 'var(--font-body)'
+              fontFamily: 'var(--font-body)',
+              textDecoration: 'none',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#777';
+              e.currentTarget.style.textDecoration = 'underline';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#555';
+              e.currentTarget.style.textDecoration = 'none';
             }}
           >
             Não tem conta? Criar conta
