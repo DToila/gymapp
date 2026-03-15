@@ -453,7 +453,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               border: 'none',
               padding: 0,
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '13px',
               color: '#555',
               textAlign: 'center',
               marginTop: '12px',
