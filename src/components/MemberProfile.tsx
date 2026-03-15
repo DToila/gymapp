@@ -74,6 +74,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const isPendingMember = (data.status as unknown as string) === 'pending';
 
   useEffect(() => {
     const nextData = { ...member };
@@ -551,6 +552,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
             </div>
           </div>
 
+          <div style={{ position: 'relative' }}>
+            {isPendingMember && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(10, 10, 10, 0.7)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 10,
+              }} />
+            )}
+
           {/* Month Selector with Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '20px' }}>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flex: 1, paddingBottom: '8px' }}>
@@ -781,6 +793,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}
