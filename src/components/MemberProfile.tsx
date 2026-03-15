@@ -38,8 +38,6 @@ const MOOD_ICONS: Record<MoodOption, string> = {
   sad: "☹️",
 };
 
-const LOCK_ICON_VERSION = "1";
-
 // Because Member is defined in TeacherDashboard, we can re-declare necessary parts here to avoid circular import.
 interface MemberDetail extends Member {
   beltLevel?: string;
@@ -553,23 +551,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
             </div>
           </div>
 
-          {/* Month Selector + Calendar/Comments — wrapped for pending overlay */}
-          <div style={{ position: 'relative' }}>
-            {(data.status as unknown as string) === 'pending' && (
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(10, 10, 10, 0.72)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10,
-                backdropFilter: 'blur(4px)',
-              }}>
-                <img src={`/lock.png?v=${LOCK_ICON_VERSION}`} alt="Locked" style={{ width: '140px', height: '140px', objectFit: 'contain', opacity: 0.95 }} />
-              </div>
-            )}
-
           {/* Month Selector with Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '20px' }}>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flex: 1, paddingBottom: '8px' }}>
@@ -801,7 +782,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
               </div>
             </div>
           </div>
-          </div>{/* end pending overlay wrapper */}
         </div>
       )}
       <style>{`
