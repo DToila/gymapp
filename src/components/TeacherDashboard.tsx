@@ -1101,6 +1101,20 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         <div style={{ color: '#AAAAAA', fontSize: '12px' }}>{formatEnrollmentDate(member.date_of_birth)}</div>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
+                            onClick={() => setSelectedMemberId(member.id)}
+                            style={{
+                              padding: '6px 10px',
+                              background: 'transparent',
+                              border: '1px solid #2a2a2a',
+                              color: '#cccccc',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Inspect
+                          </button>
+                          <button
                             onClick={() => openAcceptPendingForm(member)}
                             style={{
                               padding: '6px 10px',
