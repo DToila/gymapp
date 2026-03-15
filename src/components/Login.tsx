@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { getMemberByEmail } from "../../lib/database";
 import GBLogo from "@/components/GBLogo";
 
@@ -11,6 +12,7 @@ interface LoginProps {
 }
 
 export default function Login({ onLoginSuccess }: LoginProps) {
+  const router = useRouter();
   const [userType, setUserType] = useState<UserType>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -434,13 +436,34 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               border: '1px solid var(--border)',
               color: 'var(--text)',
               fontSize: '15px',
-              marginBottom: '16px',
+              marginBottom: '0',
               fontFamily: 'var(--font-body)',
               transition: 'border-color 0.3s'
             }}
             onFocus={(e) => e.currentTarget.style.borderColor = '#CC0000'}
             onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
           />
+
+          <button
+            type="button"
+            onClick={() => router.push('/register')}
+            style={{
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              fontSize: '11px',
+              color: '#555',
+              textAlign: 'center',
+              marginTop: '12px',
+              marginBottom: '16px',
+              letterSpacing: '1px',
+              fontFamily: 'var(--font-body)'
+            }}
+          >
+            Não tem conta? Criar conta
+          </button>
 
           {/* Password Input - Only for Teacher */}
           {userType === "teacher" && (
