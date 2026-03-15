@@ -38,6 +38,8 @@ const MOOD_ICONS: Record<MoodOption, string> = {
   sad: "☹️",
 };
 
+const LOCK_ICON_VERSION = "1";
+
 // Because Member is defined in TeacherDashboard, we can re-declare necessary parts here to avoid circular import.
 interface MemberDetail extends Member {
   beltLevel?: string;
@@ -564,7 +566,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                 zIndex: 10,
                 backdropFilter: 'blur(4px)',
               }}>
-                <img src="/lock.png" alt="Locked" style={{ width: '140px', height: '140px', objectFit: 'contain', opacity: 0.95 }} />
+                <img src={`/lock.png?v=${LOCK_ICON_VERSION}`} alt="Locked" style={{ width: '140px', height: '140px', objectFit: 'contain', opacity: 0.95 }} />
               </div>
             )}
 
