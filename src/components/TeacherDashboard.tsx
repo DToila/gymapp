@@ -99,7 +99,10 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const loadMembers = useCallback(async () => {
     try {
       const data = await getMembers();
-      const formattedMembers: any[] = data.map(mapMemberForDashboard);
+      const nonPendingMembers = data.filter(
+        (member) => String((member as any).status || '').trim().toLowerCase() !== 'pending'
+      );
+      const formattedMembers: any[] = nonPendingMembers.map(mapMemberForDashboard);
       setMembers(formattedMembers);
     } catch (error) {
       console.error('Error loading members:', error);
