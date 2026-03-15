@@ -630,7 +630,21 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           </div>
 
           {/* Two-Column Layout */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', height: '500px' }}>
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', height: '500px' }}>
+            {(data.status as unknown as string) === 'pending' && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(10, 10, 10, 0.68)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+                backdropFilter: 'blur(3px)',
+              }}>
+                <img src="/lock.png" alt="Locked" style={{ width: '140px', height: '140px', objectFit: 'contain', opacity: 0.92 }} />
+              </div>
+            )}
             {/* Calendar Column */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '12px', color: '#f0f0f0', letterSpacing: '2px', textTransform: 'uppercase' }}>
