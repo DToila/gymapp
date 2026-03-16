@@ -12,6 +12,7 @@ import {
 
 type AttendanceTab = 'adults' | 'kids';
 type BehaviorValue = 'GOOD' | 'NEUTRAL' | 'BAD' | null;
+type KidBehaviorByDate = Record<string, Record<string, BehaviorValue>>;
 
 interface AttendancePerson {
   id: string;
@@ -93,7 +94,7 @@ export default function AttendancePage() {
   const [visibleMonth, setVisibleMonth] = useState(() => getMonthStart(new Date()));
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [attendanceByDate, setAttendanceByDate] = useState<Record<string, string[]>>({});
-  const [kidBehaviorByDate, setKidBehaviorByDate] = useState<Record<string, Record<string, Exclude<BehaviorValue, null>>>>({});
+  const [kidBehaviorByDate, setKidBehaviorByDate] = useState<KidBehaviorByDate>({});
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -172,7 +173,6 @@ export default function AttendancePage() {
   }, [activeTab, people]);
 
   const checkedInIds = useMemo(() => new Set(attendanceByDate[selectedDate] || []), [attendanceByDate, selectedDate]);
-  const currentKidBehavior = useMemo(() => kidBehaviorByDate[selectedDate] || {}, [kidBehaviorByDate, selectedDate]);
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -201,15 +201,21 @@ export default function AttendancePage() {
   const loadBehaviorForDate = useCallback(async (dateKey: string) => {
     try {
       const events = await getKidBehaviorEvents({ fromDateKey: dateKey, toDateKey: dateKey });
-      const nextMap: Record<string, Exclude<BehaviorValue, null>> = {};
+      const nextMap: Record<string, BehaviorValue> = {};
       events.forEach((event) => {
         nextMap[event.kid_id] = event.value;
       });
       console.log('[Attendance] behavior date load', { dateKey, eventsCount: events.length, sample: events[0] || null });
-      setKidBehaviorByDate((prev) => ({ ...prev, [dateKey]: nextMap }));
+      setKidBehaviorByDate((prev) => ({
+        ...prev,
+        [dateKey]: {
+          ...(prev[dateKey] ?? {}),
+          ...nextMap,
+        },
+      }));
     } catch (error) {
       console.error('Error loading kid behavior for date:', dateKey, error);
-      setKidBehaviorByDate((prev) => ({ ...prev, [dateKey]: {} }));
+      setKidBehaviorByDate((prev) => ({ ...prev, [dateKey]: prev[dateKey] ?? {} }));
     }
   }, []);
 
@@ -245,34 +251,36 @@ export default function AttendancePage() {
   };
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {
-    const previous = currentKidBehavior[kidId];
+    const dateKey = selectedDate;
+    const previous = kidBehaviorByDate[dateKey]?.[kidId] ?? null;
     setKidBehaviorByDate((prev) => ({
       ...prev,
-      [selectedDate]: {
-        ...(prev[selectedDate] || {}),
+      [dateKey]: {
+        ...(prev[dateKey] ?? {}),
         [kidId]: value,
       },
     }));
 
-    console.log('[Attendance] upsert behavior click', { kidId, dateKey: selectedDate, value });
-    upsertKidBehavior({ kidId, dateKey: selectedDate, value })
+    console.log('[Attendance] upsert behavior click', { kidId, dateKey, value });
+    upsertKidBehavior({ kidId, dateKey, value })
       .then((response) => {
         console.log('[Attendance] upsert behavior response', response);
       })
       .catch((error) => {
         console.error('Error saving kid behavior:', error);
         setKidBehaviorByDate((prev) => {
-          const dateMap = { ...(prev[selectedDate] || {}) };
+          const dateMap = { ...(prev[dateKey] ?? {}) };
           if (previous) dateMap[kidId] = previous;
           else delete dateMap[kidId];
-          return { ...prev, [selectedDate]: dateMap };
+          return { ...prev, [dateKey]: dateMap };
         });
       });
   };
 
   const renderBehaviorSelector = (person: AttendancePerson, checkedIn: boolean) => {
     if (activeTab !== 'kids' || !checkedIn) return null;
-    const selected = currentKidBehavior[person.id] ?? null;
+    const dateKey = selectedDate;
+    const selected = kidBehaviorByDate[dateKey]?.[person.id] ?? null;
 
     return (
       <div className="mr-2 flex items-center gap-1">
