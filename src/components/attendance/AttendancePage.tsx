@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getMembers } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
+import { ATTENDANCE_STORAGE_KEY, KID_BEHAVIOR_STORAGE_KEY, toDateKey } from '@/lib/attendanceState';
 
 type AttendanceTab = 'adults' | 'kids';
 type BehaviorValue = 'GOOD' | 'NEUTRAL' | 'BAD' | null;
@@ -18,8 +19,6 @@ interface AttendancePerson {
 
 const weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const monthLabels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const ATTENDANCE_STORAGE_KEY = 'attendance_by_date';
-const KID_BEHAVIOR_STORAGE_KEY = 'attendance_kid_behavior_by_date';
 
 const behaviorOptions: Array<{ value: Exclude<BehaviorValue, null>; emoji: string; label: string }> = [
   { value: 'GOOD', emoji: '😀', label: 'Good' },
@@ -42,10 +41,7 @@ const getKidsGroup = (age: number | null): string => {
 };
 
 const getDateKey = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return toDateKey(date);
 };
 
 const parseDateKey = (dateKey: string): Date => {
