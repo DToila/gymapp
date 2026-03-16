@@ -125,14 +125,20 @@ export default function AttendancePage() {
       next.delete(id);
       return next;
     });
+    setBehaviorByKidId((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {
     setBehaviorByKidId((prev) => ({ ...prev, [kidId]: value }));
   };
 
-  const renderBehaviorSelector = (person: AttendancePerson) => {
-    if (activeTab !== 'kids') return null;
+  const renderBehaviorSelector = (person: AttendancePerson, checkedIn: boolean) => {
+    if (activeTab !== 'kids' || !checkedIn) return null;
     const selected = behaviorByKidId[person.id] ?? null;
 
     return (
@@ -186,7 +192,7 @@ export default function AttendancePage() {
           </div>
         </div>
 
-        {activeTab === 'kids' ? renderBehaviorSelector(person) : null}
+        {activeTab === 'kids' ? renderBehaviorSelector(person, checkedIn) : null}
 
         {checkedIn ? (
           <button
