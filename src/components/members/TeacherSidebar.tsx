@@ -78,7 +78,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
       onAddMember();
       return;
     }
-    router.push('/dashboard?openAddMember=1');
+    router.push(active === 'members' ? '/members?openAddMember=1' : '/dashboard?openAddMember=1');
   };
 
   const navItems = [
