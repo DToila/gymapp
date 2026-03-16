@@ -15,7 +15,7 @@ import RequestsList from './RequestsList';
 import RowActionsMenu from './RowActionsMenu';
 import TeacherSidebar from './TeacherSidebar';
 import AddMemberModal, { AddMemberFormData } from './AddMemberModal';
-import { toDateKey } from '@/lib/attendanceState';
+import { BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 
 const initialAdultsFilters: AdultsFilters = {
   status: 'all',
@@ -166,15 +166,23 @@ export default function MembersPage() {
     setLoading(true);
     try {
       const raw = await getMembers();
+      const to = new Date();
+      const from = new Date(to);
+      from.setDate(from.getDate() - 29);
+      const fromDateKey = toDateKey(from);
+      const toDate = toDateKey(to);
+
       let behaviorEvents: Awaited<ReturnType<typeof getKidBehaviorEvents>> = [];
       try {
-        const to = new Date();
-        const from = new Date(to);
-        from.setDate(from.getDate() - 29);
-        behaviorEvents = await getKidBehaviorEvents({ fromDateKey: toDateKey(from), toDateKey: toDateKey(to) });
+        behaviorEvents = await getKidBehaviorEvents({ fromDateKey, toDateKey: toDate });
       } catch (error) {
         console.error('Error loading 30-day kid behavior events for members page:', error);
       }
+
+      const localBehaviorEvents = readBehaviorEvents().filter(
+        (event) => event.dateKey >= fromDateKey && event.dateKey <= toDate
+      );
+
       const mapped = raw.map(mapDbMember);
 
       const behaviorByKid = new Map<string, { hasBad: boolean; hasGood: boolean }>();
@@ -183,6 +191,13 @@ export default function MembersPage() {
         if (event.value === 'BAD') current.hasBad = true;
         if (event.value === 'GOOD') current.hasGood = true;
         behaviorByKid.set(event.kid_id, current);
+      });
+
+      localBehaviorEvents.forEach((event) => {
+        const current = behaviorByKid.get(event.kidId) || { hasBad: false, hasGood: false };
+        if (event.value === 'BAD') current.hasBad = true;
+        if (event.value === 'GOOD') current.hasGood = true;
+        behaviorByKid.set(event.kidId, current);
       });
 
       const withBehavior = mapped.map((member) => {
@@ -211,6 +226,16 @@ export default function MembersPage() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleBehaviorUpdated = () => {
+      load();
+    };
+
+    window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
+    return () => window.removeEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
   }, [load]);
 
   useEffect(() => {
