@@ -396,11 +396,11 @@ export default function AttendancePage() {
               event.stopPropagation();
               uncheckIn(person.id);
             }}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-emerald-500/40 bg-emerald-500/20 text-emerald-300 transition hover:bg-emerald-500/30"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-red-500/40 bg-red-500/20 text-red-300 transition hover:bg-red-500/30"
             aria-label={`Uncheck ${person.name}`}
             title="Uncheck"
           >
-            ✓
+            ✕
           </button>
         ) : (
           <span className="text-base text-zinc-600">→</span>
