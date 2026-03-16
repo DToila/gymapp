@@ -10,9 +10,10 @@ interface TeacherSidebarProps {
   onLogout?: () => void;
   onExportTxt?: () => void;
   onExportExcel?: () => void;
+  onAddMember?: () => void;
 }
 
-export default function TeacherSidebar({ active, requestsCount = 0, onLogout, onExportTxt, onExportExcel }: TeacherSidebarProps) {
+export default function TeacherSidebar({ active, requestsCount = 0, onLogout, onExportTxt, onExportExcel, onAddMember }: TeacherSidebarProps) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
@@ -235,59 +236,89 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
 
       {/* Footer */}
       <div style={{
-        padding: collapsed ? '16px 12px' : '16px 20px',
+        padding: collapsed ? '12px 12px 16px' : '12px 20px 16px',
         borderTop: '1px solid #2a2a2a',
         display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        justifyContent: collapsed ? 'center' : 'flex-start'
+        flexDirection: 'column',
+        gap: '12px'
       }}>
+        {onAddMember && (
+          <button
+            onClick={onAddMember}
+            style={{
+              width: '100%',
+              padding: collapsed ? '8px 0' : '9px 10px',
+              fontFamily: '"Barlow Condensed", sans-serif',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              border: '1px solid #CC0000',
+              background: '#CC0000',
+              color: 'white',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
+          >
+            {collapsed ? '+' : '+ Add Member'}
+          </button>
+        )}
+
         <div style={{
-          width: '32px',
-          height: '32px',
-          background: '#CC0000',
-          fontFamily: '"Barlow Condensed", sans-serif',
-          fontWeight: 900,
-          color: 'white',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '13px',
-          flexShrink: 0
-        }}>P</div>
-        {!collapsed && (
-          <>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: '#f0f0f0' }}>Professor</div>
-              <div style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#CC0000' }}>Admin</div>
-            </div>
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                style={{
-                  background: 'none',
-                  border: '1px solid #2a2a2a',
-                  color: '#888888',
-                  fontSize: '10px',
-                  padding: '4px 8px',
-                  cursor: 'pointer',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  transition: 'all 0.2s',
-                  flexShrink: 0
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#f0f0f0';
-                  e.currentTarget.style.color = '#f0f0f0';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#2a2a2a';
-                  e.currentTarget.style.color = '#888888';
-                }}
-              >Logout</button>
-            )}
-          </>
-        )}
+          gap: '10px',
+          justifyContent: collapsed ? 'center' : 'flex-start'
+        }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            background: '#CC0000',
+            fontFamily: '"Barlow Condensed", sans-serif',
+            fontWeight: 900,
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '13px',
+            flexShrink: 0
+          }}>P</div>
+          {!collapsed && (
+            <>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '12px', fontWeight: 500, color: '#f0f0f0' }}>Professor</div>
+                <div style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#CC0000' }}>Admin</div>
+              </div>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  style={{
+                    background: 'none',
+                    border: '1px solid #2a2a2a',
+                    color: '#888888',
+                    fontSize: '10px',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    transition: 'all 0.2s',
+                    flexShrink: 0
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#f0f0f0';
+                    e.currentTarget.style.color = '#f0f0f0';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#2a2a2a';
+                    e.currentTarget.style.color = '#888888';
+                  }}
+                >Logout</button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </aside>
   );

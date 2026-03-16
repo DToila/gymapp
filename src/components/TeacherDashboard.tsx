@@ -675,7 +675,10 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       fontFamily: '"Barlow", sans-serif'
     }}>
       {/* SIDEBAR */}
-      <TeacherSidebar active="dashboard" requestsCount={pendingMembers.length} onLogout={onLogout} onExportTxt={handleExportDD} onExportExcel={handleExportDDExcel} />
+      <TeacherSidebar active="dashboard" requestsCount={pendingMembers.length} onLogout={onLogout} onExportTxt={handleExportDD} onExportExcel={handleExportDDExcel} onAddMember={() => {
+        setEnrollmentTimestamp(new Date().toISOString());
+        setShowAddModal(true);
+      }} />
 
       {/* MAIN CONTENT */}
       <div style={{
@@ -738,29 +741,6 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               }}
             >
               Quick Attendance
-            </button>
-            <button
-              onClick={() => {
-                setEnrollmentTimestamp(new Date().toISOString());
-                setShowAddModal(true);
-              }}
-              style={{
-                padding: '9px 16px',
-                fontFamily: '"Barlow Condensed", sans-serif',
-                fontSize: '11px',
-                fontWeight: 700,
-                letterSpacing: '3px',
-                textTransform: 'uppercase',
-                border: '1px solid #CC0000',
-                background: '#CC0000',
-                color: 'white',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
-            >
-              + Add Member
             </button>
           </div>
         </div>
