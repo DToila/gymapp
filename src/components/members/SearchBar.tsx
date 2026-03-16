@@ -29,15 +29,7 @@ export default function SearchBar({ value, onDebouncedChange, delay = 300 }: Sea
       value={localValue}
       onChange={(e) => setLocalValue(e.target.value)}
       placeholder="Search by name, email, phone..."
-      style={{
-        width: '100%',
-        background: '#121212',
-        border: '1px solid #2a2a2a',
-        color: '#f0f0f0',
-        padding: '12px 14px',
-        fontSize: '14px',
-        outline: 'none'
-      }}
+      className="w-full rounded-full border border-[#252525] bg-[#0f0f0f] px-5 py-3 text-sm text-zinc-200 shadow-[0_6px_16px_rgba(0,0,0,0.25)] placeholder:text-zinc-500 focus:border-[#333] focus:outline-none"
     />
   );
 }

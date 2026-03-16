@@ -334,17 +334,28 @@ export default function MembersPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0b0b0b 0%, #101010 100%)', color: '#f0f0f0', display: 'flex' }}>
       <TeacherSidebar active="members" requestsCount={filteredRequests.length} onAddMember={() => setShowAddModal(true)} />
       <div style={{ flex: 1, padding: '26px' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '280px', maxWidth: '520px' }}>
+            <SearchBar value={search} onDebouncedChange={setSearch} delay={300} />
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <button style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid #252525', background: '#141414', color: '#d4d4d4', cursor: 'pointer' }}>◌</button>
+            <button style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid #252525', background: '#141414', color: '#d4d4d4', cursor: 'pointer' }}>🔔</button>
+            <button style={{ width: '38px', height: '38px', borderRadius: '999px', border: '1px solid #252525', background: '#141414', color: '#fff', cursor: 'pointer' }}>P</button>
+          </div>
+        </div>
+
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '30px', letterSpacing: '2px', fontFamily: '"Barlow Condensed", sans-serif' }}>Members</h1>
-            <div style={{ color: '#868686', fontSize: '12px', marginTop: '4px' }}>Student management | BJJ/Gym</div>
+            <h1 style={{ margin: 0, fontSize: '42px', lineHeight: 1, fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700 }}>Members</h1>
+            <div style={{ color: '#8a8a8a', fontSize: '22px', marginTop: '6px' }}>Student Management | BJJ/Gym</div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => setShowAddModal(true)} style={{ padding: '10px 12px', border: '1px solid #CC0000', background: '#CC0000', color: '#fff', cursor: 'pointer', fontSize: '12px', letterSpacing: '1px' }}>
+            <button onClick={() => setShowAddModal(true)} style={{ padding: '10px 16px', borderRadius: '10px', border: '1px solid #CC0000', background: '#CC0000', color: '#fff', cursor: 'pointer', fontSize: '12px', letterSpacing: '1px', boxShadow: '0 8px 16px rgba(204,0,0,0.25)' }}>
               + Add member
             </button>
             <RowActionsMenu
@@ -357,13 +368,9 @@ export default function MembersPage() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '12px' }}>
-          <SearchBar value={search} onDebouncedChange={setSearch} delay={300} />
-        </div>
-
         <MembersTabs activeTab={activeTab} onChange={setActiveTab} />
 
-        <div style={{ marginBottom: '12px' }}>
+        <div style={{ marginBottom: '14px' }}>
           <QuickViewsDropdown value={quickView} onChange={setQuickView} />
         </div>
 

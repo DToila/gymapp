@@ -15,23 +15,18 @@ const tabs: Array<{ key: MembersTab; label: string }> = [
 
 export default function MembersTabs({ activeTab, onChange }: MembersTabsProps) {
   return (
-    <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+    <div className="mb-4 flex flex-wrap items-center gap-2">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.key;
         return (
           <button
             key={tab.key}
             onClick={() => onChange(tab.key)}
-            style={{
-              padding: '8px 14px',
-              border: isActive ? '1px solid #CC0000' : '1px solid #2a2a2a',
-              background: isActive ? 'rgba(204,0,0,0.16)' : '#101010',
-              color: isActive ? '#f0f0f0' : '#9a9a9a',
-              fontSize: '12px',
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
-              cursor: 'pointer'
-            }}
+            className={`rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+              isActive
+                ? 'border border-[#c81d25] bg-[rgba(200,29,37,0.18)] text-zinc-100 shadow-[0_0_0_1px_rgba(200,29,37,0.25)]'
+                : 'border border-[#252525] bg-[#141414] text-zinc-400 hover:bg-[#191919] hover:text-zinc-200'
+            }`}
           >
             {tab.label}
           </button>

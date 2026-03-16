@@ -13,19 +13,22 @@ interface KidsFiltersBarProps {
 }
 
 const chipStyle = (active: boolean): React.CSSProperties => ({
-  padding: '6px 10px',
+  padding: '8px 12px',
   border: active ? '1px solid #CC0000' : '1px solid #2a2a2a',
-  background: active ? 'rgba(204,0,0,0.14)' : '#101010',
+  borderRadius: '12px',
+  background: active ? 'rgba(204,0,0,0.18)' : '#151515',
   color: active ? '#f0f0f0' : '#9a9a9a',
-  fontSize: '11px',
+  fontSize: '12px',
+  fontWeight: 600,
   cursor: 'pointer'
 });
 
 const selectStyle: React.CSSProperties = {
-  background: '#121212',
+  background: '#151515',
   color: '#f0f0f0',
   border: '1px solid #2a2a2a',
-  padding: '7px 10px',
+  borderRadius: '10px',
+  padding: '8px 12px',
   fontSize: '12px'
 };
 

@@ -9,18 +9,12 @@ interface QuickViewsDropdownProps {
 
 export default function QuickViewsDropdown({ value, onChange }: QuickViewsDropdownProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <span style={{ color: '#888888', fontSize: '12px' }}>View</span>
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-zinc-500">View</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as QuickView)}
-        style={{
-          background: '#121212',
-          color: '#f0f0f0',
-          border: '1px solid #2a2a2a',
-          padding: '8px 10px',
-          fontSize: '12px'
-        }}
+        className="rounded-lg border border-[#252525] bg-[#151515] px-3 py-2 text-xs text-zinc-100"
       >
         <option value="recent">Recent</option>
         <option value="unpaid">Unpaid / To pay</option>
