@@ -165,15 +165,16 @@ export default function MembersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [raw, behaviorEvents] = await Promise.all([
-        getMembers(),
-        (() => {
-          const to = new Date();
-          const from = new Date(to);
-          from.setDate(from.getDate() - 29);
-          return getKidBehaviorEvents({ fromDateKey: toDateKey(from), toDateKey: toDateKey(to) });
-        })(),
-      ]);
+      const raw = await getMembers();
+      let behaviorEvents: Awaited<ReturnType<typeof getKidBehaviorEvents>> = [];
+      try {
+        const to = new Date();
+        const from = new Date(to);
+        from.setDate(from.getDate() - 29);
+        behaviorEvents = await getKidBehaviorEvents({ fromDateKey: toDateKey(from), toDateKey: toDateKey(to) });
+      } catch (error) {
+        console.error('Error loading 30-day kid behavior events for members page:', error);
+      }
       const mapped = raw.map(mapDbMember);
 
       const behaviorByKid = new Map<string, { hasBad: boolean; hasGood: boolean }>();
