@@ -6,6 +6,7 @@ import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import {
   ATTENDANCE_UPDATED_EVENT,
+  BEHAVIOR_UPDATED_EVENT,
   readBehaviorEvents,
   readAttendanceByDate,
   setMemberAttendanceForDate,
@@ -246,6 +247,17 @@ export default function AttendancePage() {
       }));
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleBehaviorUpdated = () => {
+      loadBehaviorForDate(selectedDate);
+    };
+
+    window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
+    return () => window.removeEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
+  }, [selectedDate, loadBehaviorForDate]);
 
   const loadAttendanceForDate = useCallback(async (dateKey: string) => {
     try {

@@ -5,8 +5,12 @@ import { Member, calculateMonthlyFee, getBeltOptions, getAgeFromDateOfBirth } fr
 import { getAttendanceForMember, getNotesForMember, createNote, setAttendance, getKidBehaviorEvents, upsertKidBehavior } from "../../lib/database";
 import {
   ATTENDANCE_UPDATED_EVENT,
+  BEHAVIOR_UPDATED_EVENT,
+  readBehaviorEvents,
   readAttendanceByDate,
   setMemberAttendanceForDate,
+  upsertBehaviorEvent,
+  writeBehaviorEvents,
   writeAttendanceByDate,
   toDateKey,
 } from "@/lib/attendanceState";
@@ -134,22 +138,25 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           const endOfYear = new Date(today.getFullYear(), 11, 31);
           const startKey = toDateKey(startOfYear);
           const endKey = toDateKey(endOfYear);
-          
-          console.log('[MemberProfile] Loading kid behavior for range:', { startKey, endKey, memberId: member.id });
-          
+
           const events = await getKidBehaviorEvents({ fromDateKey: startKey, toDateKey: endKey });
-          console.log('[MemberProfile] Loaded behavior events:', events);
-          
           const behaviorMapLocal: { [date: string]: BehaviorValue } = {};
+          readBehaviorEvents()
+            .filter((event) => event.kidId === member.id)
+            .forEach((event) => {
+              behaviorMapLocal[event.dateKey] = event.value;
+            });
+
           events.filter(e => e.kid_id === member.id).forEach(event => {
             behaviorMapLocal[event.date] = event.value;
           });
-          console.log('[MemberProfile] Behavior map for kid:', behaviorMapLocal);
-          
+
           setBehaviorMap(behaviorMapLocal);
         } catch (error) {
           console.error('Error loading kid behavior events:', error);
         }
+      } else {
+        setBehaviorMap({});
       }
 
       // Load notes
@@ -183,6 +190,27 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     window.addEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
     return () => window.removeEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
   }, [member.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isKid) return;
+
+    const handleBehaviorUpdated = () => {
+      const nextMap: { [date: string]: BehaviorValue } = {};
+      readBehaviorEvents()
+        .filter((event) => event.kidId === member.id)
+        .forEach((event) => {
+          nextMap[event.dateKey] = event.value;
+        });
+
+      setBehaviorMap((prev) => ({
+        ...prev,
+        ...nextMap,
+      }));
+    };
+
+    window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
+    return () => window.removeEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
+  }, [isKid, member.id]);
 
 
 
@@ -224,27 +252,21 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       event.stopPropagation();
       event.preventDefault();
     }
-    
-    console.log('[MemberProfile] Behavior selected:', { date, behavior, memberId: member.id });
-    
+
     try {
-      await upsertKidBehavior({ kidId: member.id, dateKey: date, value: behavior });
-      console.log('[MemberProfile] Behavior saved to Supabase');
-      
-      setBehaviorMap(prev => {
-        const next = {
-          ...prev,
-          [date]: behavior
-        };
-        console.log('[MemberProfile] Updated behaviorMap:', next);
-        return next;
+      const nextEvents = upsertBehaviorEvent(readBehaviorEvents(), {
+        kidId: member.id,
+        dateKey: date,
+        value: behavior,
       });
-      
-      // Dispatch event to sync with attendance page
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event(ATTENDANCE_UPDATED_EVENT));
-      }
-      
+      writeBehaviorEvents(nextEvents);
+
+      setBehaviorMap(prev => ({
+        ...prev,
+        [date]: behavior
+      }));
+
+      await upsertKidBehavior({ kidId: member.id, dateKey: date, value: behavior });
       setEmojiPickerDate(null);
     } catch (error) {
       console.error('Error setting behavior:', error);
@@ -662,11 +684,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   const attended = attendanceMap[dateStr];
                   const dayBehavior = behaviorMap[dateStr];
                   const isToday = dateStr === new Date().toISOString().split('T')[0];
-
-                  // Debug log for attended days
-                  if (attended) {
-                    console.log('[Calendar] Day rendering:', { dateStr, attended, dayBehavior, isKid, age });
-                  }
 
                   // Determine square color based on behavior (for kids) or attendance (for adults)
                   let squareClass = '';
