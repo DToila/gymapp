@@ -18,6 +18,8 @@ interface AttendancePerson {
 
 const weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const monthLabels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const ATTENDANCE_STORAGE_KEY = 'attendance_by_date';
+const KID_BEHAVIOR_STORAGE_KEY = 'attendance_kid_behavior_by_date';
 
 const behaviorOptions: Array<{ value: Exclude<BehaviorValue, null>; emoji: string; label: string }> = [
   { value: 'GOOD', emoji: '😀', label: 'Good' },
@@ -106,6 +108,36 @@ export default function AttendancePage() {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('attendance_active_tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const persistedAttendance = window.localStorage.getItem(ATTENDANCE_STORAGE_KEY);
+      if (persistedAttendance) {
+        const parsed = JSON.parse(persistedAttendance) as Record<string, string[]>;
+        setAttendanceByDate(parsed);
+      }
+
+      const persistedBehavior = window.localStorage.getItem(KID_BEHAVIOR_STORAGE_KEY);
+      if (persistedBehavior) {
+        const parsed = JSON.parse(persistedBehavior) as Record<string, Record<string, BehaviorValue>>;
+        setKidBehaviorByDate(parsed);
+      }
+    } catch (error) {
+      console.error('Error restoring attendance state from localStorage:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(attendanceByDate));
+  }, [attendanceByDate]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(KID_BEHAVIOR_STORAGE_KEY, JSON.stringify(kidBehaviorByDate));
+  }, [kidBehaviorByDate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
