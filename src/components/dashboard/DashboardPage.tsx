@@ -93,7 +93,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
       const fromDateKey = toDateKey(fromDate);
 
       const events = await getKidBehaviorEvents({ fromDateKey, toDateKey: toKey });
-      console.log('[Dashboard] kid behavior fetch', {
+      console.log('dashboard events', {
         mode,
         fromDateKey,
         toDateKey: toKey,

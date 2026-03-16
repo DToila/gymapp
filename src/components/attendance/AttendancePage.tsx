@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { deleteKidBehaviorForDate, getKidBehaviorEvents, getMembers, upsertKidBehavior } from '../../../lib/database';
+import { getKidBehaviorEvents, getMembers, upsertKidBehavior } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import {
@@ -237,17 +237,6 @@ export default function AttendancePage() {
       current.delete(id);
       return { ...prev, [selectedDate]: Array.from(current) };
     });
-
-    setKidBehaviorByDate((prev) => {
-      const dateMap = { ...(prev[selectedDate] || {}) };
-      delete dateMap[id];
-      return { ...prev, [selectedDate]: dateMap };
-    });
-
-    deleteKidBehaviorForDate({ kidId: id, dateKey: selectedDate }).catch((error) => {
-      console.error('Error deleting kid behavior on uncheck:', error);
-      loadBehaviorForDate(selectedDate);
-    });
   };
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {
@@ -261,13 +250,13 @@ export default function AttendancePage() {
       },
     }));
 
-    console.log('[Attendance] upsert behavior click', { kidId, dateKey, value });
+    console.log('emoji', { kidId, dateKey, value });
     upsertKidBehavior({ kidId, dateKey, value })
       .then((response) => {
-        console.log('[Attendance] upsert behavior response', response);
+        console.log('emoji upsert response', response);
       })
       .catch((error) => {
-        console.error('Error saving kid behavior:', error);
+        console.error('emoji upsert error', error);
         setKidBehaviorByDate((prev) => {
           const dateMap = { ...(prev[dateKey] ?? {}) };
           if (previous) dateMap[kidId] = previous;
