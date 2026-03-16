@@ -37,14 +37,7 @@ interface MemberProfileProps {
   onUpdate: (updatedMember: MemberDetail) => Promise<void> | void;
 }
 
-type MoodOption = "happy" | "neutral" | "sad";
 type BehaviorValue = 'GOOD' | 'NEUTRAL' | 'BAD' | null;
-
-const MOOD_ICONS: Record<MoodOption, string> = {
-  happy: "😊",
-  neutral: "😐",
-  sad: "☹️",
-};
 
 const BEHAVIOR_EMOJIS: Record<'GOOD' | 'NEUTRAL' | 'BAD', string> = {
   GOOD: "😀",
@@ -59,7 +52,6 @@ interface MemberDetail extends Member {
   monthlyFee?: number;
   familyDiscount?: boolean;
   attendance?: { [date: string]: boolean };
-  attendance_mood?: { [date: string]: MoodOption };
 }
 
 const createEditForm = (member: MemberDetail): MemberEditForm => ({
@@ -100,7 +92,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState<MemberEditForm>(() => createEditForm(member));
   const [attendanceMap, setAttendanceMap] = useState<{ [date: string]: boolean }>({});
-  const [attendanceMoodMap, setAttendanceMoodMap] = useState<{ [date: string]: MoodOption }>({});
   const [behaviorMap, setBehaviorMap] = useState<{ [date: string]: BehaviorValue }>({});
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [showPercentage, setShowPercentage] = useState<boolean>(true);
@@ -119,7 +110,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     const nextData = { ...member };
     setData(nextData);
     setEditForm(createEditForm(nextData));
-    setAttendanceMoodMap(nextData.attendance_mood || {});
     setIsEditing(false);
   }, [member]);
 
@@ -130,16 +120,10 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       // Load attendance
       const attendanceData = await getAttendanceForMember(member.id);
       const attendanceMapLocal: { [date: string]: boolean } = {};
-      const moodMapLocal: { [date: string]: MoodOption } = {};
       attendanceData.forEach(att => {
         attendanceMapLocal[att.date] = att.attended;
-        const mood = (att as any).mood as MoodOption | undefined;
-        if (mood) {
-          moodMapLocal[att.date] = mood;
-        }
       });
       setAttendanceMap(mergeAttendanceMapForMember(member.id, attendanceMapLocal, readAttendanceByDate()));
-      setAttendanceMoodMap((prev) => ({ ...prev, ...moodMapLocal }));
 
       // Load kid behavior if this is a kid
       if (isKid) {
@@ -241,13 +225,12 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     }
   };
 
-  const handleCalendarDayClick = (date: string, event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCalendarDayClick = (date: string) => {
     const attended = attendanceMap[date];
     
     if (isKid && attended) {
       // For kids, if day is already marked, show emoji picker
-      openEmojiPicker(date, event);
-      event.stopPropagation();
+      setEmojiPickerDate(date);
     } else {
       // Otherwise toggle attendance
       toggleDate(date);
@@ -265,6 +248,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    
+    return undefined;
   }, [emojiPickerDate]);
 
   const year = new Date().getFullYear();
@@ -646,7 +631,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   const day = d + 1;
                   const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                   const attended = attendanceMap[dateStr];
-                  const dayMood = attendanceMoodMap[dateStr];
                   const dayBehavior = behaviorMap[dateStr];
                   const isToday = dateStr === new Date().toISOString().split('T')[0];
 
@@ -674,8 +658,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   return (
                     <div key={dateStr} className="relative">
                       <button
-                        onClick={(e) => handleCalendarDayClick(dateStr, e)}
-                        onMouseEnter={(e) => {
+                        onClick={() => handleCalendarDayClick(dateStr)}
+                        onMouseEnter={() => {
                           if (isKid && attended) {
                             setEmojiPickerDate(dateStr);
                           }
