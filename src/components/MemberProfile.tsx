@@ -91,6 +91,8 @@ function mergeAttendanceMapForMember(memberId: string, baseMap: { [date: string]
   return nextMap;
 }
 
+const normalizeDateKey = (value: string): string => value.split('T')[0];
+
 export default function MemberProfile({ member, onBack, onUpdate }: MemberProfileProps) {
   const [data, setData] = useState<MemberDetail>({ ...member });
   const [isEditing, setIsEditing] = useState(false);
@@ -119,6 +121,40 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     setIsEditing(false);
   }, [member]);
 
+  const readLocalBehaviorMap = useCallback((): { [date: string]: BehaviorValue } => {
+    const nextMap: { [date: string]: BehaviorValue } = {};
+
+    readBehaviorEvents()
+      .filter((event) => event.kidId === member.id)
+      .forEach((event) => {
+        nextMap[event.dateKey] = event.value;
+      });
+
+    return nextMap;
+  }, [member.id]);
+
+  const loadKidBehaviorMap = useCallback(async (): Promise<{ [date: string]: BehaviorValue }> => {
+    const today = new Date();
+    const startOfYear = new Date(today.getFullYear(), 0, 1);
+    const endOfYear = new Date(today.getFullYear(), 11, 31);
+    const startKey = toDateKey(startOfYear);
+    const endKey = toDateKey(endOfYear);
+
+    const events = await getKidBehaviorEvents({ fromDateKey: startKey, toDateKey: endKey });
+    const nextMap: { [date: string]: BehaviorValue } = {
+      ...readLocalBehaviorMap(),
+    };
+
+    events
+      .filter((event) => event.kid_id === member.id)
+      .forEach((event) => {
+        const normalizedDateKey = normalizeDateKey(event.date);
+        nextMap[normalizedDateKey] = event.value;
+      });
+
+    return nextMap;
+  }, [member.id, readLocalBehaviorMap]);
+
   const loadMemberData = useCallback(async () => {
     try {
       setLoading(true);
@@ -127,34 +163,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       const attendanceData = await getAttendanceForMember(member.id);
       const attendanceMapLocal: { [date: string]: boolean } = {};
       attendanceData.forEach(att => {
-        attendanceMapLocal[att.date] = att.attended;
+        attendanceMapLocal[normalizeDateKey(att.date)] = att.attended;
       });
       setAttendanceMap(mergeAttendanceMapForMember(member.id, attendanceMapLocal, readAttendanceByDate()));
 
       // Load kid behavior if this is a kid
       if (isKid) {
         try {
-          const today = new Date();
-          const startOfYear = new Date(today.getFullYear(), 0, 1);
-          const endOfYear = new Date(today.getFullYear(), 11, 31);
-          const startKey = toDateKey(startOfYear);
-          const endKey = toDateKey(endOfYear);
-
-          const events = await getKidBehaviorEvents({ fromDateKey: startKey, toDateKey: endKey });
-          const behaviorMapLocal: { [date: string]: BehaviorValue } = {};
-          readBehaviorEvents()
-            .filter((event) => event.kidId === member.id)
-            .forEach((event) => {
-              behaviorMapLocal[event.dateKey] = event.value;
-            });
-
-          events.filter(e => e.kid_id === member.id).forEach(event => {
-            behaviorMapLocal[event.date] = event.value;
-          });
-
-          setBehaviorMap(behaviorMapLocal);
+          setBehaviorMap(await loadKidBehaviorMap());
         } catch (error) {
           console.error('Error loading kid behavior events:', error);
+          setBehaviorMap(readLocalBehaviorMap());
         }
       } else {
         setBehaviorMap({});
@@ -175,7 +194,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     } finally {
       setLoading(false);
     }
-  }, [member.id, isKid]);
+  }, [isKid, loadKidBehaviorMap, member.id, readLocalBehaviorMap]);
 
   useEffect(() => {
     loadMemberData();
@@ -196,19 +215,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     if (typeof window === 'undefined' || !isKid) return;
 
     const handleBehaviorUpdated = () => {
-      const nextMap: { [date: string]: BehaviorValue } = {};
-      readBehaviorEvents()
-        .filter((event) => event.kidId === member.id)
-        .forEach((event) => {
-          nextMap[event.dateKey] = event.value;
-        });
+      const localMap = readLocalBehaviorMap();
+      setBehaviorMap(localMap);
 
-      setBehaviorMap(nextMap);
+      loadKidBehaviorMap()
+        .then((nextMap) => setBehaviorMap(nextMap))
+        .catch(() => setBehaviorMap(localMap));
     };
 
     window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
     return () => window.removeEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
-  }, [isKid, member.id]);
+  }, [isKid, loadKidBehaviorMap, readLocalBehaviorMap]);
 
 
 
@@ -696,18 +713,18 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   let squareClass = '';
                   let shouldShowEmoji = false;
 
-                  if (isKid && attended) {
+                  if (isKid && dayBehavior) {
                     shouldShowEmoji = true;
                     if (dayBehavior === 'GOOD') {
                       squareClass = 'bg-green-600/40 border-green-500 text-green-400';
                     } else if (dayBehavior === 'BAD') {
                       squareClass = 'bg-red-600/40 border-red-500 text-red-400';
-                    } else if (dayBehavior === 'NEUTRAL') {
-                      squareClass = 'bg-zinc-600/40 border-zinc-500 text-zinc-400';
                     } else {
-                      // No behavior set yet
                       squareClass = 'bg-zinc-600/40 border-zinc-500 text-zinc-400';
                     }
+                  } else if (isKid && attended) {
+                    shouldShowEmoji = true;
+                    squareClass = 'bg-zinc-600/40 border-zinc-500 text-zinc-400';
                   } else if (!isKid && attended) {
                     squareClass = 'bg-white/20 border-white/40 text-white';
                   } else if (isToday) {
