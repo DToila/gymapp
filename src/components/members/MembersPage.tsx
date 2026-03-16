@@ -393,49 +393,393 @@ export default function MembersPage() {
       </div>
 
       {showAddModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <form onSubmit={handleAddMember} style={{ width: '100%', maxWidth: '560px', maxHeight: '88vh', overflowY: 'auto', background: '#111111', border: '1px solid #2a2a2a', padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', letterSpacing: '2px' }}>Add New Member</div>
-              <button type="button" onClick={() => setShowAddModal(false)} style={{ background: 'transparent', border: '1px solid #2a2a2a', color: '#999', cursor: 'pointer', padding: '4px 8px' }}>✕</button>
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50
+        }}>
+          <div style={{
+            background: '#111111',
+            border: '1px solid #2a2a2a',
+            padding: '32px',
+            maxWidth: '400px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginBottom: '24px'
+            }}>
+              <h3 style={{
+                fontFamily: '"Barlow Condensed", sans-serif',
+                fontSize: '20px',
+                fontWeight: 900,
+                color: '#f0f0f0',
+                margin: 0
+              }}>
+                ADD NEW MEMBER
+              </h3>
+              <div style={{
+                fontSize: '10px',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                color: '#555555',
+                fontFamily: '"Barlow Condensed", sans-serif',
+                textAlign: 'right',
+                marginTop: '2px'
+              }}>
+                Enrollment: {new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-')}
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <input placeholder="Name" value={newMember.name} onChange={(e) => setNewMember((p) => ({ ...p, name: e.target.value }))} style={{ gridColumn: '1 / -1', padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }} required />
-              <input placeholder="Email" value={newMember.email} onChange={(e) => setNewMember((p) => ({ ...p, email: e.target.value }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }} />
-              <input placeholder="Phone" value={newMember.phone} onChange={(e) => setNewMember((p) => ({ ...p, phone: e.target.value }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }} />
-              <input placeholder="Date of birth (YYYY-MM-DD)" value={newMember.date_of_birth} onChange={(e) => setNewMember((p) => ({ ...p, date_of_birth: e.target.value }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }} />
-              <input placeholder="Student Ref" value={newMember.ref} onChange={(e) => setNewMember((p) => ({ ...p, ref: e.target.value }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }} />
-              <input placeholder="IBAN" value={newMember.iban} onChange={(e) => setNewMember((p) => ({ ...p, iban: e.target.value }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }} />
-              <input placeholder="NIF" value={newMember.nif} onChange={(e) => setNewMember((p) => ({ ...p, nif: e.target.value }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }} />
-              <input type="number" placeholder="Fee" value={newMember.fee} onChange={(e) => setNewMember((p) => ({ ...p, fee: Number(e.target.value || 0) }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }} />
-              <select value={newMember.belt_level} onChange={(e) => setNewMember((p) => ({ ...p, belt_level: e.target.value }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }}>
-                <option>White Belt</option>
-                <option>Grey Belt</option>
-                <option>Yellow Belt</option>
-                <option>Orange Belt</option>
-                <option>Green Belt</option>
-                <option>Blue Belt</option>
-                <option>Purple Belt</option>
-                <option>Brown Belt</option>
-                <option>Black Belt</option>
-              </select>
-              <select value={newMember.status} onChange={(e) => setNewMember((p) => ({ ...p, status: e.target.value as any }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }}>
-                <option value="Active">Active</option>
-                <option value="Paused">Paused</option>
-                <option value="Unpaid">Unpaid</option>
-              </select>
-              <select value={newMember.payment_type} onChange={(e) => setNewMember((p) => ({ ...p, payment_type: e.target.value as any }))} style={{ padding: '10px', background: '#0d0d0d', border: '1px solid #2a2a2a', color: '#f0f0f0' }}>
-                <option value="Direct Debit">Direct Debit</option>
-                <option value="Cash">Cash</option>
-              </select>
-            </div>
+            <form onSubmit={handleAddMember} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={newMember.name}
+                  onChange={(e) => setNewMember((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Member name"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                  required
+                />
+              </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '14px' }}>
-              <button type="button" onClick={() => setShowAddModal(false)} style={{ padding: '10px 12px', border: '1px solid #2a2a2a', background: 'transparent', color: '#bbb', cursor: 'pointer' }}>Cancel</button>
-              <button type="submit" disabled={isSubmittingMember} style={{ padding: '10px 12px', border: '1px solid #CC0000', background: '#CC0000', color: '#fff', cursor: 'pointer' }}>{isSubmittingMember ? 'Saving...' : 'Save member'}</button>
-            </div>
-          </form>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Student Number
+                </label>
+                <input
+                  type="text"
+                  value={newMember.ref}
+                  onChange={(e) => setNewMember((p) => ({ ...p, ref: e.target.value }))}
+                  placeholder="Student reference"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  IBAN
+                </label>
+                <input
+                  type="text"
+                  value={newMember.iban}
+                  onChange={(e) => setNewMember((p) => ({ ...p, iban: e.target.value }))}
+                  placeholder="PT50 0002 0123 1234 5678 9015"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  NIF
+                </label>
+                <input
+                  type="text"
+                  value={newMember.nif}
+                  onChange={(e) => setNewMember((p) => ({ ...p, nif: e.target.value }))}
+                  placeholder="Portuguese tax ID"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={newMember.phone}
+                  onChange={(e) => setNewMember((p) => ({ ...p, phone: e.target.value }))}
+                  placeholder="(555) 123-4567"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={newMember.date_of_birth}
+                  onChange={(e) => setNewMember((p) => ({ ...p, date_of_birth: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newMember.email}
+                  onChange={(e) => setNewMember((p) => ({ ...p, email: e.target.value }))}
+                  placeholder="member@example.com"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Payment Type
+                </label>
+                <select
+                  value={newMember.payment_type}
+                  onChange={(e) => setNewMember((p) => ({ ...p, payment_type: e.target.value as 'Direct Debit' | 'Cash' }))}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                >
+                  <option value="Direct Debit">Direct Debit</option>
+                  <option value="Cash">Cash</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Monthly Fee (€)
+                </label>
+                <input
+                  type="number"
+                  value={newMember.fee}
+                  onChange={(e) => setNewMember((p) => ({ ...p, fee: Number(e.target.value || 0) }))}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Belt Level
+                </label>
+                <select
+                  value={newMember.belt_level}
+                  onChange={(e) => setNewMember((p) => ({ ...p, belt_level: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                >
+                  <option>White Belt</option>
+                  <option>Grey Belt</option>
+                  <option>Yellow Belt</option>
+                  <option>Orange Belt</option>
+                  <option>Green Belt</option>
+                  <option>Blue Belt</option>
+                  <option>Purple Belt</option>
+                  <option>Brown Belt</option>
+                  <option>Black Belt</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                  Status
+                </label>
+                <select
+                  value={newMember.status}
+                  onChange={(e) => setNewMember((p) => ({ ...p, status: e.target.value as 'Active' | 'Paused' | 'Unpaid' }))}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f0f0f0',
+                    fontSize: '13px',
+                    fontFamily: '"Barlow", sans-serif'
+                  }}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Paused">Paused</option>
+                  <option value="Unpaid">Unpaid</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="familyDiscountMembers"
+                  type="checkbox"
+                  checked={newMember.family_discount}
+                  onChange={(e) => setNewMember((p) => ({ ...p, family_discount: e.target.checked }))}
+                  style={{ width: '16px', height: '16px', accentColor: '#CC0000' }}
+                />
+                <label htmlFor="familyDiscountMembers" style={{ fontSize: '12px', color: '#888888' }}>
+                  Family discount
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="customFeeMembers"
+                  type="checkbox"
+                  checked={newMember.custom_fee}
+                  onChange={(e) => setNewMember((p) => ({ ...p, custom_fee: e.target.checked }))}
+                  style={{ width: '16px', height: '16px', accentColor: '#CC0000' }}
+                />
+                <label htmlFor="customFeeMembers" style={{ fontSize: '12px', color: '#888888' }}>
+                  Custom fee
+                </label>
+              </div>
+
+              {newMember.custom_fee && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
+                    Custom Fee Amount (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newMember.custom_fee_amount}
+                    onChange={(e) => setNewMember((p) => ({ ...p, custom_fee_amount: Number(e.target.value || 0) }))}
+                    placeholder="Enter custom fee amount"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: '#1a1a1a',
+                      border: '1px solid #2a2a2a',
+                      color: '#f0f0f0',
+                      fontSize: '13px',
+                      fontFamily: '"Barlow", sans-serif'
+                    }}
+                  />
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: 'transparent',
+                    border: '1px solid #2a2a2a',
+                    color: '#888888',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#f0f0f0';
+                    e.currentTarget.style.color = '#f0f0f0';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#2a2a2a';
+                    e.currentTarget.style.color = '#888888';
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingMember}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: '#CC0000',
+                    border: '1px solid #CC0000',
+                    color: 'white',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    opacity: isSubmittingMember ? 0.7 : 1
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
+                >
+                  {isSubmittingMember ? 'Saving...' : 'Save member'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
