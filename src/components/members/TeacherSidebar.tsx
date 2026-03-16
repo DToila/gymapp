@@ -16,17 +16,31 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const exportTriggerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+      if (
+        exportRef.current && !exportRef.current.contains(e.target as Node) &&
+        exportTriggerRef.current && !exportTriggerRef.current.contains(e.target as Node)
+      ) {
         setShowExportDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleExportToggle = () => {
+    if (!onExportTxt && !onExportExcel) return;
+    if (!showExportDropdown && exportTriggerRef.current) {
+      const rect = exportTriggerRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.top, left: rect.right + 4 });
+    }
+    setShowExportDropdown(v => !v);
+  };
 
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', onClick: () => router.push('/dashboard') },
@@ -88,7 +102,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
         {navItems.map((item) => {
           const isActive = active === item.key;
           return (
@@ -145,9 +159,9 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
         })}
 
         {/* Export DD dropdown item — always last in nav */}
-        <div ref={exportRef} style={{ position: 'relative' }}>
+        <div ref={exportTriggerRef}>
           <div
-            onClick={() => (onExportTxt || onExportExcel) && setShowExportDropdown(v => !v)}
+            onClick={handleExportToggle}
             style={{
               padding: collapsed ? '10px 12px' : '10px 20px',
               display: 'flex',
@@ -155,7 +169,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
               justifyContent: collapsed ? 'center' : 'space-between',
               gap: '12px',
               fontSize: '13px',
-              color: '#888888',
+              color: showExportDropdown ? '#f0f0f0' : '#888888',
               cursor: (onExportTxt || onExportExcel) ? 'pointer' : 'default',
               borderLeft: '2px solid transparent',
               background: showExportDropdown ? '#1a1a1a' : 'transparent',
@@ -169,48 +183,54 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
               }
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = '#888888';
-              if (!showExportDropdown) (e.currentTarget as HTMLElement).style.background = 'transparent';
+              if (!showExportDropdown) {
+                (e.currentTarget as HTMLElement).style.color = '#888888';
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }
             }}
           >
             <span>{collapsed ? 'E' : 'Export DD'}</span>
-            {!collapsed && <span style={{ fontSize: '10px', color: '#555' }}>{showExportDropdown ? '▲' : '▼'}</span>}
+            {!collapsed && <span style={{ fontSize: '10px', color: '#666' }}>{showExportDropdown ? '▲' : '▼'}</span>}
           </div>
+        </div>
 
-          {showExportDropdown && !collapsed && (
-            <div style={{
-              position: 'absolute',
-              left: '100%',
-              bottom: '0',
+        {/* Fixed-position dropdown — escapes overflow:hidden */}
+        {showExportDropdown && !collapsed && dropdownPos && (
+          <div
+            ref={exportRef}
+            style={{
+              position: 'fixed',
+              top: dropdownPos.top,
+              left: dropdownPos.left,
               background: '#1a1a1a',
               border: '1px solid #2a2a2a',
-              minWidth: '130px',
-              zIndex: 100,
-              boxShadow: '4px 4px 12px rgba(0,0,0,0.6)'
-            }}>
-              {onExportTxt && (
-                <div
-                  onClick={() => { onExportTxt(); setShowExportDropdown(false); }}
-                  style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer', borderBottom: '1px solid #2a2a2a', transition: 'background 0.15s' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
-                >
-                  Export TXT
-                </div>
-              )}
-              {onExportExcel && (
-                <div
-                  onClick={() => { onExportExcel(); setShowExportDropdown(false); }}
-                  style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer', transition: 'background 0.15s' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
-                >
-                  Export Excel
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+              minWidth: '140px',
+              zIndex: 9999,
+              boxShadow: '4px 4px 16px rgba(0,0,0,0.7)'
+            }}
+          >
+            {onExportTxt && (
+              <div
+                onClick={() => { onExportTxt(); setShowExportDropdown(false); }}
+                style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer', borderBottom: '1px solid #2a2a2a' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
+              >
+                Export TXT
+              </div>
+            )}
+            {onExportExcel && (
+              <div
+                onClick={() => { onExportExcel(); setShowExportDropdown(false); }}
+                style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
+              >
+                Export Excel
+              </div>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* Footer */}
