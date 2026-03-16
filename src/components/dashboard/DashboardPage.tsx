@@ -1,7 +1,6 @@
 "use client";
 
 import { kpis, notes, unpaidPayments, kidsNeedsAttention, kidsGreatBehavior, attendanceRecent, requests, birthdays } from './mockData';
-import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -10,13 +9,14 @@ import KidsBehaviorPanel from './KidsBehaviorPanel';
 import AttendancePanel from './AttendancePanel';
 import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
+import TeacherSidebar from '@/components/members/TeacherSidebar';
 
 export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-zinc-100">
-      <Sidebar active="dashboard" onLogout={onLogout} />
+    <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
+      <TeacherSidebar active="dashboard" requestsCount={requests.length} onLogout={onLogout} />
 
-      <main className="ml-[260px] p-6 lg:p-8">
+      <main className="flex-1 p-6 lg:p-8">
         <Topbar />
 
         <header className="mb-6">

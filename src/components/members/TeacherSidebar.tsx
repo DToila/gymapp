@@ -16,7 +16,6 @@ interface TeacherSidebarProps {
 
 export default function TeacherSidebar({ active, requestsCount = 0, onLogout, onExportTxt, onExportExcel, onAddMember }: TeacherSidebarProps) {
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const exportTriggerRef = useRef<HTMLDivElement>(null);
@@ -78,187 +77,86 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
       onAddMember();
       return;
     }
-    router.push(active === 'members' ? '/members?openAddMember=1' : '/dashboard?openAddMember=1');
+    router.push('/members?openAddMember=1');
   };
 
   const navItems = [
-    { key: 'dashboard', label: 'Dashboard', onClick: () => router.push('/dashboard') },
-    { key: 'members', label: 'Membros', onClick: () => router.push('/members') },
-    { key: 'attendance', label: 'Presenças', onClick: () => {} },
-    { key: 'settings', label: 'Definições', onClick: () => {} }
+    { key: 'dashboard', label: 'Dashboard', icon: '◔', onClick: () => router.push('/dashboard') },
+    { key: 'members', label: 'Membros', icon: '◌', onClick: () => router.push('/members') },
+    { key: 'attendance', label: 'Presenças', icon: '◍', onClick: () => {} },
+    { key: 'payments', label: 'Pagamentos', icon: '▣', onClick: () => {} },
+    { key: 'requests', label: 'Pedidos', icon: '◎', onClick: () => {} },
+    { key: 'settings', label: 'Definições', icon: '☰', onClick: () => {} }
   ];
 
   return (
-    <aside style={{
-      width: collapsed ? '72px' : '248px',
-      minWidth: collapsed ? '72px' : '248px',
-      background: '#111111',
-      borderRight: '1px solid #2a2a2a',
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      position: 'sticky',
-      top: 0,
-      transition: 'width 0.2s, min-width 0.2s',
-      flexShrink: 0,
-      overflow: 'hidden'
-    }}>
-      {/* Header */}
-      <div style={{ padding: collapsed ? '14px 12px' : '22px 20px', borderBottom: '1px solid #2a2a2a' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'space-between', gap: '8px', marginBottom: collapsed ? 0 : '8px' }}>
-          <GBLogo size={collapsed ? 32 : 48} />
-          {!collapsed && (
-            <button
-              onClick={() => setCollapsed(true)}
-              style={{ background: 'none', border: '1px solid #2a2a2a', color: '#888', width: '22px', height: '22px', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >‹</button>
-          )}
+    <aside className="sticky top-0 z-10 flex h-screen w-[260px] min-w-[260px] flex-col border-r border-[#222] bg-[#0d0d0d]">
+      <div className="border-b border-[#202020] px-5 py-5">
+        <div className="mb-2 flex items-center gap-3">
+          <GBLogo size={46} />
+          <div>
+            <div className="text-sm font-extrabold tracking-[0.22em] text-zinc-100">GRACIE BARRA</div>
+            <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Carnaxide & Queijas / GymApp</div>
+          </div>
         </div>
-        {!collapsed && (
-          <>
-            <div style={{
-              fontFamily: '"Barlow Condensed", sans-serif',
-              fontSize: '13px',
-              fontWeight: 800,
-              letterSpacing: '3px',
-              textTransform: 'uppercase',
-              color: '#f0f0f0',
-              marginBottom: '4px'
-            }}>
-              Gracie Barra
-            </div>
-            <div style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#555555' }}>
-              Carnaxide & Queijas / GymApp
-            </div>
-          </>
-        )}
-        {collapsed && (
-          <button
-            onClick={() => setCollapsed(false)}
-            style={{ background: 'none', border: '1px solid #2a2a2a', color: '#888', width: '22px', height: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px auto 0' }}
-          >›</button>
-        )}
       </div>
 
-      {/* Nav */}
-      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'visible' }}>
+      <nav className="flex-1 overflow-visible px-3 py-4">
         {navItems.map((item) => {
-          const isActive = active === item.key;
+          const isActive = active === (item.key as any);
           return (
             <div
               key={item.key}
               onClick={item.onClick}
-              style={{
-                padding: collapsed ? '10px 12px' : '10px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: collapsed ? 'center' : 'space-between',
-                gap: '12px',
-                fontSize: '13px',
-                color: isActive ? '#f0f0f0' : '#888888',
-                cursor: 'pointer',
-                borderLeft: isActive ? '2px solid #CC0000' : '2px solid transparent',
-                background: isActive ? 'rgba(204,0,0,0.07)' : 'transparent',
-                transition: 'all 0.2s',
-                whiteSpace: 'nowrap'
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  (e.currentTarget as HTMLElement).style.color = '#f0f0f0';
-                  (e.currentTarget as HTMLElement).style.background = '#1a1a1a';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  (e.currentTarget as HTMLElement).style.color = '#888888';
-                  (e.currentTarget as HTMLElement).style.background = 'transparent';
-                }
-              }}
+              className={`mb-1 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
+                isActive
+                  ? 'border-l-2 border-[#c81d25] bg-[#2a1113] text-white'
+                  : 'text-zinc-400 hover:bg-[#161616] hover:text-zinc-200'
+              }`}
             >
-              <span>{collapsed ? item.label.charAt(0) : item.label}</span>
-              {!collapsed && item.key === 'dashboard' && requestsCount > 0 && (
-                <span style={{
-                  minWidth: '18px',
-                  height: '18px',
-                  padding: '0 5px',
-                  borderRadius: '9px',
-                  background: '#CC0000',
-                  color: '#ffffff',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+              <span className="flex items-center gap-2">
+                <span className="text-xs">{item.icon}</span>
+                <span>{item.label}</span>
+              </span>
+              {item.key === 'dashboard' && requestsCount > 0 ? (
+                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#c81d25] px-1.5 text-[10px] font-bold text-white">
                   {requestsCount}
                 </span>
-              )}
+              ) : null}
             </div>
           );
         })}
 
-        {/* Export DD dropdown item — always last in nav */}
         <div ref={exportTriggerRef}>
           <div
             onClick={handleExportToggle}
-            style={{
-              padding: collapsed ? '10px 12px' : '10px 20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: collapsed ? 'center' : 'space-between',
-              gap: '12px',
-              fontSize: '13px',
-              color: showExportDropdown ? '#f0f0f0' : '#888888',
-              cursor: 'pointer',
-              borderLeft: '2px solid transparent',
-              background: showExportDropdown ? '#1a1a1a' : 'transparent',
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = '#f0f0f0';
-              if (!showExportDropdown) (e.currentTarget as HTMLElement).style.background = '#1a1a1a';
-            }}
-            onMouseLeave={(e) => {
-              if (!showExportDropdown) {
-                (e.currentTarget as HTMLElement).style.color = '#888888';
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
-              }
-            }}
+            className={`mb-1 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
+              showExportDropdown ? 'bg-[#161616] text-zinc-100' : 'text-zinc-400 hover:bg-[#161616] hover:text-zinc-200'
+            }`}
           >
-            <span>{collapsed ? 'E' : 'Export DD'}</span>
-            {!collapsed && <span style={{ fontSize: '10px', color: '#666' }}>{showExportDropdown ? '▲' : '▼'}</span>}
+            <span className="flex items-center gap-2">
+              <span className="text-xs">⬇</span>
+              <span>Export DD</span>
+            </span>
+            <span className="text-[10px] text-zinc-500">{showExportDropdown ? '▲' : '▼'}</span>
           </div>
         </div>
 
-        {/* Fixed-position dropdown — escapes overflow:hidden */}
-        {showExportDropdown && !collapsed && dropdownPos && (
+        {showExportDropdown && dropdownPos && (
           <div
             ref={exportRef}
-            style={{
-              position: 'fixed',
-              top: dropdownPos.top,
-              left: dropdownPos.left,
-              background: '#1a1a1a',
-              border: '1px solid #2a2a2a',
-              minWidth: '140px',
-              zIndex: 9999,
-              boxShadow: '4px 4px 16px rgba(0,0,0,0.7)'
-            }}
+            className="fixed z-[9999] min-w-[148px] border border-[#2a2a2a] bg-[#1a1a1a] shadow-[4px_4px_16px_rgba(0,0,0,0.7)]"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
           >
             <div
               onClick={handleExportTxtClick}
-              style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer', borderBottom: '1px solid #2a2a2a' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
+              className="cursor-pointer border-b border-[#2a2a2a] px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#2a2a2a] hover:text-zinc-100"
             >
               Export TXT
             </div>
             <div
               onClick={handleExportExcelClick}
-              style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer' }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
+              className="cursor-pointer px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#2a2a2a] hover:text-zinc-100"
             >
               Export Excel
             </div>
@@ -266,88 +164,28 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
         )}
       </nav>
 
-      {/* Footer */}
-      <div style={{
-        padding: collapsed ? '12px 12px 16px' : '12px 20px 16px',
-        borderTop: '1px solid #2a2a2a',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px'
-      }}>
+      <div className="flex flex-col gap-3 border-t border-[#202020] p-4">
         <button
           onClick={handleAddMemberClick}
-          style={{
-            width: '100%',
-            padding: collapsed ? '8px 0' : '9px 10px',
-            fontFamily: '"Barlow Condensed", sans-serif',
-            fontSize: '11px',
-            fontWeight: 700,
-            letterSpacing: '2px',
-            textTransform: 'uppercase',
-            border: '1px solid #CC0000',
-            background: '#CC0000',
-            color: 'white',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
-          onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
+          className="w-full rounded-lg border border-[#c81d25] bg-[#c81d25] px-3 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#a8141c]"
         >
-          {collapsed ? '+' : '+ Add Member'}
+          + Add Member
         </button>
 
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          justifyContent: collapsed ? 'center' : 'flex-start'
-        }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            background: '#CC0000',
-            fontFamily: '"Barlow Condensed", sans-serif',
-            fontWeight: 900,
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '13px',
-            flexShrink: 0
-          }}>P</div>
-          {!collapsed && (
-            <>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '12px', fontWeight: 500, color: '#f0f0f0' }}>Professor</div>
-                <div style={{ fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', color: '#CC0000' }}>Admin</div>
-              </div>
-              {onLogout && (
-                <button
-                  onClick={onLogout}
-                  style={{
-                    background: 'none',
-                    border: '1px solid #2a2a2a',
-                    color: '#888888',
-                    fontSize: '10px',
-                    padding: '4px 8px',
-                    cursor: 'pointer',
-                    textTransform: 'uppercase',
-                    letterSpacing: '1px',
-                    transition: 'all 0.2s',
-                    flexShrink: 0
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#f0f0f0';
-                    e.currentTarget.style.color = '#f0f0f0';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#2a2a2a';
-                    e.currentTarget.style.color = '#888888';
-                  }}
-                >Logout</button>
-              )}
-            </>
-          )}
+        <div className="flex items-center gap-3 rounded-lg bg-[#111] p-2.5">
+          <div className="grid h-8 w-8 place-items-center rounded-full bg-[#c81d25] text-xs font-bold text-white">P</div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm text-zinc-100">Professor</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[#c81d25]">Admin</div>
+          </div>
+          {onLogout ? (
+            <button
+              onClick={onLogout}
+              className="rounded-md border border-[#2a2a2a] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-zinc-400 hover:border-zinc-200 hover:text-zinc-100"
+            >
+              Logout
+            </button>
+          ) : null}
         </div>
       </div>
     </aside>
