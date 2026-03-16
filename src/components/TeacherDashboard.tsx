@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import MemberProfile from "./MemberProfile";
 import GBLogo from "@/components/GBLogo";
 import { Member, calculateMonthlyFee, getBeltOptions } from "../../lib/types";
@@ -38,6 +39,7 @@ const MOOD_OPTIONS: Array<{ value: MoodOption; icon: string; label: string }> = 
 ];
 
 export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
+  const router = useRouter();
   const [members, setMembers] = useState<Member[]>([]);
   const [pendingMembers, setPendingMembers] = useState<Member[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -723,9 +725,16 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           flexDirection: 'column',
           overflow: 'hidden'
         }}>
-          {['Dashboard', 'Membros', 'Presenças', 'Export DD', 'Definições'].map((item, idx) => (
+          {[
+            { label: 'Dashboard', action: () => {} },
+            { label: 'Membros', action: () => router.push('/members') },
+            { label: 'Presenças', action: () => {} },
+            { label: 'Export DD', action: () => {} },
+            { label: 'Definições', action: () => {} }
+          ].map((item, idx) => (
             <div
-              key={item}
+              key={item.label}
+              onClick={item.action}
               style={{
                 padding: '10px 20px',
                 display: 'flex',
@@ -752,7 +761,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 }
               }}
             >
-              <span>{item}</span>
+              <span>{item.label}</span>
               {idx === 0 && pendingMembers.length > 0 && (
                 <span style={{
                   minWidth: '18px',
