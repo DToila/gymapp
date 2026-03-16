@@ -61,6 +61,15 @@ const createEditForm = (member: MemberDetail): MemberEditForm => ({
   nif: member.nif || '',
 });
 
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'Active': return 'border-green-800 bg-green-900/30 text-green-400';
+    case 'Paused': return 'border-[#444] bg-[#1e1e1e] text-[#888]';
+    case 'Unpaid': return 'border-red-800 bg-red-900/20 text-red-400';
+    default: return 'border-[#444] bg-[#1e1e1e] text-[#888]';
+  }
+}
+
 export default function MemberProfile({ member, onBack, onUpdate }: MemberProfileProps) {
   const [data, setData] = useState<MemberDetail>({ ...member });
   const [isEditing, setIsEditing] = useState(false);
@@ -75,6 +84,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [newComment, setNewComment] = useState("");
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const isPendingMember = (data.status as unknown as string) === 'pending';
+  void commentsEndRef;
 
   useEffect(() => {
     const nextData = { ...member };
@@ -284,525 +294,329 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const profileInitials = profileName.trim()
     ? profileName.split(' ').filter(Boolean).map((namePart) => namePart[0]).join('').toUpperCase()
     : '?';
-  const profileFieldStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '6px 0 8px',
-    background: 'transparent',
-    border: 'none',
-    borderBottom: '1px solid #2a2a2a',
-    color: '#f0f0f0',
-    fontSize: '14px',
-    fontFamily: '"Barlow", sans-serif'
-  };
-  const profileLabelStyle: React.CSSProperties = {
-    fontSize: '9px',
-    fontWeight: 700,
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    color: '#555555',
-    marginBottom: '6px'
-  };
-  const profileValueStyle: React.CSSProperties = {
-    fontSize: '14px',
-    color: '#f0f0f0',
-    wordBreak: 'break-word'
-  };
+
+  const inputCls = "w-full px-0 py-1.5 bg-transparent border-0 border-b border-[#2a2a2a] text-[#f0f0f0] text-sm focus:outline-none focus:border-[#c81d25] transition-colors";
+  const selectCls = inputCls + " cursor-pointer";
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', fontFamily: '"Barlow", sans-serif', padding: '24px' }}>
+    <div className="min-h-screen bg-[#0b0b0b] text-white p-6" style={{ fontFamily: '"Barlow", sans-serif' }}>
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3px solid #CC0000', borderTop: '3px solid transparent', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }}></div>
-            <p style={{ color: '#555555' }}>Loading member data...</p>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-full border-[3px] border-[#c81d25] border-t-transparent animate-spin mx-auto mb-4" />
+            <p className="text-[#555]">Loading member data...</p>
           </div>
         </div>
       ) : (
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <button
-            onClick={onBack}
-            style={{ background: 'transparent', border: '1px solid #2a2a2a', color: '#888', fontSize: '14px', fontWeight: 600, marginBottom: '24px', cursor: 'pointer', paddingBottom: '12px', padding: '8px 12px', borderRadius: '4px' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#444';
-              e.currentTarget.style.color = '#aaa';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#2a2a2a';
-              e.currentTarget.style.color = '#888';
-            }}
-          >
-            ← Back
-          </button>
+        <div className="max-w-5xl mx-auto">
 
-          {/* Profile Header Card */}
-          <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#222222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 900, color: '#CC0000', flexShrink: 0, border: '2px solid #CC0000' }}>
-              {profileInitials}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
+          {/* Top bar: Back + Edit/Save/Cancel */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#252525] bg-[#141414] text-sm font-semibold text-[#888] hover:text-[#ccc] hover:border-[#444] transition-colors cursor-pointer"
+            >
+              ← Back
+            </button>
+            {isEditing ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleEditCancel}
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-xl border border-[#252525] bg-[#141414] text-[#888] text-xs font-bold uppercase tracking-widest hover:text-[#ccc] disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-xl bg-[#c81d25] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#a81520] disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2 rounded-xl border border-[#c81d25] text-[#c81d25] text-xs font-bold uppercase tracking-widest hover:bg-[#c81d25] hover:text-white transition-colors cursor-pointer"
+              >
+                Edit Member
+              </button>
+            )}
+          </div>
+
+          {/* Summary Card */}
+          <div className="rounded-2xl border border-[#222] bg-[#121212] p-6 mb-6">
+            <div className="flex items-start gap-5">
+              {/* Avatar */}
+              <div className="w-16 h-16 rounded-full bg-[#1a1a1a] border-2 border-[#c81d25] flex items-center justify-center text-xl font-black text-[#c81d25] shrink-0">
+                {profileInitials}
+              </div>
+              <div className="flex-1 min-w-0">
+                {/* Name + badges */}
+                <div className="mb-5">
                   {isEditing ? (
                     <input
                       type="text"
                       value={editForm.name}
                       onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                      style={{
-                        ...profileFieldStyle,
-                        fontSize: '24px',
-                        fontWeight: 900,
-                        fontFamily: '"Barlow Condensed", sans-serif',
-                        letterSpacing: '2px',
-                        textTransform: 'uppercase',
-                        padding: '4px 0 8px'
-                      }}
+                      className={inputCls + " text-2xl font-black uppercase tracking-widest"}
+                      style={{ fontFamily: '"Barlow Condensed", sans-serif' }}
                     />
                   ) : (
-                    <h1 style={{ fontSize: '28px', fontWeight: 900, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: 0, letterSpacing: '2px', textTransform: 'uppercase' }}>{data.name}</h1>
+                    <h1 className="text-3xl font-black uppercase tracking-widest mb-2" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
+                      {data.name}
+                    </h1>
+                  )}
+                  {!isEditing && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="rounded-full px-3 py-0.5 text-[11px] font-bold border border-[#c81d25]/40 bg-[rgba(200,29,37,0.15)] text-[#ef4444]">
+                        {data.beltLevel || data.belt_level || 'No Belt'}
+                      </span>
+                      <span className={`rounded-full px-3 py-0.5 text-[11px] font-bold border ${statusBadgeClass(data.status)}`}>
+                        {data.status}
+                      </span>
+                    </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                  {isEditing ? (
-                    <>
-                      <button
-                        onClick={handleEditCancel}
-                        disabled={isSaving}
-                        style={{
-                          padding: '8px 12px',
-                          background: 'transparent',
-                          border: '1px solid #2a2a2a',
-                          color: '#888888',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: isSaving ? 'not-allowed' : 'pointer',
-                          textTransform: 'uppercase',
-                          letterSpacing: '1px',
-                          opacity: isSaving ? 0.6 : 1
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleEditSave}
-                        disabled={isSaving}
-                        style={{
-                          padding: '8px 14px',
-                          background: '#CC0000',
-                          border: '1px solid #CC0000',
-                          color: '#ffffff',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: isSaving ? 'not-allowed' : 'pointer',
-                          textTransform: 'uppercase',
-                          letterSpacing: '1px',
-                          opacity: isSaving ? 0.7 : 1
-                        }}
-                      >
-                        {isSaving ? 'Saving...' : 'Save'}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      style={{
-                        padding: '8px 14px',
-                        background: 'transparent',
-                        border: '1px solid #CC0000',
-                        color: '#CC0000',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        textTransform: 'uppercase',
-                        letterSpacing: '1px'
-                      }}
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', columnGap: '36px', rowGap: '24px' }}>
-                <div>
-                  <div style={profileLabelStyle}>Email</div>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={editForm.email}
-                      onChange={(e) => handleEditFieldChange('email', e.target.value)}
-                      style={profileFieldStyle}
-                    />
-                  ) : (
-                    <div style={profileValueStyle}>{data.email || 'N/A'}</div>
-                  )}
-                </div>
-                <div>
-                  <div style={profileLabelStyle}>Phone</div>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={editForm.phone}
-                      onChange={(e) => handleEditFieldChange('phone', e.target.value)}
-                      style={profileFieldStyle}
-                    />
-                  ) : (
-                    <div style={profileValueStyle}>{data.phone || 'N/A'}</div>
-                  )}
-                </div>
-                <div>
-                  <div style={profileLabelStyle}>Date of Birth</div>
-                  {isEditing ? (
-                    <input
-                      type="date"
-                      value={editForm.date_of_birth}
-                      onChange={(e) => handleEditDateOfBirthChange(e.target.value)}
-                      style={profileFieldStyle}
-                    />
-                  ) : (
-                    <div style={profileValueStyle}>{data.date_of_birth || 'N/A'}</div>
-                  )}
-                </div>
-                <div>
-                  <div style={profileLabelStyle}>Belt Level</div>
-                  {isEditing ? (
-                    <select
-                      value={editForm.belt_level}
-                      onChange={(e) => handleEditFieldChange('belt_level', e.target.value)}
-                      style={profileFieldStyle}
-                    >
-                      {editBeltOptions.map((beltOption) => (
-                        <option key={beltOption} value={beltOption}>{beltOption}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div style={profileValueStyle}>{data.beltLevel || data.belt_level || 'N/A'}</div>
-                  )}
-                </div>
-                <div>
-                  <div style={profileLabelStyle}>Status</div>
-                  {isEditing ? (
-                    <select
-                      value={editForm.status}
-                      onChange={(e) => handleEditFieldChange('status', e.target.value as MemberEditForm['status'])}
-                      style={profileFieldStyle}
-                    >
-                      <option>Active</option>
-                      <option>Paused</option>
-                      <option>Unpaid</option>
-                    </select>
-                  ) : (
-                    <div style={profileValueStyle}>{data.status}</div>
-                  )}
-                </div>
-                <div>
-                  <div style={profileLabelStyle}>Payment Type</div>
-                  {isEditing ? (
-                    <select
-                      value={editForm.payment_type}
-                      onChange={(e) => handleEditPaymentTypeChange(e.target.value as MemberEditForm['payment_type'])}
-                      style={profileFieldStyle}
-                    >
-                      <option>Direct Debit</option>
-                      <option>Cash</option>
-                    </select>
-                  ) : (
-                    <div style={profileValueStyle}>{data.paymentType || data.payment_type || 'N/A'}</div>
-                  )}
-                </div>
-                <div>
-                  <div style={profileLabelStyle}>Monthly Fee</div>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={editForm.fee}
-                      onChange={(e) => handleEditFieldChange('fee', e.target.value)}
-                      style={profileFieldStyle}
-                    />
-                  ) : (
-                    <div style={profileValueStyle}>€{(data.monthlyFee ?? data.fee ?? 0).toFixed(2)}</div>
-                  )}
-                </div>
-                <div>
-                  <div style={profileLabelStyle}>IBAN</div>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editForm.iban}
-                      onChange={(e) => handleEditFieldChange('iban', e.target.value)}
-                      style={profileFieldStyle}
-                    />
-                  ) : (
-                    <div style={profileValueStyle}>{data.iban || 'N/A'}</div>
-                  )}
-                </div>
-                <div>
-                  <div style={profileLabelStyle}>NIF</div>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editForm.nif}
-                      onChange={(e) => handleEditFieldChange('nif', e.target.value)}
-                      style={profileFieldStyle}
-                    />
-                  ) : (
-                    <div style={profileValueStyle}>{data.nif || 'N/A'}</div>
-                  )}
+
+                {/* Info grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Email</div>
+                    {isEditing ? (
+                      <input type="email" value={editForm.email} onChange={(e) => handleEditFieldChange('email', e.target.value)} className={inputCls} />
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0] break-words">{data.email || 'N/A'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Phone</div>
+                    {isEditing ? (
+                      <input type="tel" value={editForm.phone} onChange={(e) => handleEditFieldChange('phone', e.target.value)} className={inputCls} />
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">{data.phone || 'N/A'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Date of Birth</div>
+                    {isEditing ? (
+                      <input type="date" value={editForm.date_of_birth} onChange={(e) => handleEditDateOfBirthChange(e.target.value)} className={inputCls} />
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">{data.date_of_birth || 'N/A'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Belt Level</div>
+                    {isEditing ? (
+                      <select value={editForm.belt_level} onChange={(e) => handleEditFieldChange('belt_level', e.target.value)} className={selectCls}>
+                        {editBeltOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">{data.beltLevel || data.belt_level || 'N/A'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Status</div>
+                    {isEditing ? (
+                      <select value={editForm.status} onChange={(e) => handleEditFieldChange('status', e.target.value as MemberEditForm['status'])} className={selectCls}>
+                        <option>Active</option>
+                        <option>Paused</option>
+                        <option>Unpaid</option>
+                      </select>
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">{data.status}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Payment Type</div>
+                    {isEditing ? (
+                      <select value={editForm.payment_type} onChange={(e) => handleEditPaymentTypeChange(e.target.value as MemberEditForm['payment_type'])} className={selectCls}>
+                        <option>Direct Debit</option>
+                        <option>Cash</option>
+                      </select>
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">{data.paymentType || data.payment_type || 'N/A'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Monthly Fee</div>
+                    {isEditing ? (
+                      <input type="number" step="0.01" value={editForm.fee} onChange={(e) => handleEditFieldChange('fee', e.target.value)} className={inputCls} />
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">€{(data.monthlyFee ?? data.fee ?? 0).toFixed(2)}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">IBAN</div>
+                    {isEditing ? (
+                      <input type="text" value={editForm.iban} onChange={(e) => handleEditFieldChange('iban', e.target.value)} className={inputCls} />
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">{data.iban || 'N/A'}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">NIF</div>
+                    {isEditing ? (
+                      <input type="text" value={editForm.nif} onChange={(e) => handleEditFieldChange('nif', e.target.value)} className={inputCls} />
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">{data.nif || 'N/A'}</div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div style={{ position: 'relative' }}>
-            {isPendingMember && (
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(10, 10, 10, 0.7)',
-                backdropFilter: 'blur(4px)',
-                zIndex: 10,
-              }} />
-            )}
+          {/* Pending notice (no blur) */}
+          {isPendingMember && (
+            <div className="mb-4 rounded-xl border border-[#c81d25]/20 bg-[#c81d25]/5 px-4 py-3 text-sm text-[#888] text-center">
+              This member&apos;s registration is pending approval.
+            </div>
+          )}
 
-          {/* Month Selector with Toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', gap: '20px' }}>
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flex: 1, paddingBottom: '8px' }}>
+          {/* Month selector + Days/% toggle */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex gap-2 overflow-x-auto flex-1 pb-1" style={{ scrollbarWidth: 'none' }}>
               {months.map((m) => {
                 const percent = getMonthAttendance(year, m);
                 const { attended, total } = getMonthAttendanceCount(year, m);
                 const displayValue = showPercentage ? `${percent}%` : `${attended}/${total}`;
+                const monthName = new Date(year, m).toLocaleString("default", { month: "short" });
+                const active = selectedMonth === m;
                 return (
                   <button
                     key={m}
                     onClick={() => setSelectedMonth(m)}
                     title={`${percent}% attendance`}
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '64px',
-                      height: '64px',
-                      background: selectedMonth === m ? '#CC0000' : '#1a1a1a',
-                      color: selectedMonth === m ? 'white' : '#888888',
-                      border: '1px solid #2a2a2a',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      flexShrink: 0
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedMonth !== m) {
-                        e.currentTarget.style.background = '#222222';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedMonth !== m) {
-                        e.currentTarget.style.background = '#1a1a1a';
-                      }
-                    }}
+                    className={`relative flex flex-col items-center justify-center w-16 h-16 rounded-xl border shrink-0 text-xs font-bold transition-colors overflow-hidden cursor-pointer ${
+                      active
+                        ? 'bg-[#c81d25] border-[#c81d25] text-white'
+                        : 'bg-[#141414] border-[#252525] text-[#888] hover:bg-[#1a1a1a] hover:text-[#aaa]'
+                    }`}
                   >
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#CC0000', width: `${percent}%`, transition: 'all 0.2s' }}></div>
-                    <span>{new Date(year, m).toLocaleString("default", { month: "short" })}</span>
-                    <span style={{ fontSize: '10px', fontWeight: 'normal', marginTop: '4px', opacity: 0.75 }}>{displayValue}</span>
+                    {!active && (
+                      <div className="absolute bottom-0 left-0 h-[2px] bg-[#c81d25]" style={{ width: `${percent}%` }} />
+                    )}
+                    <span>{monthName}</span>
+                    <span className="text-[10px] mt-0.5 font-normal opacity-75">{displayValue}</span>
                   </button>
                 );
               })}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-              <span style={{ fontSize: '12px', color: '#888888' }}>Days</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs text-[#666]">Days</span>
               <button
                 onClick={() => setShowPercentage(!showPercentage)}
-                style={{
-                  position: 'relative',
-                  display: 'inline-flex',
-                  height: '24px',
-                  width: '44px',
-                  alignItems: 'center',
-                  borderRadius: '12px',
-                  background: showPercentage ? '#CC0000' : '#333333',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer border-0"
+                style={{ background: showPercentage ? '#c81d25' : '#333' }}
               >
-                <span style={{
-                  display: 'inline-block',
-                  height: '16px',
-                  width: '16px',
-                  borderRadius: '50%',
-                  background: 'white',
-                  transition: 'transform 0.2s',
-                  transform: showPercentage ? 'translateX(24px)' : 'translateX(4px)'
-                }} />
+                <span
+                  className="inline-block h-4 w-4 rounded-full bg-white transition-transform"
+                  style={{ transform: showPercentage ? 'translateX(24px)' : 'translateX(4px)' }}
+                />
               </button>
-              <span style={{ fontSize: '12px', color: '#888888' }}>%</span>
+              <span className="text-xs text-[#666]">%</span>
             </div>
           </div>
 
-          {/* Two-Column Layout */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', height: '500px' }}>
-            {/* Calendar Column */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '12px', color: '#f0f0f0', letterSpacing: '2px', textTransform: 'uppercase' }}>
+          {/* Two-column: Calendar + Notes */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            {/* Calendar card */}
+            <div className="rounded-2xl border border-[#222] bg-[#121212] p-5">
+              <h2 className="text-sm font-black uppercase tracking-widest text-[#f0f0f0] mb-4" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
                 {new Date(year, selectedMonth).toLocaleString("default", { month: "long", year: 'numeric' })}
               </h2>
-              <div style={{ flex: 1, background: '#111111', border: '1px solid #2a2a2a', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', flex: 1 }}>
-                  {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
-                    <div key={d} style={{ fontWeight: 700, fontSize: '11px', textAlign: 'center', color: '#555555', padding: '4px', textTransform: 'uppercase' }}>
-                      {d}
-                    </div>
-                  ))}
-                  {Array.from({ length: getFirstDay(year, selectedMonth) }).map((_, i) => (
-                    <div key={`empty-${i}`} />
-                  ))}
-                  {Array.from({ length: getDaysInMonth(year, selectedMonth) }, (_, d) => {
-                    const day = d + 1;
-                    const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const attended = attendanceMap[dateStr];
-                    const dayMood = attendanceMoodMap[dateStr];
-                    const isToday = dateStr === new Date().toISOString().split('T')[0];
-                    return (
-                      <button
-                        key={dateStr}
-                        onClick={() => toggleDate(dateStr)}
-                        style={{
-                          position: 'relative',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: attended ? '#CC0000' : '#1a1a1a',
-                          border: isToday ? '2px solid #CC0000' : '1px solid #2a2a2a',
-                          color: attended ? 'white' : '#555555',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!attended) {
-                            e.currentTarget.style.background = '#222222';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!attended) {
-                            e.currentTarget.style.background = '#1a1a1a';
-                          }
-                        }}
-                      >
-                        {day}
-                        {dayMood && (
-                          <span style={{
-                            position: 'absolute',
-                            right: '4px',
-                            bottom: '2px',
-                            fontSize: '11px',
-                            lineHeight: 1
-                          }}>
-                            {MOOD_ICONS[dayMood]}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                  {Array.from({ length: Math.max(0, 42 - getFirstDay(year, selectedMonth) - getDaysInMonth(year, selectedMonth)) }).map((_, i) => (
-                    <div key={`fill-${i}`} />
-                  ))}
-                </div>
+              <div className="grid grid-cols-7 gap-1">
+                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
+                  <div key={d} className="text-[10px] font-bold text-[#444] text-center py-1 uppercase">{d}</div>
+                ))}
+                {Array.from({ length: getFirstDay(year, selectedMonth) }).map((_, i) => (
+                  <div key={`empty-${i}`} />
+                ))}
+                {Array.from({ length: getDaysInMonth(year, selectedMonth) }, (_, d) => {
+                  const day = d + 1;
+                  const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const attended = attendanceMap[dateStr];
+                  const dayMood = attendanceMoodMap[dateStr];
+                  const isToday = dateStr === new Date().toISOString().split('T')[0];
+                  return (
+                    <button
+                      key={dateStr}
+                      onClick={() => toggleDate(dateStr)}
+                      className={`relative flex items-center justify-center w-full aspect-square rounded-lg text-[11px] font-semibold transition-colors cursor-pointer border ${
+                        attended
+                          ? 'bg-[#c81d25] text-white border-[#c81d25]'
+                          : isToday
+                          ? 'bg-[#141414] border-[#c81d25]/50 text-[#888] hover:bg-[#1e1e1e]'
+                          : 'bg-[#141414] border-[#1e1e1e] text-[#555] hover:bg-[#1a1a1a] hover:text-[#888]'
+                      }`}
+                    >
+                      {day}
+                      {dayMood && (
+                        <span className="absolute right-0.5 bottom-0.5 text-[9px] leading-none">
+                          {MOOD_ICONS[dayMood]}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+                {Array.from({ length: Math.max(0, 42 - getFirstDay(year, selectedMonth) - getDaysInMonth(year, selectedMonth)) }).map((_, i) => (
+                  <div key={`fill-${i}`} />
+                ))}
               </div>
             </div>
 
-            {/* Comments Column */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '12px', color: '#f0f0f0', letterSpacing: '2px', textTransform: 'uppercase' }}>NOTES & COMMENTS</h3>
-              <div style={{ flex: 1, background: '#111111', border: '1px solid #2a2a2a', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ height: '320px', overflowY: 'auto', marginBottom: '16px' }}>
-                  {comments.length === 0 ? (
-                    <p style={{ color: '#555555', textAlign: 'center', paddingTop: '32px' }}>No comments yet. Add the first note!</p>
-                  ) : (
-                    <div>
-                      {comments.map((comment, index) => (
-                        <div key={comment.id}>
-                          <div>
-                            <div style={{ color: '#888888', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                              {comment.timestamp.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </div>
-                            <div style={{ color: '#555555', fontSize: '11px', marginBottom: '8px' }}>
-                              {comment.teacherName}
-                            </div>
-                            <div style={{ color: '#f0f0f0', fontSize: '13px', lineHeight: '1.5', paddingLeft: '12px', borderLeft: '2px solid #2a2a2a', marginBottom: '16px' }}>
-                              {comment.message}
-                            </div>
-                          </div>
-                          {index < comments.length - 1 && (
-                            <div style={{ borderBottom: '1px solid #2a2a2a', marginBottom: '16px', opacity: 0.3 }}></div>
-                          )}
+            {/* Notes card */}
+            <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 flex flex-col" style={{ minHeight: '400px' }}>
+              <h3 className="text-sm font-black uppercase tracking-widest text-[#f0f0f0] mb-4 shrink-0" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
+                Notes &amp; Comments
+              </h3>
+              <div className="flex-1 overflow-y-auto mb-4" style={{ maxHeight: '320px' }}>
+                {comments.length === 0 ? (
+                  <p className="text-[#555] text-sm text-center pt-8">No comments yet. Add the first note!</p>
+                ) : (
+                  <div className="space-y-4">
+                    {[...comments].reverse().map((comment) => (
+                      <div key={comment.id} className="border-l-2 border-[#2a2a2a] pl-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#1a1a1a] border border-[#2a2a2a] text-[#888]">
+                            {comment.teacherName}
+                          </span>
+                          <span className="text-[11px] text-[#444]">
+                            {comment.timestamp.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
                         </div>
-                      ))}
-                      <div ref={commentsEndRef} />
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendComment()}
-                    placeholder="Add a note or comment..."
-                    style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      background: '#1a1a1a',
-                      border: '1px solid #2a2a2a',
-                      color: '#f0f0f0',
-                      fontSize: '13px',
-                      fontFamily: '"Barlow", sans-serif'
-                    }}
-                  />
-                  <button
-                    onClick={handleSendComment}
-                    disabled={!newComment.trim()}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#CC0000',
-                      border: 'none',
-                      color: 'white',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: newComment.trim() ? 'pointer' : 'not-allowed',
-                      opacity: newComment.trim() ? 1 : 0.5,
-                      textTransform: 'uppercase',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (newComment.trim()) {
-                        e.currentTarget.style.background = '#990000';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (newComment.trim()) {
-                        e.currentTarget.style.background = '#CC0000';
-                      }
-                    }}
-                  >
-                    Send
-                  </button>
-                </div>
+                        <p className="text-sm text-[#ccc] leading-relaxed">{comment.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendComment()}
+                  placeholder="Add a note or comment..."
+                  className="flex-1 px-3 py-2 rounded-xl border border-[#2a2a2a] bg-[#161616] text-sm text-[#f0f0f0] placeholder-[#444] focus:outline-none focus:border-[#c81d25]/50 transition-colors"
+                  style={{ fontFamily: '"Barlow", sans-serif' }}
+                />
+                <button
+                  onClick={handleSendComment}
+                  disabled={!newComment.trim()}
+                  className="px-4 py-2 rounded-xl bg-[#c81d25] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#a81520] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  Add
+                </button>
               </div>
             </div>
           </div>
-          </div>
+
         </div>
       )}
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

@@ -14,7 +14,7 @@ import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { KidBehaviorItem, NoteItem } from './types';
-import { toDateKey } from '@/lib/attendanceState';
+import { BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
 
 const getRelativeTime = (isoDate: string): string => {
@@ -92,23 +92,59 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
       }
       const fromDateKey = toDateKey(fromDate);
 
-      const events = await getKidBehaviorEvents({ fromDateKey, toDateKey: toKey });
-      console.log('dashboard events', {
-        mode,
+      let dbEvents: Awaited<ReturnType<typeof getKidBehaviorEvents>> = [];
+      try {
+        dbEvents = await getKidBehaviorEvents({ fromDateKey, toDateKey: toKey });
+      } catch (error) {
+        console.error('dashboard behavior db fetch error', error);
+      }
+
+      const localEvents = readBehaviorEvents().filter(
+        (event) => event.dateKey >= fromDateKey && event.dateKey <= toKey
+      );
+
+      const events = [
+        ...dbEvents.map((event) => ({
+          kid_id: event.kid_id,
+          date: event.date,
+          value: event.value,
+          created_at: event.created_at || new Date(`${event.date}T12:00:00`).toISOString(),
+        })),
+        ...localEvents.map((event) => ({
+          kid_id: event.kidId,
+          date: event.dateKey,
+          value: event.value,
+          created_at: new Date(event.createdAt).toISOString(),
+        })),
+      ];
+
+      console.log('dashboard behavior fetch', {
         fromDateKey,
         toDateKey: toKey,
-        eventsCount: events.length,
+        count: events.length,
         sample: events[0] || null,
       });
 
       const kidIds = new Set(realKids.map((kid) => kid.id));
-      const mappedEvents = events
+      const dedupedByKidAndDate = new Map<string, { kidId: string; createdAt: string; value: 'GOOD' | 'NEUTRAL' | 'BAD' }>();
+
+      events
         .filter((event) => kidIds.has(event.kid_id))
-        .map((event) => ({
-          kidId: event.kid_id,
-          createdAt: event.created_at || new Date(`${event.date}T12:00:00`).toISOString(),
-          value: event.value,
-        }))
+        .forEach((event) => {
+          const createdAt = event.created_at || new Date(`${event.date}T12:00:00`).toISOString();
+          const key = `${event.kid_id}:${event.date}`;
+          const existing = dedupedByKidAndDate.get(key);
+
+          if (!existing || new Date(createdAt).getTime() >= new Date(existing.createdAt).getTime()) {
+            dedupedByKidAndDate.set(key, {
+              kidId: event.kid_id,
+              createdAt,
+              value: event.value,
+            });
+          }
+        });
+
+      const mappedEvents = Array.from(dedupedByKidAndDate.values())
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       setKidsMembers(realKids);
@@ -134,6 +170,10 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
       fetchKidsBehavior(behaviorMode);
     };
 
+    const handleBehaviorUpdated = () => {
+      fetchKidsBehavior(behaviorMode);
+    };
+
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         loadDashboardData();
@@ -142,6 +182,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
     };
 
     window.addEventListener('focus', handleFocus);
+    window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
     document.addEventListener('visibilitychange', handleVisibility);
 
     const channel = supabase
@@ -157,6 +198,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
 
     return () => {
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
       document.removeEventListener('visibilitychange', handleVisibility);
       supabase.removeChannel(channel);
     };

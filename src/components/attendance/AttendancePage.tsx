@@ -5,9 +5,12 @@ import { getKidBehaviorEvents, getMembers, upsertKidBehavior } from '../../../li
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import {
+  readBehaviorEvents,
   readAttendanceByDate,
   toDateKey,
+  upsertBehaviorEvent,
   writeAttendanceByDate,
+  writeBehaviorEvents,
 } from '@/lib/attendanceState';
 
 type AttendanceTab = 'adults' | 'kids';
@@ -199,9 +202,15 @@ export default function AttendancePage() {
   };
 
   const loadBehaviorForDate = useCallback(async (dateKey: string) => {
+    const localEvents = readBehaviorEvents().filter((event) => event.dateKey === dateKey);
+    const nextMap: Record<string, BehaviorValue> = {};
+
+    localEvents.forEach((event) => {
+      nextMap[event.kidId] = event.value;
+    });
+
     try {
       const events = await getKidBehaviorEvents({ fromDateKey: dateKey, toDateKey: dateKey });
-      const nextMap: Record<string, BehaviorValue> = {};
       events.forEach((event) => {
         nextMap[event.kid_id] = event.value;
       });
@@ -215,7 +224,13 @@ export default function AttendancePage() {
       }));
     } catch (error) {
       console.error('Error loading kid behavior for date:', dateKey, error);
-      setKidBehaviorByDate((prev) => ({ ...prev, [dateKey]: prev[dateKey] ?? {} }));
+      setKidBehaviorByDate((prev) => ({
+        ...prev,
+        [dateKey]: {
+          ...(prev[dateKey] ?? {}),
+          ...nextMap,
+        },
+      }));
     }
   }, []);
 
@@ -241,7 +256,6 @@ export default function AttendancePage() {
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {
     const dateKey = selectedDate;
-    const previous = kidBehaviorByDate[dateKey]?.[kidId] ?? null;
     setKidBehaviorByDate((prev) => ({
       ...prev,
       [dateKey]: {
@@ -250,19 +264,21 @@ export default function AttendancePage() {
       },
     }));
 
-    console.log('emoji', { kidId, dateKey, value });
+    console.log('emoji click', { kidId, dateKey, value });
+
+    try {
+      const nextBehaviorEvents = upsertBehaviorEvent(readBehaviorEvents(), { kidId, dateKey, value });
+      writeBehaviorEvents(nextBehaviorEvents);
+    } catch (error) {
+      console.error('emoji local write error', error);
+    }
+
     upsertKidBehavior({ kidId, dateKey, value })
-      .then((response) => {
-        console.log('emoji upsert response', response);
+      .then((data) => {
+        console.log('emoji upsert ok', data);
       })
       .catch((error) => {
         console.error('emoji upsert error', error);
-        setKidBehaviorByDate((prev) => {
-          const dateMap = { ...(prev[dateKey] ?? {}) };
-          if (previous) dateMap[kidId] = previous;
-          else delete dateMap[kidId];
-          return { ...prev, [dateKey]: dateMap };
-        });
       });
   };
 

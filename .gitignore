@@ -40,3 +40,5 @@ yarn-error.log*
 .vscode
 .idea/
 *.iml
+.vercel
+.env*.local

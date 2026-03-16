@@ -11,43 +11,13 @@ interface BehaviorEvent {
 }
 
 interface KidBehaviorRank extends KidBehaviorItem {
-  riskScore: number;
-  bestScore: number;
   badCount: number;
   goodCount: number;
   eventCount: number;
 }
 
-const MIN_EVENTS = 3;
+const MIN_EVENTS = 1;
 const MAX_ROWS = 5;
-
-const computeRiskScore = (eventsNewestFirst: BehaviorEvent[]): number => {
-  let score = 0;
-  eventsNewestFirst.forEach((event) => {
-    if (event.value === 'BAD') score += 3;
-    if (event.value === 'NEUTRAL') score += 1;
-  });
-  return Number(score.toFixed(1));
-};
-
-const computeBestScore = (eventsNewestFirst: BehaviorEvent[]): number => {
-  let score = 0;
-  let goodStreak = 0;
-
-  eventsNewestFirst.forEach((event) => {
-    const base = event.value === 'GOOD' ? 2 : event.value === 'NEUTRAL' ? 0 : -2;
-    score += base;
-
-    if (event.value === 'GOOD') {
-      goodStreak += 1;
-      if (goodStreak > 1) score += 1;
-    } else {
-      goodStreak = 0;
-    }
-  });
-
-  return Number(score.toFixed(1));
-};
 
 export default function KidsBehaviorPanel({
   needsAttention,
@@ -90,40 +60,23 @@ export default function KidsBehaviorPanel({
           eventCount: events.length,
           badCount,
           goodCount,
-          riskScore: computeRiskScore(events),
-          bestScore: computeBestScore(events),
         };
       })
       .filter((kid) => kid.eventCount >= MIN_EVENTS);
 
-    const needsSorted =
-      mode === 'now'
-        ? [...candidates].sort((a, b) => b.riskScore - a.riskScore)
-        : [...candidates].sort((a, b) => b.badCount - a.badCount);
-
-    const greatSorted =
-      mode === 'now'
-        ? [...candidates].sort((a, b) => b.bestScore - a.bestScore)
-        : [...candidates].sort((a, b) => b.goodCount - a.goodCount);
+    const needsSorted = [...candidates].filter((k) => k.badCount > 0).sort((a, b) => b.badCount - a.badCount);
+    const greatSorted = [...candidates].filter((k) => k.goodCount > 0).sort((a, b) => b.goodCount - a.goodCount);
 
     const needsTop = needsSorted.slice(0, MAX_ROWS);
     const greatTop = greatSorted.slice(0, MAX_ROWS);
 
-    const allLow =
-      mode === 'now'
-        ? needsTop.length === 0 || needsTop[0].riskScore <= 0
-        : needsTop.length === 0 || needsTop[0].badCount === 0;
-
-    return { needsTop, greatTop, allLow };
-  }, [allKids, behaviorEvents, mode]);
+    return { needsTop, greatTop };
+  }, [allKids, behaviorEvents]);
 
   const needsTitle = mode === 'now' ? 'Needs Attention (Now)' : 'Needs Attention (This month)';
   const greatTitle = mode === 'now' ? 'Great Behavior (Now)' : 'Great Behavior (This month)';
 
   const renderMetric = (kid: KidBehaviorRank, side: 'needs' | 'great') => {
-    if (mode === 'now') {
-      return side === 'needs' ? `score ${kid.riskScore}` : `score ${kid.bestScore}`;
-    }
     return side === 'needs' ? `😡 ${kid.badCount}` : `😀 ${kid.goodCount}`;
   };
 
@@ -152,7 +105,7 @@ export default function KidsBehaviorPanel({
       <div className="grid gap-4 p-4 md:grid-cols-2">
         <div>
           <p className="mb-2 text-sm font-semibold text-[#ef4444]">{needsTitle}</p>
-          {ranked.allLow ? (
+          {ranked.needsTop.length === 0 ? (
             <p className="rounded-lg border border-[#1f2a1f] bg-[#0f1a0f] p-3 text-sm text-[#86efac]">All good ✅</p>
           ) : (
             <ul className="space-y-2">
@@ -178,24 +131,28 @@ export default function KidsBehaviorPanel({
 
         <div>
           <p className="mb-2 text-sm font-semibold text-[#22c55e]">{greatTitle}</p>
-          <ul className="space-y-2">
-            {ranked.greatTop.map((kid) => (
-              <li key={kid.id}>
-                <button
-                  onClick={() => console.log('open kid profile', kid.id)}
-                  className="flex w-full items-center gap-2 rounded-md px-1 py-1 text-left text-sm hover:bg-[#181818]"
-                >
-                  <div className="grid h-7 w-7 place-items-center rounded-full bg-zinc-700 text-[10px] text-white">{kid.name.charAt(0)}</div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-zinc-200">{kid.name}</div>
-                    <div className="text-[11px] text-zinc-500">{renderMetric(kid, 'great')}</div>
-                  </div>
-                  <span className="text-zinc-500">{kid.group}</span>
-                  <span className="text-[#22c55e]">✔</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {ranked.greatTop.length === 0 ? (
+            <p className="rounded-lg border border-[#252525] bg-[#0f0f0f] p-3 text-sm text-zinc-500">No stars yet</p>
+          ) : (
+            <ul className="space-y-2">
+              {ranked.greatTop.map((kid) => (
+                <li key={kid.id}>
+                  <button
+                    onClick={() => console.log('open kid profile', kid.id)}
+                    className="flex w-full items-center gap-2 rounded-md px-1 py-1 text-left text-sm hover:bg-[#181818]"
+                  >
+                    <div className="grid h-7 w-7 place-items-center rounded-full bg-zinc-700 text-[10px] text-white">{kid.name.charAt(0)}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-zinc-200">{kid.name}</div>
+                      <div className="text-[11px] text-zinc-500">{renderMetric(kid, 'great')}</div>
+                    </div>
+                    <span className="text-zinc-500">{kid.group}</span>
+                    <span className="text-[#22c55e]">✔</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </section>
