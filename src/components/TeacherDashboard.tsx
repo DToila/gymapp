@@ -676,7 +676,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       fontFamily: '"Barlow", sans-serif'
     }}>
       {/* SIDEBAR */}
-      <TeacherSidebar active="dashboard" requestsCount={pendingMembers.length} onLogout={onLogout} />
+      <TeacherSidebar active="dashboard" requestsCount={pendingMembers.length} onLogout={onLogout} onExportTxt={handleExportDD} onExportExcel={handleExportDDExcel} />
 
       {/* MAIN CONTENT */}
       <div style={{
