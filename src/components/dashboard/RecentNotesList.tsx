@@ -8,7 +8,7 @@ const audienceClass: Record<NoteItem['audience'], string> = {
 
 export default function RecentNotesList({ notes, loading = false }: { notes: NoteItem[]; loading?: boolean }) {
   return (
-    <Panel title="Recent Notes" icon={<span className="text-[#c81d25]">▣</span>} actionText="View all" onAction={() => console.log('view all notes')}>
+    <Panel title="Recent Notes" icon={<span className="text-[#c81d25]">✎</span>} actionText="View all" onAction={() => console.log('view all notes')}>
       {loading ? (
         <p className="py-4 text-sm text-zinc-500">Loading recent notes...</p>
       ) : notes.length === 0 ? (

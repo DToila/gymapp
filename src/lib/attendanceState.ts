@@ -58,7 +58,12 @@ export const readAttendanceByDate = (): Record<string, string[]> => {
 
 export const writeAttendanceByDate = (attendanceByDate: Record<string, string[]>) => {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(attendanceByDate));
+
+  const nextRaw = JSON.stringify(attendanceByDate);
+  const currentRaw = window.localStorage.getItem(ATTENDANCE_STORAGE_KEY);
+  if (currentRaw === nextRaw) return;
+
+  window.localStorage.setItem(ATTENDANCE_STORAGE_KEY, nextRaw);
   dispatchAttendanceUpdated();
 };
 
