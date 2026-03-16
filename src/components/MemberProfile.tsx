@@ -212,13 +212,24 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     }
   };
 
-  const handleBehaviorSelect = async (date: string, behavior: 'GOOD' | 'NEUTRAL' | 'BAD') => {
+  const handleBehaviorSelect = async (date: string, behavior: 'GOOD' | 'NEUTRAL' | 'BAD', event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    
     try {
       await upsertKidBehavior({ kidId: member.id, dateKey: date, value: behavior });
       setBehaviorMap(prev => ({
         ...prev,
         [date]: behavior
       }));
+      
+      // Dispatch event to sync with attendance page
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event(ATTENDANCE_UPDATED_EVENT));
+      }
+      
       setEmojiPickerDate(null);
     } catch (error) {
       console.error('Error setting behavior:', error);
@@ -239,14 +250,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
-        setEmojiPickerDate(null);
+      // Don't close if clicking inside the picker or emoji buttons
+      if (emojiPickerRef.current && emojiPickerRef.current.contains(e.target as Node)) {
+        return;
       }
+      setEmojiPickerDate(null);
     };
     
     if (emojiPickerDate) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      // Use click instead of mousedown to allow button onClick handlers to fire first
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
     }
     
     return undefined;
@@ -679,13 +693,19 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                         <div
                           ref={emojiPickerRef}
                           className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-2 flex gap-1 shadow-lg"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {(['GOOD', 'NEUTRAL', 'BAD'] as const).map((behavior) => (
                             <button
                               key={behavior}
-                              onClick={() => handleBehaviorSelect(dateStr, behavior)}
-                              className="w-8 h-8 rounded text-lg hover:bg-[#2a2a2a] transition-colors flex items-center justify-center"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                handleBehaviorSelect(dateStr, behavior, e);
+                              }}
+                              className="w-8 h-8 rounded text-lg hover:bg-[#2a2a2a] transition-colors flex items-center justify-center cursor-pointer"
                               title={behavior}
+                              type="button"
                             >
                               {BEHAVIOR_EMOJIS[behavior]}
                             </button>
