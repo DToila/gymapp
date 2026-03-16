@@ -141,3 +141,14 @@ export const createNote = async (note: Omit<Note, 'id' | 'created_at'>): Promise
   if (error) throw error
   return data
 }
+
+export const getRecentTeacherNotes = async (limit: number = 5): Promise<Note[]> => {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw error
+  return data || []
+}
