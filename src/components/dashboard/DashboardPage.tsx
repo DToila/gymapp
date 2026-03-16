@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { kpis, notes as notesFallback, unpaidPayments, kidsNeedsAttention, kidsGreatBehavior, attendanceRecent, requests, birthdays } from './mockData';
+import { kpis, unpaidPayments, kidsNeedsAttention, kidsGreatBehavior, attendanceRecent, requests, birthdays } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -27,10 +27,12 @@ const getRelativeTime = (isoDate: string): string => {
 };
 
 export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
-  const [recentNotes, setRecentNotes] = useState<NoteItem[]>(notesFallback.slice(0, 5));
+  const [recentNotes, setRecentNotes] = useState<NoteItem[]>([]);
+  const [recentNotesLoading, setRecentNotesLoading] = useState(true);
 
   useEffect(() => {
     const loadRecentNotes = async () => {
+      setRecentNotesLoading(true);
       try {
         const [recent, members] = await Promise.all([
           getRecentTeacherNotes(5),
@@ -55,7 +57,9 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
         setRecentNotes(mapped);
       } catch (error) {
         console.error('Error loading recent notes:', error);
-        setRecentNotes(notesFallback.slice(0, 5));
+        setRecentNotes([]);
+      } finally {
+        setRecentNotesLoading(false);
       }
     };
 
@@ -82,7 +86,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-7">
-            <RecentNotesList notes={recentNotes} />
+            <RecentNotesList notes={recentNotes} loading={recentNotesLoading} />
             <UnpaidPaymentsTable rows={unpaidPayments} />
           </div>
 
