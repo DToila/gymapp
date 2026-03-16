@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getKidBehaviorEvents, getMembers, upsertKidBehavior } from '../../../lib/database';
+import { getKidBehaviorEvents, getMembers, upsertKidBehavior, getAttendanceForDate, setAttendance } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import {
@@ -247,16 +247,48 @@ export default function AttendancePage() {
     }
   }, []);
 
+  const loadAttendanceForDate = useCallback(async (dateKey: string) => {
+    try {
+      const attendedMemberIds = await getAttendanceForDate(dateKey);
+      setAttendanceByDate((prev) => ({
+        ...prev,
+        [dateKey]: attendedMemberIds,
+      }));
+    } catch (error) {
+      console.error('Error loading attendance for date:', dateKey, error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAttendanceForDate(selectedDate);
+  }, [selectedDate, loadAttendanceForDate]);
+
   useEffect(() => {
     loadBehaviorForDate(selectedDate);
   }, [selectedDate, loadBehaviorForDate]);
 
   const checkIn = (id: string) => {
     setAttendanceByDate((prev) => setMemberAttendanceForDate(prev, selectedDate, id, true));
+    setAttendance(id, selectedDate, true)
+      .then(() => {
+        const nextAttendanceByDate = setMemberAttendanceForDate(readAttendanceByDate(), selectedDate, id, true);
+        writeAttendanceByDate(nextAttendanceByDate);
+      })
+      .catch((error) => {
+        console.error('Error checking in member:', error);
+      });
   };
 
   const uncheckIn = (id: string) => {
     setAttendanceByDate((prev) => setMemberAttendanceForDate(prev, selectedDate, id, false));
+    setAttendance(id, selectedDate, false)
+      .then(() => {
+        const nextAttendanceByDate = setMemberAttendanceForDate(readAttendanceByDate(), selectedDate, id, false);
+        writeAttendanceByDate(nextAttendanceByDate);
+      })
+      .catch((error) => {
+        console.error('Error unchecking member:', error);
+      });
   };
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {

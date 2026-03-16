@@ -131,6 +131,18 @@ export const setAttendance = async (memberId: string, date: string, attended: bo
   }
 }
 
+export const getAttendanceForDate = async (date: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('member_id')
+    .eq('date', date)
+    .eq('attended', true)
+    .order('member_id', { ascending: true })
+
+  if (error) throw error
+  return (data || []).map(row => row.member_id)
+}
+
 // Notes
 export const getNotesForMember = async (memberId: string): Promise<Note[]> => {
   const { data, error } = await supabase
