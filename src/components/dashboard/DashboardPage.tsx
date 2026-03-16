@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { kpis, unpaidPayments, kidsNeedsAttention, kidsGreatBehavior, attendanceRecent, requests, birthdays } from './mockData';
+import { kpis, unpaidPayments, attendanceRecent, requests, birthdays } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -13,7 +13,7 @@ import AttendancePanel from './AttendancePanel';
 import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { NoteItem } from './types';
+import { KidBehaviorItem, NoteItem } from './types';
 
 const getRelativeTime = (isoDate: string): string => {
   const then = new Date(isoDate).getTime();
@@ -29,6 +29,8 @@ const getRelativeTime = (isoDate: string): string => {
 export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const [recentNotes, setRecentNotes] = useState<NoteItem[]>([]);
   const [recentNotesLoading, setRecentNotesLoading] = useState(true);
+  const [kidsMembers, setKidsMembers] = useState<KidBehaviorItem[]>([]);
+  const [kidsBehaviorEvents, setKidsBehaviorEvents] = useState<Array<{ kidId: string; createdAt: string; value: 'GOOD' | 'NEUTRAL' | 'BAD' }>>([]);
 
   useEffect(() => {
     const loadRecentNotes = async () => {
@@ -54,10 +56,52 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
           };
         });
 
+        const realKids: KidBehaviorItem[] = members
+          .filter((member) => {
+            if (!member.date_of_birth) return false;
+            const age = getAgeFromDateOfBirth(member.date_of_birth);
+            return age !== null && age < 16;
+          })
+          .map((member, index) => ({
+            id: member.id,
+            name: member.name,
+            group: `Kids ${(index % 3) + 1}`,
+          }));
+
+        const moodToBehavior = (moodRaw: string | undefined): 'GOOD' | 'NEUTRAL' | 'BAD' | null => {
+          const mood = String(moodRaw || '').toLowerCase();
+          if (mood === 'happy') return 'GOOD';
+          if (mood === 'neutral') return 'NEUTRAL';
+          if (mood === 'sad') return 'BAD';
+          return null;
+        };
+
+        const behaviorEvents = realKids.flatMap((kid) => {
+          const member = memberById.get(kid.id) as any;
+          const moodHistory = member?.attendance_mood as Record<string, string> | undefined;
+          if (!moodHistory) return [];
+
+          return Object.entries(moodHistory)
+            .map(([date, mood]) => {
+              const value = moodToBehavior(mood);
+              if (!value) return null;
+              return {
+                kidId: kid.id,
+                createdAt: new Date(`${date}T12:00:00`).toISOString(),
+                value,
+              };
+            })
+            .filter((event): event is { kidId: string; createdAt: string; value: 'GOOD' | 'NEUTRAL' | 'BAD' } => Boolean(event));
+        });
+
         setRecentNotes(mapped);
+        setKidsMembers(realKids);
+        setKidsBehaviorEvents(behaviorEvents);
       } catch (error) {
         console.error('Error loading recent notes:', error);
         setRecentNotes([]);
+        setKidsMembers([]);
+        setKidsBehaviorEvents([]);
       } finally {
         setRecentNotesLoading(false);
       }
@@ -91,7 +135,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
           </div>
 
           <div className="space-y-4 lg:col-span-5">
-            <KidsBehaviorPanel needsAttention={kidsNeedsAttention} greatBehavior={kidsGreatBehavior} />
+            <KidsBehaviorPanel needsAttention={kidsMembers} greatBehavior={kidsMembers} behaviorEvents={kidsBehaviorEvents} />
             <AttendancePanel checkedIn={27} total={62} recent={attendanceRecent} />
             <PendingRequestsList requests={requests} />
             <UpcomingBirthdays items={birthdays} />

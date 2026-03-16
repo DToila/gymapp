@@ -129,7 +129,7 @@ export default function KidsBehaviorPanel({
   const ranked = useMemo(() => {
     const now = new Date();
     const { start, end } = getDateRange(mode, now);
-    const sourceEvents = behaviorEvents && behaviorEvents.length > 0 ? behaviorEvents : fallbackEventsForKids(allKids);
+    const sourceEvents = behaviorEvents !== undefined ? behaviorEvents : fallbackEventsForKids(allKids);
 
     const inRange = sourceEvents.filter((event) => {
       const date = new Date(event.createdAt);
