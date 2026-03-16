@@ -14,7 +14,7 @@ export default function TeacherSidebar({ active, requestsCount = 0 }: TeacherSid
   const [collapsed, setCollapsed] = useState(false);
 
   const navItems = [
-    { key: 'dashboard', label: 'Dashboard', onClick: () => router.push('/') },
+    { key: 'dashboard', label: 'Dashboard', onClick: () => router.push('/dashboard') },
     { key: 'members', label: 'Membros', onClick: () => router.push('/members') },
     { key: 'attendance', label: 'Presenças', onClick: () => {} },
     { key: 'export', label: 'Export DD', onClick: () => {} },
