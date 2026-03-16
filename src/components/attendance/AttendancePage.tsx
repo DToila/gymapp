@@ -5,8 +5,10 @@ import { getKidBehaviorEvents, getMembers, upsertKidBehavior } from '../../../li
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import {
+  ATTENDANCE_UPDATED_EVENT,
   readBehaviorEvents,
   readAttendanceByDate,
+  setMemberAttendanceForDate,
   toDateKey,
   upsertBehaviorEvent,
   writeAttendanceByDate,
@@ -125,6 +127,17 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    const handleAttendanceUpdated = () => {
+      setAttendanceByDate(readAttendanceByDate());
+    };
+
+    window.addEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
+    return () => window.removeEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     writeAttendanceByDate(attendanceByDate);
   }, [attendanceByDate]);
 
@@ -239,19 +252,11 @@ export default function AttendancePage() {
   }, [selectedDate, loadBehaviorForDate]);
 
   const checkIn = (id: string) => {
-    setAttendanceByDate((prev) => {
-      const current = new Set(prev[selectedDate] || []);
-      current.add(id);
-      return { ...prev, [selectedDate]: Array.from(current) };
-    });
+    setAttendanceByDate((prev) => setMemberAttendanceForDate(prev, selectedDate, id, true));
   };
 
   const uncheckIn = (id: string) => {
-    setAttendanceByDate((prev) => {
-      const current = new Set(prev[selectedDate] || []);
-      current.delete(id);
-      return { ...prev, [selectedDate]: Array.from(current) };
-    });
+    setAttendanceByDate((prev) => setMemberAttendanceForDate(prev, selectedDate, id, false));
   };
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {

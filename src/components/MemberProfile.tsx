@@ -3,6 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Member, calculateMonthlyFee, getBeltOptions } from "../../lib/types";
 import { getAttendanceForMember, getNotesForMember, createNote, setAttendance } from "../../lib/database";
+import {
+  ATTENDANCE_UPDATED_EVENT,
+  readAttendanceByDate,
+  setMemberAttendanceForDate,
+  writeAttendanceByDate,
+} from "@/lib/attendanceState";
 
 interface Comment {
   id: string;
@@ -70,6 +76,16 @@ function statusBadgeClass(status: string): string {
   }
 }
 
+function mergeAttendanceMapForMember(memberId: string, baseMap: { [date: string]: boolean }, attendanceByDate: Record<string, string[]>): { [date: string]: boolean } {
+  const nextMap = { ...baseMap };
+
+  Object.entries(attendanceByDate).forEach(([dateKey, memberIds]) => {
+    nextMap[dateKey] = memberIds.includes(memberId);
+  });
+
+  return nextMap;
+}
+
 export default function MemberProfile({ member, onBack, onUpdate }: MemberProfileProps) {
   const [data, setData] = useState<MemberDetail>({ ...member });
   const [isEditing, setIsEditing] = useState(false);
@@ -109,7 +125,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           moodMapLocal[att.date] = mood;
         }
       });
-      setAttendanceMap(attendanceMapLocal);
+      setAttendanceMap(mergeAttendanceMapForMember(member.id, attendanceMapLocal, readAttendanceByDate()));
       setAttendanceMoodMap((prev) => ({ ...prev, ...moodMapLocal }));
 
       // Load notes
@@ -133,6 +149,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     loadMemberData();
   }, [loadMemberData]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleAttendanceUpdated = () => {
+      setAttendanceMap((prev) => mergeAttendanceMapForMember(member.id, prev, readAttendanceByDate()));
+    };
+
+    window.addEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
+    return () => window.removeEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
+  }, [member.id]);
+
 
 
   // Auto-scroll to bottom when new comments are added
@@ -148,6 +175,9 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
     try {
       await setAttendance(member.id, date, newAttended);
+      const nextAttendanceByDate = setMemberAttendanceForDate(readAttendanceByDate(), date, member.id, newAttended);
+      writeAttendanceByDate(nextAttendanceByDate);
+
       setAttendanceMap(prev => ({
         ...prev,
         [date]: newAttended

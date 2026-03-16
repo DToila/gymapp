@@ -10,6 +10,7 @@ export interface BehaviorEvent {
 
 export const ATTENDANCE_STORAGE_KEY = 'gymapp.attendanceByDate';
 export const BEHAVIOR_EVENTS_STORAGE_KEY = 'gymapp.behaviorEvents';
+export const ATTENDANCE_UPDATED_EVENT = 'attendance-updated';
 export const BEHAVIOR_UPDATED_EVENT = 'behavior-updated';
 
 const LEGACY_ATTENDANCE_STORAGE_KEY = 'attendance_by_date';
@@ -23,6 +24,11 @@ export const toDateKey = (date: Date): string => {
 };
 
 const isBehaviorValue = (value: unknown): value is 'GOOD' | 'NEUTRAL' | 'BAD' => value === 'GOOD' || value === 'NEUTRAL' || value === 'BAD';
+
+const dispatchAttendanceUpdated = () => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(ATTENDANCE_UPDATED_EVENT));
+};
 
 const dispatchBehaviorUpdated = () => {
   if (typeof window === 'undefined') return;
@@ -53,6 +59,27 @@ export const readAttendanceByDate = (): Record<string, string[]> => {
 export const writeAttendanceByDate = (attendanceByDate: Record<string, string[]>) => {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(attendanceByDate));
+  dispatchAttendanceUpdated();
+};
+
+export const setMemberAttendanceForDate = (
+  attendanceByDate: Record<string, string[]>,
+  dateKey: string,
+  memberId: string,
+  attended: boolean
+): Record<string, string[]> => {
+  const current = new Set(attendanceByDate[dateKey] || []);
+
+  if (attended) {
+    current.add(memberId);
+  } else {
+    current.delete(memberId);
+  }
+
+  return {
+    ...attendanceByDate,
+    [dateKey]: Array.from(current),
+  };
 };
 
 const migrateLegacyBehaviorMap = (): BehaviorEvent[] => {
