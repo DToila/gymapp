@@ -123,13 +123,18 @@ export default function MembersTable({
           ) : (
             <tbody>
               {rows.map((member) => (
-                <tr key={member.id} onClick={() => onRowClick(member)} style={{ borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }}>
+                <tr key={member.id} style={{ borderBottom: '1px solid #1a1a1a' }}>
                   <td style={{ padding: '11px 12px', color: '#f0f0f0', fontSize: '13px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '30px', height: '30px', background: '#1e1e1e', border: '1px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CC0000', fontSize: '12px', fontWeight: 800 }}>
                         {member.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
-                      <span>{member.name}</span>
+                      <span
+                        onClick={() => onRowClick(member)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {member.name}
+                      </span>
                     </div>
                   </td>
 

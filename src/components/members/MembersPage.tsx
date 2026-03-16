@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getMembers } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import { mockMembers, mockRequests } from './mockData';
@@ -11,8 +12,8 @@ import QuickViewsDropdown from './QuickViewsDropdown';
 import { AdultsFiltersBar, KidsFiltersBar } from './FiltersBar';
 import MembersTable from './MembersTable';
 import RequestsList from './RequestsList';
-import MemberDrawer from './MemberDrawer';
 import RowActionsMenu from './RowActionsMenu';
+import TeacherSidebar from './TeacherSidebar';
 
 const initialAdultsFilters: AdultsFilters = {
   status: 'all',
@@ -96,6 +97,7 @@ function isInactive(lastAttendanceAt?: string): boolean {
 }
 
 export default function MembersPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<MembersTab>('adults');
   const [search, setSearch] = useState('');
   const [quickView, setQuickView] = useState<QuickView>('recent');
@@ -106,7 +108,6 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [requests, setRequests] = useState<Member[]>([]);
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -235,7 +236,9 @@ export default function MembersPage() {
   }, [currentRows, page, pageSize]);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', padding: '26px' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', display: 'flex' }}>
+      <TeacherSidebar active="members" requestsCount={filteredRequests.length} />
+      <div style={{ flex: 1, padding: '26px' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
@@ -281,7 +284,7 @@ export default function MembersPage() {
             totalItems={currentRows.length}
             onPageChange={setPage}
             onPageSizeChange={setPageSize}
-            onRowClick={setSelectedMember}
+            onRowClick={(member) => router.push(`/members/${member.id}`)}
             onClearFilters={() => {
               setSearch('');
               setQuickView('recent');
@@ -291,8 +294,7 @@ export default function MembersPage() {
           />
         )}
       </div>
-
-      <MemberDrawer member={selectedMember} onClose={() => setSelectedMember(null)} />
+      </div>
     </div>
   );
 }
