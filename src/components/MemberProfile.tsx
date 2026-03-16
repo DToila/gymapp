@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Member, calculateMonthlyFee, getBeltOptions, getAgeFromDateOfBirth } from "../../lib/types";
-import { getAttendanceForMember, getNotesForMember, createNote, setAttendance, getKidBehaviorEvents, upsertKidBehavior } from "../../lib/database";
+import { getAttendanceForMember, getNotesForMember, createNote, setAttendance, getKidBehaviorEvents, upsertKidBehavior, deleteKidBehaviorForDate } from "../../lib/database";
 import {
   ATTENDANCE_UPDATED_EVENT,
   BEHAVIOR_UPDATED_EVENT,
   readBehaviorEvents,
   readAttendanceByDate,
+  removeBehaviorEvent,
   setMemberAttendanceForDate,
   upsertBehaviorEvent,
   writeBehaviorEvents,
@@ -202,10 +203,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           nextMap[event.dateKey] = event.value;
         });
 
-      setBehaviorMap((prev) => ({
-        ...prev,
-        ...nextMap,
-      }));
+      setBehaviorMap(nextMap);
     };
 
     window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
@@ -237,6 +235,23 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
       const updated = { ...data, attendance: { ...attendanceMap, [date]: newAttended } };
       setData(updated);
+
+      if (isKid && !newAttended) {
+        const nextEvents = removeBehaviorEvent(readBehaviorEvents(), member.id, date);
+        writeBehaviorEvents(nextEvents);
+        setBehaviorMap((prev) => {
+          const next = { ...prev };
+          delete next[date];
+          return next;
+        });
+        setEmojiPickerDate(null);
+
+        try {
+          await deleteKidBehaviorForDate({ kidId: member.id, dateKey: date });
+        } catch (error) {
+          console.error('Error clearing behavior for date:', error);
+        }
+      }
 
       // For kids, if marking as attended for first time, show emoji picker
       if (isKid && newAttended && !behaviorMap[date]) {
@@ -274,15 +289,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   };
 
   const handleCalendarDayClick = (date: string) => {
-    const attended = attendanceMap[date];
-    
-    if (isKid && attended) {
-      // For kids, if day is already marked, show emoji picker
-      setEmojiPickerDate(date);
-    } else {
-      // Otherwise toggle attendance
-      toggleDate(date);
-    }
+    toggleDate(date);
   };
 
   useEffect(() => {
