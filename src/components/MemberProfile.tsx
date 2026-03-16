@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Member, calculateMonthlyFee, getBeltOptions } from "../../lib/types";
-import { getAttendanceForMember, getNotesForMember, createNote, setAttendance } from "../../lib/database";
+import { Member, calculateMonthlyFee, getBeltOptions, getAgeFromDateOfBirth } from "../../lib/types";
+import { getAttendanceForMember, getNotesForMember, createNote, setAttendance, getKidBehaviorEvents, upsertKidBehavior } from "../../lib/database";
 import {
   ATTENDANCE_UPDATED_EVENT,
   readAttendanceByDate,
   setMemberAttendanceForDate,
   writeAttendanceByDate,
+  toDateKey,
 } from "@/lib/attendanceState";
 
 interface Comment {
@@ -37,11 +38,18 @@ interface MemberProfileProps {
 }
 
 type MoodOption = "happy" | "neutral" | "sad";
+type BehaviorValue = 'GOOD' | 'NEUTRAL' | 'BAD' | null;
 
 const MOOD_ICONS: Record<MoodOption, string> = {
   happy: "😊",
   neutral: "😐",
   sad: "☹️",
+};
+
+const BEHAVIOR_EMOJIS: Record<'GOOD' | 'NEUTRAL' | 'BAD', string> = {
+  GOOD: "😀",
+  NEUTRAL: "😐",
+  BAD: "😡",
 };
 
 // Because Member is defined in TeacherDashboard, we can re-declare necessary parts here to avoid circular import.
@@ -93,14 +101,19 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [editForm, setEditForm] = useState<MemberEditForm>(() => createEditForm(member));
   const [attendanceMap, setAttendanceMap] = useState<{ [date: string]: boolean }>({});
   const [attendanceMoodMap, setAttendanceMoodMap] = useState<{ [date: string]: MoodOption }>({});
+  const [behaviorMap, setBehaviorMap] = useState<{ [date: string]: BehaviorValue }>({});
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [showPercentage, setShowPercentage] = useState<boolean>(true);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
+  const [emojiPickerDate, setEmojiPickerDate] = useState<string | null>(null);
   const commentsEndRef = useRef<HTMLDivElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const isPendingMember = (data.status as unknown as string) === 'pending';
   void commentsEndRef;
+
+  const isKid = data.date_of_birth ? getAgeFromDateOfBirth(data.date_of_birth) && getAgeFromDateOfBirth(data.date_of_birth)! < 16 : false;
 
   useEffect(() => {
     const nextData = { ...member };
@@ -128,6 +141,26 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       setAttendanceMap(mergeAttendanceMapForMember(member.id, attendanceMapLocal, readAttendanceByDate()));
       setAttendanceMoodMap((prev) => ({ ...prev, ...moodMapLocal }));
 
+      // Load kid behavior if this is a kid
+      if (isKid) {
+        try {
+          const today = new Date();
+          const startOfYear = new Date(today.getFullYear(), 0, 1);
+          const endOfYear = new Date(today.getFullYear(), 11, 31);
+          const startKey = toDateKey(startOfYear);
+          const endKey = toDateKey(endOfYear);
+          
+          const events = await getKidBehaviorEvents({ fromDateKey: startKey, toDateKey: endKey });
+          const behaviorMapLocal: { [date: string]: BehaviorValue } = {};
+          events.filter(e => e.kid_id === member.id).forEach(event => {
+            behaviorMapLocal[event.date] = event.value;
+          });
+          setBehaviorMap(behaviorMapLocal);
+        } catch (error) {
+          console.error('Error loading kid behavior events:', error);
+        }
+      }
+
       // Load notes
       const notesData = await getNotesForMember(member.id);
       const formattedComments: Comment[] = notesData.map(note => ({
@@ -143,7 +176,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     } finally {
       setLoading(false);
     }
-  }, [member.id]);
+  }, [member.id, isKid]);
 
   useEffect(() => {
     loadMemberData();
@@ -185,10 +218,54 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
       const updated = { ...data, attendance: { ...attendanceMap, [date]: newAttended } };
       setData(updated);
+
+      // For kids, if marking as attended for first time, show emoji picker
+      if (isKid && newAttended && !behaviorMap[date]) {
+        setEmojiPickerDate(date);
+      }
     } catch (error) {
       console.error('Error updating attendance:', error);
     }
   };
+
+  const handleBehaviorSelect = async (date: string, behavior: 'GOOD' | 'NEUTRAL' | 'BAD') => {
+    try {
+      await upsertKidBehavior({ kidId: member.id, dateKey: date, value: behavior });
+      setBehaviorMap(prev => ({
+        ...prev,
+        [date]: behavior
+      }));
+      setEmojiPickerDate(null);
+    } catch (error) {
+      console.error('Error setting behavior:', error);
+    }
+  };
+
+  const handleCalendarDayClick = (date: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    const attended = attendanceMap[date];
+    
+    if (isKid && attended) {
+      // For kids, if day is already marked, show emoji picker
+      openEmojiPicker(date, event);
+      event.stopPropagation();
+    } else {
+      // Otherwise toggle attendance
+      toggleDate(date);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setEmojiPickerDate(null);
+      }
+    };
+    
+    if (emojiPickerDate) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [emojiPickerDate]);
 
   const year = new Date().getFullYear();
 
@@ -554,11 +631,11 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
             {/* Calendar card */}
-            <div className="rounded-2xl border border-[#222] bg-[#121212] p-5">
+            <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 relative">
               <h2 className="text-sm font-black uppercase tracking-widest text-[#f0f0f0] mb-4" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
                 {new Date(year, selectedMonth).toLocaleString("default", { month: "long", year: 'numeric' })}
               </h2>
-              <div className="grid grid-cols-7 gap-1">
+              <div className="grid grid-cols-7 gap-1 relative">
                 {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
                   <div key={d} className="text-[10px] font-bold text-[#444] text-center py-1 uppercase">{d}</div>
                 ))}
@@ -570,26 +647,68 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                   const attended = attendanceMap[dateStr];
                   const dayMood = attendanceMoodMap[dateStr];
+                  const dayBehavior = behaviorMap[dateStr];
                   const isToday = dateStr === new Date().toISOString().split('T')[0];
+
+                  // Determine square color based on behavior (for kids) or attendance (for adults)
+                  let squareClass = '';
+                  let shouldShowEmoji = false;
+
+                  if (isKid && attended) {
+                    shouldShowEmoji = true;
+                    if (dayBehavior === 'GOOD') {
+                      squareClass = 'bg-green-600/40 border-green-500 text-green-400';
+                    } else if (dayBehavior === 'BAD') {
+                      squareClass = 'bg-red-600/40 border-red-500 text-red-400';
+                    } else {
+                      squareClass = 'bg-zinc-600/40 border-zinc-500 text-zinc-400';
+                    }
+                  } else if (!isKid && attended) {
+                    squareClass = 'bg-white/20 border-white/40 text-white';
+                  } else if (isToday) {
+                    squareClass = 'bg-[#141414] border-[#c81d25]/50 text-[#888] hover:bg-[#1e1e1e]';
+                  } else {
+                    squareClass = 'bg-[#141414] border-[#1e1e1e] text-[#555] hover:bg-[#1a1a1a] hover:text-[#888]';
+                  }
+
                   return (
-                    <button
-                      key={dateStr}
-                      onClick={() => toggleDate(dateStr)}
-                      className={`relative flex items-center justify-center w-full aspect-square rounded-lg text-[11px] font-semibold transition-colors cursor-pointer border ${
-                        attended
-                          ? 'bg-[#c81d25] text-white border-[#c81d25]'
-                          : isToday
-                          ? 'bg-[#141414] border-[#c81d25]/50 text-[#888] hover:bg-[#1e1e1e]'
-                          : 'bg-[#141414] border-[#1e1e1e] text-[#555] hover:bg-[#1a1a1a] hover:text-[#888]'
-                      }`}
-                    >
-                      {day}
-                      {dayMood && (
-                        <span className="absolute right-0.5 bottom-0.5 text-[9px] leading-none">
-                          {MOOD_ICONS[dayMood]}
-                        </span>
+                    <div key={dateStr} className="relative">
+                      <button
+                        onClick={(e) => handleCalendarDayClick(dateStr, e)}
+                        onMouseEnter={(e) => {
+                          if (isKid && attended) {
+                            setEmojiPickerDate(dateStr);
+                          }
+                        }}
+                        className={`relative flex items-center justify-center w-full aspect-square rounded-lg text-[11px] font-semibold transition-colors cursor-pointer border ${squareClass}`}
+                      >
+                        {day}
+                        {shouldShowEmoji && dayBehavior && (
+                          <span className="absolute right-0.5 bottom-0.5 text-[14px] leading-none">
+                            {BEHAVIOR_EMOJIS[dayBehavior]}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Emoji Picker Popup */}
+                      {isKid && emojiPickerDate === dateStr && (
+                        <div
+                          ref={emojiPickerRef}
+                          className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-2 flex gap-1 shadow-lg"
+                        >
+                          {(['GOOD', 'NEUTRAL', 'BAD'] as const).map((behavior) => (
+                            <button
+                              key={behavior}
+                              onClick={() => handleBehaviorSelect(dateStr, behavior)}
+                              className="w-8 h-8 rounded text-lg hover:bg-[#2a2a2a] transition-colors flex items-center justify-center"
+                              title={behavior}
+                            >
+                              {BEHAVIOR_EMOJIS[behavior]}
+                            </button>
+                          ))}
+                        </div>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
                 {Array.from({ length: Math.max(0, 42 - getFirstDay(year, selectedMonth) - getDaysInMonth(year, selectedMonth)) }).map((_, i) => (
