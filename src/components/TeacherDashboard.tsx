@@ -63,7 +63,6 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [showQuickModal, setShowQuickModal] = useState(false);
   const [quickSelection, setQuickSelection] = useState<{ [id: string]: boolean }>({});
   const [under16MoodByMemberId, setUnder16MoodByMemberId] = useState<{ [id: string]: MoodOption }>({});
-  const [showDDDropdown, setShowDDDropdown] = useState(false);
   const [acceptingPendingMemberId, setAcceptingPendingMemberId] = useState<string | null>(null);
   const [acceptForm, setAcceptForm] = useState<{ belt_level: string; payment_type: "Direct Debit" | "Cash"; fee: string }>({
     belt_level: "White Belt",
@@ -740,121 +739,6 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             >
               Quick Attendance
             </button>
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowDDDropdown(!showDDDropdown)}
-                style={{
-                  padding: '9px 16px',
-                  fontFamily: '"Barlow Condensed", sans-serif',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  letterSpacing: '3px',
-                  textTransform: 'uppercase',
-                  border: '1px solid #2a2a2a',
-                  background: 'transparent',
-                  color: '#888888',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#f0f0f0';
-                  e.currentTarget.style.borderColor = '#f0f0f0';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#888888';
-                  e.currentTarget.style.borderColor = '#2a2a2a';
-                }}
-              >
-                Export DD ▾
-              </button>
-              {showDDDropdown && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '4px',
-                  background: '#111111',
-                  border: '1px solid #2a2a2a',
-                  borderRadius: '4px',
-                  zIndex: 1000,
-                  minWidth: '180px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)'
-                }}>
-                  <button
-                    onClick={() => {
-                      handleExportDD();
-                      setShowDDDropdown(false);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      padding: '10px 14px',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#888888',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      borderBottom: '1px solid #2a2a2a'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#1a1a1a';
-                      e.currentTarget.style.color = '#f0f0f0';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = '#888888';
-                    }}
-                  >
-                    Exportar TXT (CGD)
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleExportDDExcel();
-                      setShowDDDropdown(false);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      padding: '10px 14px',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#888888',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#1a1a1a';
-                      e.currentTarget.style.color = '#f0f0f0';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = '#888888';
-                    }}
-                  >
-                    Exportar Excel
-                  </button>
-                </div>
-              )}
-            </div>
-            {showDDDropdown && (
-              <div
-                onClick={() => setShowDDDropdown(false)}
-                style={{
-                  position: 'fixed',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  zIndex: 999
-                }}
-              />
-            )}
             <button
               onClick={() => {
                 setEnrollmentTimestamp(new Date().toISOString());
