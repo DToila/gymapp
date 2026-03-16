@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createMember, getMembers } from '../../../lib/database';
 import { calculateMonthlyFee, getAgeFromDateOfBirth, getBeltOptions } from '../../../lib/types';
-import { mockMembers, mockRequests } from './mockData';
+import { mockMembers } from './mockData';
 import { AdultsFilters, KidsFilters, Member, MembersTab, QuickView } from './types';
 import SearchBar from './SearchBar';
 import MembersTabs from './MembersTabs';
@@ -33,10 +33,11 @@ type MembersAddForm = AddMemberFormData;
 
 function normalizeStatus(rawStatus: string | undefined): Member['status'] {
   const value = String(rawStatus || '').trim().toLowerCase();
+  if (value === 'pending') return 'Pending';
   if (value === 'active') return 'Active';
   if (value === 'paused') return 'Paused';
   if (value === 'unpaid') return 'Unpaid';
-  return 'Pending';
+  return 'Active';
 }
 
 function toTitleBelt(rawBelt: string | undefined): string {
@@ -154,11 +155,11 @@ export default function MembersPage() {
       const nonPending = mapped.filter((m) => m.status !== 'Pending');
 
       setAllMembers(nonPending.length > 0 ? nonPending : mockMembers);
-      setRequests(pending.length > 0 ? pending : mockRequests);
+      setRequests(pending);
     } catch (error) {
       console.error('Error loading members page data:', error);
       setAllMembers(mockMembers);
-      setRequests(mockRequests);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
