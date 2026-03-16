@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getMembers } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
@@ -15,6 +15,9 @@ interface AttendancePerson {
   group?: string;
   belt?: string;
 }
+
+const weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const monthLabels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const behaviorOptions: Array<{ value: Exclude<BehaviorValue, null>; emoji: string; label: string }> = [
   { value: 'GOOD', emoji: '😀', label: 'Good' },
@@ -36,13 +39,60 @@ const getKidsGroup = (age: number | null): string => {
   return 'Kids 3';
 };
 
+const getDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseDateKey = (dateKey: string): Date => {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, (month || 1) - 1, day || 1);
+};
+
+const isToday = (dateKey: string): boolean => dateKey === getDateKey(new Date());
+
+const formatDateLabel = (dateKey: string): string => {
+  if (isToday(dateKey)) return 'Today';
+  const date = parseDateKey(dateKey);
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const getMonthStart = (date: Date): Date => new Date(date.getFullYear(), date.getMonth(), 1);
+
+const buildCalendarDays = (visibleMonth: Date): Array<{ key: string; label: number; inCurrentMonth: boolean }> => {
+  const monthStart = getMonthStart(visibleMonth);
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(1 - monthStart.getDay());
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const current = new Date(gridStart);
+    current.setDate(gridStart.getDate() + index);
+    return {
+      key: getDateKey(current),
+      label: current.getDate(),
+      inCurrentMonth: current.getMonth() === visibleMonth.getMonth(),
+    };
+  });
+};
+
 export default function AttendancePage() {
+  const todayKey = useMemo(() => getDateKey(new Date()), []);
   const [activeTab, setActiveTab] = useState<AttendanceTab>('adults');
   const [search, setSearch] = useState('');
   const [people, setPeople] = useState<AttendancePerson[]>([]);
   const [loading, setLoading] = useState(true);
-  const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
-  const [behaviorByKidId, setBehaviorByKidId] = useState<Record<string, BehaviorValue>>({});
+  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [visibleMonth, setVisibleMonth] = useState(() => getMonthStart(new Date()));
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [attendanceByDate, setAttendanceByDate] = useState<Record<string, string[]>>({});
+  const [kidBehaviorByDate, setKidBehaviorByDate] = useState<Record<string, Record<string, BehaviorValue>>>({});
+  const datePickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -56,6 +106,17 @@ export default function AttendancePage() {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem('attendance_active_tab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setIsDatePickerOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -93,6 +154,9 @@ export default function AttendancePage() {
     return people.filter((person) => person.type === targetType);
   }, [activeTab, people]);
 
+  const checkedInIds = useMemo(() => new Set(attendanceByDate[selectedDate] || []), [attendanceByDate, selectedDate]);
+  const currentKidBehavior = useMemo(() => kidBehaviorByDate[selectedDate] || {}, [kidBehaviorByDate, selectedDate]);
+
   const normalizedSearch = search.trim().toLowerCase();
 
   const leftList = useMemo(() => {
@@ -111,35 +175,48 @@ export default function AttendancePage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [scopedPeople, checkedInIds]);
 
+  const selectDate = (dateKey: string) => {
+    setSelectedDate(dateKey);
+    setVisibleMonth(getMonthStart(parseDateKey(dateKey)));
+    setIsDatePickerOpen(false);
+  };
+
   const checkIn = (id: string) => {
-    setCheckedInIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      return next;
+    setAttendanceByDate((prev) => {
+      const current = new Set(prev[selectedDate] || []);
+      current.add(id);
+      return { ...prev, [selectedDate]: Array.from(current) };
     });
   };
 
   const uncheckIn = (id: string) => {
-    setCheckedInIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
+    setAttendanceByDate((prev) => {
+      const current = new Set(prev[selectedDate] || []);
+      current.delete(id);
+      return { ...prev, [selectedDate]: Array.from(current) };
     });
-    setBehaviorByKidId((prev) => {
-      if (!(id in prev)) return prev;
-      const next = { ...prev };
-      delete next[id];
-      return next;
+    setKidBehaviorByDate((prev) => {
+      const currentForDate = prev[selectedDate];
+      if (!currentForDate || !(id in currentForDate)) return prev;
+      const nextForDate = { ...currentForDate };
+      delete nextForDate[id];
+      return { ...prev, [selectedDate]: nextForDate };
     });
   };
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {
-    setBehaviorByKidId((prev) => ({ ...prev, [kidId]: value }));
+    setKidBehaviorByDate((prev) => ({
+      ...prev,
+      [selectedDate]: {
+        ...(prev[selectedDate] || {}),
+        [kidId]: value,
+      },
+    }));
   };
 
   const renderBehaviorSelector = (person: AttendancePerson, checkedIn: boolean) => {
     if (activeTab !== 'kids' || !checkedIn) return null;
-    const selected = behaviorByKidId[person.id] ?? null;
+    const selected = currentKidBehavior[person.id] ?? null;
 
     return (
       <div className="mr-2 flex items-center gap-1">
@@ -214,6 +291,8 @@ export default function AttendancePage() {
     );
   };
 
+  const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
+
   return (
     <div className="flex min-h-screen bg-[linear-gradient(180deg,#0b0b0b_0%,#101010_100%)] text-zinc-100">
       <TeacherSidebar active="attendance" />
@@ -231,12 +310,90 @@ export default function AttendancePage() {
               />
             </label>
 
-            <button
-              type="button"
-              className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(200,29,37,0.28)] transition hover:bg-[#ab1820]"
-            >
-              Start Attendance
-            </button>
+            <div className="flex flex-wrap items-center gap-3" ref={datePickerRef}>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsDatePickerOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#252525] bg-[#141414] px-4 py-2.5 text-sm font-medium text-zinc-200 shadow-[0_10px_20px_rgba(0,0,0,0.2)] transition hover:border-[rgba(200,29,37,0.45)] hover:text-white"
+                >
+                  <span>{formatDateLabel(selectedDate)}</span>
+                  <span className="text-xs text-zinc-500">▾</span>
+                </button>
+
+                {isDatePickerOpen ? (
+                  <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-[300px] rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVisibleMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                        className="grid h-8 w-8 place-items-center rounded-lg border border-[#252525] bg-[#161616] text-zinc-300 transition hover:border-[#343434] hover:text-white"
+                      >
+                        ‹
+                      </button>
+                      <div className="text-sm font-semibold text-zinc-100">
+                        {monthLabels[visibleMonth.getMonth()]} {visibleMonth.getFullYear()}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setVisibleMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                        className="grid h-8 w-8 place-items-center rounded-lg border border-[#252525] bg-[#161616] text-zinc-300 transition hover:border-[#343434] hover:text-white"
+                      >
+                        ›
+                      </button>
+                    </div>
+
+                    <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[11px] uppercase tracking-[0.12em] text-zinc-500">
+                      {weekdayLabels.map((label) => (
+                        <div key={label} className="py-1">{label}</div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {calendarDays.map((day) => {
+                        const isSelected = day.key === selectedDate;
+                        const isCurrentDay = isToday(day.key);
+                        return (
+                          <button
+                            key={day.key}
+                            type="button"
+                            onClick={() => selectDate(day.key)}
+                            className={`h-9 rounded-lg border text-sm transition ${
+                              isSelected
+                                ? 'border-[#c81d25] bg-[rgba(200,29,37,0.22)] text-white'
+                                : isCurrentDay
+                                  ? 'border-[#7f1d1d] bg-[rgba(127,29,29,0.2)] text-zinc-100'
+                                  : day.inCurrentMonth
+                                    ? 'border-transparent bg-[#151515] text-zinc-300 hover:border-[#303030] hover:bg-[#191919]'
+                                    : 'border-transparent bg-transparent text-zinc-600 hover:bg-[#141414]'
+                            }`}
+                          >
+                            {day.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => selectDate(todayKey)}
+                        className="rounded-lg border border-[#252525] bg-[#161616] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300 transition hover:border-[rgba(200,29,37,0.45)] hover:text-white"
+                      >
+                        Today
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <button
+                type="button"
+                className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(200,29,37,0.28)] transition hover:bg-[#ab1820]"
+              >
+                Start Attendance
+              </button>
+            </div>
           </div>
 
           <header className="mb-5">
