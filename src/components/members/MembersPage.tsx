@@ -426,16 +426,45 @@ export default function MembersPage() {
               }}>
                 ADD NEW MEMBER
               </h3>
-              <div style={{
-                fontSize: '10px',
-                letterSpacing: '2px',
-                textTransform: 'uppercase',
-                color: '#555555',
-                fontFamily: '"Barlow Condensed", sans-serif',
-                textAlign: 'right',
-                marginTop: '2px'
-              }}>
-                Enrollment: {new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-')}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{
+                  fontSize: '10px',
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  color: '#555555',
+                  fontFamily: '"Barlow Condensed", sans-serif',
+                  textAlign: 'right',
+                  marginTop: '2px'
+                }}>
+                  Enrollment: {new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-')}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  aria-label="Close add member form"
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #2a2a2a',
+                    color: '#888888',
+                    width: '24px',
+                    height: '24px',
+                    lineHeight: '22px',
+                    textAlign: 'center',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    padding: 0
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#f0f0f0';
+                    e.currentTarget.style.color = '#f0f0f0';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#2a2a2a';
+                    e.currentTarget.style.color = '#888888';
+                  }}
+                >
+                  X
+                </button>
               </div>
             </div>
 
