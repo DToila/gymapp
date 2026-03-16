@@ -14,7 +14,7 @@ import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { KidBehaviorItem, NoteItem } from './types';
-import { KID_BEHAVIOR_STORAGE_KEY, BehaviorValue } from '@/lib/attendanceState';
+import { BEHAVIOR_EVENTS_STORAGE_KEY, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents } from '@/lib/attendanceState';
 
 const getRelativeTime = (isoDate: string): string => {
   const then = new Date(isoDate).getTime();
@@ -68,57 +68,15 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
           group: `Kids ${(index % 3) + 1}`,
         }));
 
-      const moodToBehavior = (moodRaw: string | undefined): 'GOOD' | 'NEUTRAL' | 'BAD' | null => {
-        const mood = String(moodRaw || '').toLowerCase();
-        if (mood === 'happy') return 'GOOD';
-        if (mood === 'neutral') return 'NEUTRAL';
-        if (mood === 'sad') return 'BAD';
-        return null;
-      };
-
-      const behaviorEventMap = new Map<string, { kidId: string; createdAt: string; value: 'GOOD' | 'NEUTRAL' | 'BAD' }>();
-
-      realKids.forEach((kid) => {
-        const member = memberById.get(kid.id) as any;
-        const moodHistory = member?.attendance_mood as Record<string, string> | undefined;
-        if (!moodHistory) return;
-
-        Object.entries(moodHistory).forEach(([date, mood]) => {
-          const value = moodToBehavior(mood);
-          if (!value) return;
-          behaviorEventMap.set(`${kid.id}:${date}`, {
-            kidId: kid.id,
-            createdAt: new Date(`${date}T12:00:00`).toISOString(),
-            value,
-          });
-        });
-      });
-
-      if (typeof window !== 'undefined') {
-        try {
-          const raw = window.localStorage.getItem(KID_BEHAVIOR_STORAGE_KEY);
-          if (raw) {
-            const persisted = JSON.parse(raw) as Record<string, Record<string, BehaviorValue>>;
-            Object.entries(persisted).forEach(([dateKey, kidMap]) => {
-              Object.entries(kidMap || {}).forEach(([kidId, behavior]) => {
-                if (!memberById.has(kidId)) return;
-                if (behavior !== 'GOOD' && behavior !== 'NEUTRAL' && behavior !== 'BAD') return;
-                behaviorEventMap.set(`${kidId}:${dateKey}`, {
-                  kidId,
-                  createdAt: new Date(`${dateKey}T12:00:00`).toISOString(),
-                  value: behavior,
-                });
-              });
-            });
-          }
-        } catch (error) {
-          console.error('Error reading persisted attendance behavior:', error);
-        }
-      }
-
-      const mergedBehaviorEvents = Array.from(behaviorEventMap.values()).sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      const kidIds = new Set(realKids.map((kid) => kid.id));
+      const mergedBehaviorEvents = readBehaviorEvents()
+        .filter((event) => kidIds.has(event.kidId))
+        .map((event) => ({
+          kidId: event.kidId,
+          createdAt: new Date(`${event.dateKey}T12:00:00`).toISOString(),
+          value: event.value,
+        }))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       setRecentNotes(mapped);
       setKidsMembers(realKids);
@@ -139,9 +97,13 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === KID_BEHAVIOR_STORAGE_KEY) {
+      if (event.key === BEHAVIOR_EVENTS_STORAGE_KEY) {
         loadDashboardData();
       }
+    };
+
+    const handleBehaviorUpdated = () => {
+      loadDashboardData();
     };
 
     const handleFocus = () => {
@@ -149,11 +111,13 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
     };
 
     window.addEventListener('storage', handleStorage);
+    window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated as EventListener);
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
 
     return () => {
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated as EventListener);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
     };

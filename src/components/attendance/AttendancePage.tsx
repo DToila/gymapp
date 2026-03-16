@@ -4,7 +4,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getMembers } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { ATTENDANCE_STORAGE_KEY, KID_BEHAVIOR_STORAGE_KEY, toDateKey } from '@/lib/attendanceState';
+import {
+  BehaviorEvent,
+  readAttendanceByDate,
+  removeBehaviorEvent,
+  toDateKey,
+  upsertBehaviorEvent,
+  writeAttendanceByDate,
+  writeBehaviorEvents,
+  readBehaviorEvents,
+} from '@/lib/attendanceState';
 
 type AttendanceTab = 'adults' | 'kids';
 type BehaviorValue = 'GOOD' | 'NEUTRAL' | 'BAD' | null;
@@ -89,7 +98,7 @@ export default function AttendancePage() {
   const [visibleMonth, setVisibleMonth] = useState(() => getMonthStart(new Date()));
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [attendanceByDate, setAttendanceByDate] = useState<Record<string, string[]>>({});
-  const [kidBehaviorByDate, setKidBehaviorByDate] = useState<Record<string, Record<string, BehaviorValue>>>({});
+  const [behaviorEvents, setBehaviorEvents] = useState<BehaviorEvent[]>([]);
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -109,17 +118,8 @@ export default function AttendancePage() {
     if (typeof window === 'undefined') return;
 
     try {
-      const persistedAttendance = window.localStorage.getItem(ATTENDANCE_STORAGE_KEY);
-      if (persistedAttendance) {
-        const parsed = JSON.parse(persistedAttendance) as Record<string, string[]>;
-        setAttendanceByDate(parsed);
-      }
-
-      const persistedBehavior = window.localStorage.getItem(KID_BEHAVIOR_STORAGE_KEY);
-      if (persistedBehavior) {
-        const parsed = JSON.parse(persistedBehavior) as Record<string, Record<string, BehaviorValue>>;
-        setKidBehaviorByDate(parsed);
-      }
+      setAttendanceByDate(readAttendanceByDate());
+      setBehaviorEvents(readBehaviorEvents());
     } catch (error) {
       console.error('Error restoring attendance state from localStorage:', error);
     }
@@ -127,13 +127,8 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(ATTENDANCE_STORAGE_KEY, JSON.stringify(attendanceByDate));
+    writeAttendanceByDate(attendanceByDate);
   }, [attendanceByDate]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(KID_BEHAVIOR_STORAGE_KEY, JSON.stringify(kidBehaviorByDate));
-  }, [kidBehaviorByDate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -183,7 +178,17 @@ export default function AttendancePage() {
   }, [activeTab, people]);
 
   const checkedInIds = useMemo(() => new Set(attendanceByDate[selectedDate] || []), [attendanceByDate, selectedDate]);
-  const currentKidBehavior = useMemo(() => kidBehaviorByDate[selectedDate] || {}, [kidBehaviorByDate, selectedDate]);
+  const currentKidBehavior = useMemo(() => {
+    const map: Record<string, Exclude<BehaviorValue, null>> = {};
+    behaviorEvents
+      .filter((event) => event.dateKey === selectedDate)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .forEach((event) => {
+        if (map[event.kidId]) return;
+        map[event.kidId] = event.value;
+      });
+    return map;
+  }, [behaviorEvents, selectedDate]);
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -223,23 +228,23 @@ export default function AttendancePage() {
       current.delete(id);
       return { ...prev, [selectedDate]: Array.from(current) };
     });
-    setKidBehaviorByDate((prev) => {
-      const currentForDate = prev[selectedDate];
-      if (!currentForDate || !(id in currentForDate)) return prev;
-      const nextForDate = { ...currentForDate };
-      delete nextForDate[id];
-      return { ...prev, [selectedDate]: nextForDate };
+    setBehaviorEvents((prev) => {
+      const next = removeBehaviorEvent(prev, id, selectedDate);
+      writeBehaviorEvents(next);
+      return next;
     });
   };
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {
-    setKidBehaviorByDate((prev) => ({
-      ...prev,
-      [selectedDate]: {
-        ...(prev[selectedDate] || {}),
-        [kidId]: value,
-      },
-    }));
+    setBehaviorEvents((prev) => {
+      const next = upsertBehaviorEvent(prev, {
+        kidId,
+        dateKey: selectedDate,
+        value,
+      });
+      writeBehaviorEvents(next);
+      return next;
+    });
   };
 
   const renderBehaviorSelector = (person: AttendancePerson, checkedIn: boolean) => {
