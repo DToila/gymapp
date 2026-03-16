@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createMember, getMembers } from '../../../lib/database';
+import { createMember, getKidBehaviorEvents, getMembers } from '../../../lib/database';
 import { calculateMonthlyFee, getAgeFromDateOfBirth, getBeltOptions } from '../../../lib/types';
 import { mockMembers } from './mockData';
 import { AdultsFilters, KidsFilters, Member, MembersTab, QuickView } from './types';
@@ -15,6 +15,7 @@ import RequestsList from './RequestsList';
 import RowActionsMenu from './RowActionsMenu';
 import TeacherSidebar from './TeacherSidebar';
 import AddMemberModal, { AddMemberFormData } from './AddMemberModal';
+import { toDateKey } from '@/lib/attendanceState';
 
 const initialAdultsFilters: AdultsFilters = {
   status: 'all',
@@ -71,6 +72,21 @@ function isKidsMember(member: Member): boolean {
   if (member.group || member.behaviorState) return true;
   const age = getAgeFromDateOfBirth(member.dateOfBirth);
   return age !== null && age < 16;
+}
+
+function inferKidsGroup(member: Member): Member['group'] {
+  if (member.group) return member.group;
+  const age = getAgeFromDateOfBirth(member.dateOfBirth);
+  if (age === null) return 'Kids 1';
+  if (age <= 8) return 'Kids 1';
+  if (age <= 12) return 'Kids 2';
+  return 'Teens';
+}
+
+function deriveKidBehaviorState(hasBad: boolean, hasGood: boolean): NonNullable<Member['behaviorState']> {
+  if (hasBad) return 'attention';
+  if (hasGood) return 'good';
+  return 'neutral';
 }
 
 function isWithinNext7DaysBirthday(dateOfBirth?: string): boolean {
@@ -149,10 +165,37 @@ export default function MembersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const raw = await getMembers();
+      const [raw, behaviorEvents] = await Promise.all([
+        getMembers(),
+        (() => {
+          const to = new Date();
+          const from = new Date(to);
+          from.setDate(from.getDate() - 29);
+          return getKidBehaviorEvents({ fromDateKey: toDateKey(from), toDateKey: toDateKey(to) });
+        })(),
+      ]);
       const mapped = raw.map(mapDbMember);
-      const pending = mapped.filter((m) => m.status === 'Pending');
-      const nonPending = mapped.filter((m) => m.status !== 'Pending');
+
+      const behaviorByKid = new Map<string, { hasBad: boolean; hasGood: boolean }>();
+      behaviorEvents.forEach((event) => {
+        const current = behaviorByKid.get(event.kid_id) || { hasBad: false, hasGood: false };
+        if (event.value === 'BAD') current.hasBad = true;
+        if (event.value === 'GOOD') current.hasGood = true;
+        behaviorByKid.set(event.kid_id, current);
+      });
+
+      const withBehavior = mapped.map((member) => {
+        if (!isKidsMember(member)) return member;
+        const summary = behaviorByKid.get(member.id);
+        return {
+          ...member,
+          group: inferKidsGroup(member),
+          behaviorState: deriveKidBehaviorState(Boolean(summary?.hasBad), Boolean(summary?.hasGood)),
+        };
+      });
+
+      const pending = withBehavior.filter((m) => m.status === 'Pending');
+      const nonPending = withBehavior.filter((m) => m.status !== 'Pending');
 
       setAllMembers(nonPending.length > 0 ? nonPending : mockMembers);
       setRequests(pending);

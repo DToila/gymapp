@@ -185,7 +185,7 @@ export default function MembersTable({
                       </td>
                       <td style={{ padding: '11px 12px' }}>
                         <span style={behaviorStyle()}>
-                          {member.behaviorState === 'good' ? '😀 Good' : member.behaviorState === 'neutral' ? '😐 Neutral' : '😡 Needs attention'}
+                          {(member.behaviorState ?? 'neutral') === 'good' ? '😀 Good' : (member.behaviorState ?? 'neutral') === 'neutral' ? '😐 Neutral' : '😡 Needs attention'}
                         </span>
                       </td>
                       <td style={{ padding: '11px 12px' }}>
