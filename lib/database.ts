@@ -1,6 +1,18 @@
 import { supabase } from './supabase'
 import { Member, Attendance, Note } from './types'
 
+export type KidBehaviorValue = 'GOOD' | 'NEUTRAL' | 'BAD'
+
+export interface KidBehaviorEvent {
+  id?: string
+  kid_id: string
+  date: string
+  value: KidBehaviorValue
+  coach_id?: string | null
+  created_at: string
+  updated_at?: string
+}
+
 // Members
 export const getMembers = async (): Promise<Member[]> => {
   const { data, error } = await supabase
@@ -151,4 +163,69 @@ export const getRecentTeacherNotes = async (limit: number = 5): Promise<Note[]> 
 
   if (error) throw error
   return data || []
+}
+
+export const upsertKidBehavior = async ({ kidId, dateKey, value, coachId }: { kidId: string; dateKey: string; value: KidBehaviorValue; coachId?: string }): Promise<KidBehaviorEvent> => {
+  const { data, error } = await supabase
+    .from('kid_behavior_events')
+    .upsert(
+      {
+        kid_id: kidId,
+        date: dateKey,
+        value,
+        coach_id: coachId || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'kid_id,date' }
+    )
+    .select('id, kid_id, date, value, coach_id, created_at, updated_at')
+    .single()
+
+  if (error) {
+    console.error('Supabase upsertKidBehavior failed', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      kidId,
+      dateKey,
+      value,
+    })
+    throw error
+  }
+
+  return data as KidBehaviorEvent
+}
+
+export const getKidBehaviorEvents = async ({ fromDateKey, toDateKey }: { fromDateKey: string; toDateKey: string }): Promise<KidBehaviorEvent[]> => {
+  const { data, error } = await supabase
+    .from('kid_behavior_events')
+    .select('id, kid_id, date, value, coach_id, created_at, updated_at')
+    .gte('date', fromDateKey)
+    .lte('date', toDateKey)
+    .order('date', { ascending: false })
+
+  if (error) {
+    console.error('Supabase getKidBehaviorEvents failed', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      fromDateKey,
+      toDateKey,
+    })
+    throw error
+  }
+
+  return (data || []) as KidBehaviorEvent[]
+}
+
+export const deleteKidBehaviorForDate = async ({ kidId, dateKey }: { kidId: string; dateKey: string }): Promise<void> => {
+  const { error } = await supabase
+    .from('kid_behavior_events')
+    .delete()
+    .eq('kid_id', kidId)
+    .eq('date', dateKey)
+
+  if (error) throw error
 }

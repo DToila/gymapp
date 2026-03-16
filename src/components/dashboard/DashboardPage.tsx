@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
-import { getMembers, getRecentTeacherNotes } from '../../../lib/database';
+import { getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import { kpis, unpaidPayments, attendanceRecent, requests, birthdays } from './mockData';
 import Topbar from './Topbar';
@@ -14,7 +14,8 @@ import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { KidBehaviorItem, NoteItem } from './types';
-import { BEHAVIOR_EVENTS_STORAGE_KEY, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents } from '@/lib/attendanceState';
+import { toDateKey } from '@/lib/attendanceState';
+import { supabase } from '../../../lib/supabase';
 
 const getRelativeTime = (isoDate: string): string => {
   const then = new Date(isoDate).getTime();
@@ -30,6 +31,7 @@ const getRelativeTime = (isoDate: string): string => {
 export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const [recentNotes, setRecentNotes] = useState<NoteItem[]>([]);
   const [recentNotesLoading, setRecentNotesLoading] = useState(true);
+  const [behaviorMode, setBehaviorMode] = useState<'now' | 'month'>('now');
   const [kidsMembers, setKidsMembers] = useState<KidBehaviorItem[]>([]);
   const [kidsBehaviorEvents, setKidsBehaviorEvents] = useState<Array<{ kidId: string; createdAt: string; value: 'GOOD' | 'NEUTRAL' | 'BAD' }>>([]);
 
@@ -56,6 +58,18 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
         };
       });
 
+      setRecentNotes(mapped);
+    } catch (error) {
+      console.error('Error loading recent notes:', error);
+      setRecentNotes([]);
+    } finally {
+      setRecentNotesLoading(false);
+    }
+  }, []);
+
+  const fetchKidsBehavior = useCallback(async (mode: 'now' | 'month') => {
+    try {
+      const members = await getMembers();
       const realKids: KidBehaviorItem[] = members
         .filter((member) => {
           if (!member.date_of_birth) return false;
@@ -68,26 +82,41 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
           group: `Kids ${(index % 3) + 1}`,
         }));
 
+      const now = new Date();
+      const toKey = toDateKey(now);
+      const fromDate = new Date(now);
+      if (mode === 'now') {
+        fromDate.setDate(fromDate.getDate() - 6);
+      } else {
+        fromDate.setDate(1);
+      }
+      const fromDateKey = toDateKey(fromDate);
+
+      const events = await getKidBehaviorEvents({ fromDateKey, toDateKey: toKey });
+      console.log('[Dashboard] kid behavior fetch', {
+        mode,
+        fromDateKey,
+        toDateKey: toKey,
+        eventsCount: events.length,
+        sample: events[0] || null,
+      });
+
       const kidIds = new Set(realKids.map((kid) => kid.id));
-      const mergedBehaviorEvents = readBehaviorEvents()
-        .filter((event) => kidIds.has(event.kidId))
+      const mappedEvents = events
+        .filter((event) => kidIds.has(event.kid_id))
         .map((event) => ({
-          kidId: event.kidId,
-          createdAt: new Date(`${event.dateKey}T12:00:00`).toISOString(),
+          kidId: event.kid_id,
+          createdAt: event.created_at || new Date(`${event.date}T12:00:00`).toISOString(),
           value: event.value,
         }))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      setRecentNotes(mapped);
       setKidsMembers(realKids);
-      setKidsBehaviorEvents(mergedBehaviorEvents);
+      setKidsBehaviorEvents(mappedEvents);
     } catch (error) {
-      console.error('Error loading recent notes:', error);
-      setRecentNotes([]);
+      console.error('Error fetching kids behavior:', error);
       setKidsMembers([]);
       setKidsBehaviorEvents([]);
-    } finally {
-      setRecentNotesLoading(false);
     }
   }, []);
 
@@ -96,32 +125,42 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
   }, [loadDashboardData]);
 
   useEffect(() => {
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === BEHAVIOR_EVENTS_STORAGE_KEY) {
+    fetchKidsBehavior(behaviorMode);
+  }, [behaviorMode, fetchKidsBehavior]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      loadDashboardData();
+      fetchKidsBehavior(behaviorMode);
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
         loadDashboardData();
+        fetchKidsBehavior(behaviorMode);
       }
     };
 
-    const handleBehaviorUpdated = () => {
-      loadDashboardData();
-    };
-
-    const handleFocus = () => {
-      loadDashboardData();
-    };
-
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated as EventListener);
     window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    const channel = supabase
+      .channel('kid-behavior')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'kid_behavior_events' },
+        () => {
+          fetchKidsBehavior(behaviorMode);
+        }
+      )
+      .subscribe();
 
     return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated as EventListener);
       window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      supabase.removeChannel(channel);
     };
-  }, [loadDashboardData]);
+  }, [behaviorMode, fetchKidsBehavior, loadDashboardData]);
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
@@ -148,7 +187,13 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
           </div>
 
           <div className="space-y-4 lg:col-span-5">
-            <KidsBehaviorPanel needsAttention={kidsMembers} greatBehavior={kidsMembers} behaviorEvents={kidsBehaviorEvents} />
+            <KidsBehaviorPanel
+              needsAttention={kidsMembers}
+              greatBehavior={kidsMembers}
+              behaviorEvents={kidsBehaviorEvents}
+              mode={behaviorMode}
+              onModeChange={setBehaviorMode}
+            />
             <AttendancePanel checkedIn={27} total={62} recent={attendanceRecent} />
             <PendingRequestsList requests={requests} />
             <UpcomingBirthdays items={birthdays} />

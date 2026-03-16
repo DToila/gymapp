@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { KidBehaviorItem } from './types';
 
 type BehaviorMode = 'now' | 'month';
@@ -19,74 +19,14 @@ interface KidBehaviorRank extends KidBehaviorItem {
 }
 
 const MIN_EVENTS = 3;
-const NOW_WINDOW_DAYS = 7;
 const MAX_ROWS = 5;
 
-const getDateRange = (mode: BehaviorMode, now: Date): { start: Date; end: Date } => {
-  if (mode === 'now') {
-    const start = new Date(now);
-    start.setDate(start.getDate() - NOW_WINDOW_DAYS);
-    return { start, end: now };
-  }
-
-  return {
-    start: new Date(now.getFullYear(), now.getMonth(), 1),
-    end: now,
-  };
-};
-
-const hashKid = (input: string): number => {
-  return input.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-};
-
-const fallbackEventsForKids = (kids: KidBehaviorItem[]): BehaviorEvent[] => {
-  const now = new Date();
-  const events: BehaviorEvent[] = [];
-
-  kids.forEach((kid) => {
-    const seed = hashKid(kid.id + kid.name);
-
-    for (let dayOffset = 0; dayOffset < 30; dayOffset += 1) {
-      const createdAt = new Date(now);
-      createdAt.setDate(createdAt.getDate() - dayOffset);
-      createdAt.setHours(18 - (seed % 6), (seed + dayOffset) % 59, 0, 0);
-
-      const signal = (seed + dayOffset * 7) % 10;
-      let value: BehaviorValue;
-
-      if (seed % 3 === 0) {
-        value = signal < 5 ? 'BAD' : signal < 8 ? 'NEUTRAL' : 'GOOD';
-      } else if (seed % 3 === 1) {
-        value = signal < 2 ? 'BAD' : signal < 7 ? 'NEUTRAL' : 'GOOD';
-      } else {
-        value = signal < 1 ? 'BAD' : signal < 3 ? 'NEUTRAL' : 'GOOD';
-      }
-
-      events.push({ kidId: kid.id, createdAt: createdAt.toISOString(), value });
-    }
-  });
-
-  return events;
-};
-
-const computeRiskScore = (eventsNewestFirst: BehaviorEvent[], now: Date): number => {
+const computeRiskScore = (eventsNewestFirst: BehaviorEvent[]): number => {
   let score = 0;
-  let badStreak = 0;
-
   eventsNewestFirst.forEach((event) => {
-    const ageDays = (now.getTime() - new Date(event.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-    const multiplier = Math.max(0.3, 1 - ageDays / NOW_WINDOW_DAYS);
-    const base = event.value === 'BAD' ? 3 : event.value === 'NEUTRAL' ? 1 : 0;
-    score += base * multiplier;
-
-    if (event.value === 'BAD') {
-      badStreak += 1;
-      if (badStreak > 1) score += 2;
-    } else {
-      badStreak = 0;
-    }
+    if (event.value === 'BAD') score += 3;
+    if (event.value === 'NEUTRAL') score += 1;
   });
-
   return Number(score.toFixed(1));
 };
 
@@ -113,13 +53,15 @@ export default function KidsBehaviorPanel({
   needsAttention,
   greatBehavior,
   behaviorEvents,
+  mode,
+  onModeChange,
 }: {
   needsAttention: KidBehaviorItem[];
   greatBehavior: KidBehaviorItem[];
-  behaviorEvents?: BehaviorEvent[];
+  behaviorEvents: BehaviorEvent[];
+  mode: BehaviorMode;
+  onModeChange: (mode: BehaviorMode) => void;
 }) {
-  const [mode, setMode] = useState<BehaviorMode>('now');
-
   const allKids = useMemo(() => {
     const map = new Map<string, KidBehaviorItem>();
     [...needsAttention, ...greatBehavior].forEach((kid) => map.set(kid.id, kid));
@@ -127,17 +69,8 @@ export default function KidsBehaviorPanel({
   }, [needsAttention, greatBehavior]);
 
   const ranked = useMemo(() => {
-    const now = new Date();
-    const { start, end } = getDateRange(mode, now);
-    const sourceEvents = behaviorEvents !== undefined ? behaviorEvents : fallbackEventsForKids(allKids);
-
-    const inRange = sourceEvents.filter((event) => {
-      const date = new Date(event.createdAt);
-      return date >= start && date <= end;
-    });
-
     const grouped = new Map<string, BehaviorEvent[]>();
-    inRange.forEach((event) => {
+    behaviorEvents.forEach((event) => {
       const current = grouped.get(event.kidId) || [];
       current.push(event);
       grouped.set(event.kidId, current);
@@ -157,7 +90,7 @@ export default function KidsBehaviorPanel({
           eventCount: events.length,
           badCount,
           goodCount,
-          riskScore: computeRiskScore(events, now),
+          riskScore: computeRiskScore(events),
           bestScore: computeBestScore(events),
         };
       })
@@ -178,7 +111,7 @@ export default function KidsBehaviorPanel({
 
     const allLow =
       mode === 'now'
-        ? needsTop.length === 0 || needsTop[0].riskScore <= 1
+        ? needsTop.length === 0 || needsTop[0].riskScore <= 0
         : needsTop.length === 0 || needsTop[0].badCount === 0;
 
     return { needsTop, greatTop, allLow };
@@ -204,7 +137,7 @@ export default function KidsBehaviorPanel({
         <div className="flex items-center gap-2">
           <select
             value={mode}
-            onChange={(event) => setMode(event.target.value as BehaviorMode)}
+            onChange={(event) => onModeChange(event.target.value as BehaviorMode)}
             className="rounded-md border border-[#2a2a2a] bg-[#0f0f0f] px-2 py-1 text-xs text-zinc-200"
           >
             <option value="now">Now (7 days)</option>

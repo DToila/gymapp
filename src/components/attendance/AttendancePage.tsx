@@ -1,18 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { getMembers } from '../../../lib/database';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { deleteKidBehaviorForDate, getKidBehaviorEvents, getMembers, upsertKidBehavior } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import {
-  BehaviorEvent,
   readAttendanceByDate,
-  removeBehaviorEvent,
   toDateKey,
-  upsertBehaviorEvent,
   writeAttendanceByDate,
-  writeBehaviorEvents,
-  readBehaviorEvents,
 } from '@/lib/attendanceState';
 
 type AttendanceTab = 'adults' | 'kids';
@@ -98,7 +93,7 @@ export default function AttendancePage() {
   const [visibleMonth, setVisibleMonth] = useState(() => getMonthStart(new Date()));
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [attendanceByDate, setAttendanceByDate] = useState<Record<string, string[]>>({});
-  const [behaviorEvents, setBehaviorEvents] = useState<BehaviorEvent[]>([]);
+  const [kidBehaviorByDate, setKidBehaviorByDate] = useState<Record<string, Record<string, Exclude<BehaviorValue, null>>>>({});
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -119,7 +114,6 @@ export default function AttendancePage() {
 
     try {
       setAttendanceByDate(readAttendanceByDate());
-      setBehaviorEvents(readBehaviorEvents());
     } catch (error) {
       console.error('Error restoring attendance state from localStorage:', error);
     }
@@ -178,17 +172,7 @@ export default function AttendancePage() {
   }, [activeTab, people]);
 
   const checkedInIds = useMemo(() => new Set(attendanceByDate[selectedDate] || []), [attendanceByDate, selectedDate]);
-  const currentKidBehavior = useMemo(() => {
-    const map: Record<string, Exclude<BehaviorValue, null>> = {};
-    behaviorEvents
-      .filter((event) => event.dateKey === selectedDate)
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .forEach((event) => {
-        if (map[event.kidId]) return;
-        map[event.kidId] = event.value;
-      });
-    return map;
-  }, [behaviorEvents, selectedDate]);
+  const currentKidBehavior = useMemo(() => kidBehaviorByDate[selectedDate] || {}, [kidBehaviorByDate, selectedDate]);
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -214,6 +198,25 @@ export default function AttendancePage() {
     setIsDatePickerOpen(false);
   };
 
+  const loadBehaviorForDate = useCallback(async (dateKey: string) => {
+    try {
+      const events = await getKidBehaviorEvents({ fromDateKey: dateKey, toDateKey: dateKey });
+      const nextMap: Record<string, Exclude<BehaviorValue, null>> = {};
+      events.forEach((event) => {
+        nextMap[event.kid_id] = event.value;
+      });
+      console.log('[Attendance] behavior date load', { dateKey, eventsCount: events.length, sample: events[0] || null });
+      setKidBehaviorByDate((prev) => ({ ...prev, [dateKey]: nextMap }));
+    } catch (error) {
+      console.error('Error loading kid behavior for date:', dateKey, error);
+      setKidBehaviorByDate((prev) => ({ ...prev, [dateKey]: {} }));
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBehaviorForDate(selectedDate);
+  }, [selectedDate, loadBehaviorForDate]);
+
   const checkIn = (id: string) => {
     setAttendanceByDate((prev) => {
       const current = new Set(prev[selectedDate] || []);
@@ -228,23 +231,43 @@ export default function AttendancePage() {
       current.delete(id);
       return { ...prev, [selectedDate]: Array.from(current) };
     });
-    setBehaviorEvents((prev) => {
-      const next = removeBehaviorEvent(prev, id, selectedDate);
-      writeBehaviorEvents(next);
-      return next;
+
+    setKidBehaviorByDate((prev) => {
+      const dateMap = { ...(prev[selectedDate] || {}) };
+      delete dateMap[id];
+      return { ...prev, [selectedDate]: dateMap };
+    });
+
+    deleteKidBehaviorForDate({ kidId: id, dateKey: selectedDate }).catch((error) => {
+      console.error('Error deleting kid behavior on uncheck:', error);
+      loadBehaviorForDate(selectedDate);
     });
   };
 
   const setBehavior = (kidId: string, value: Exclude<BehaviorValue, null>) => {
-    setBehaviorEvents((prev) => {
-      const next = upsertBehaviorEvent(prev, {
-        kidId,
-        dateKey: selectedDate,
-        value,
+    const previous = currentKidBehavior[kidId];
+    setKidBehaviorByDate((prev) => ({
+      ...prev,
+      [selectedDate]: {
+        ...(prev[selectedDate] || {}),
+        [kidId]: value,
+      },
+    }));
+
+    console.log('[Attendance] upsert behavior click', { kidId, dateKey: selectedDate, value });
+    upsertKidBehavior({ kidId, dateKey: selectedDate, value })
+      .then((response) => {
+        console.log('[Attendance] upsert behavior response', response);
+      })
+      .catch((error) => {
+        console.error('Error saving kid behavior:', error);
+        setKidBehaviorByDate((prev) => {
+          const dateMap = { ...(prev[selectedDate] || {}) };
+          if (previous) dateMap[kidId] = previous;
+          else delete dateMap[kidId];
+          return { ...prev, [selectedDate]: dateMap };
+        });
       });
-      writeBehaviorEvents(next);
-      return next;
-    });
   };
 
   const renderBehaviorSelector = (person: AttendancePerson, checkedIn: boolean) => {
