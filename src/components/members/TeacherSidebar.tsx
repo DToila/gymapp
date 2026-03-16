@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import GBLogo from '@/components/GBLogo';
+import { exportDDTxt, exportDDExcel } from '../../../lib/ddExport';
 
 interface TeacherSidebarProps {
   active: 'dashboard' | 'members';
@@ -35,12 +36,49 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
   }, []);
 
   const handleExportToggle = () => {
-    if (!onExportTxt && !onExportExcel) return;
     if (!showExportDropdown && exportTriggerRef.current) {
       const rect = exportTriggerRef.current.getBoundingClientRect();
       setDropdownPos({ top: rect.top, left: rect.right + 4 });
     }
     setShowExportDropdown(v => !v);
+  };
+
+  const handleExportTxtClick = async () => {
+    try {
+      if (onExportTxt) {
+        await Promise.resolve(onExportTxt());
+      } else {
+        await exportDDTxt();
+      }
+    } catch (error) {
+      console.error('Error exporting DD TXT:', error);
+      alert('Error exporting DD TXT. Please try again.');
+    } finally {
+      setShowExportDropdown(false);
+    }
+  };
+
+  const handleExportExcelClick = async () => {
+    try {
+      if (onExportExcel) {
+        await Promise.resolve(onExportExcel());
+      } else {
+        await exportDDExcel();
+      }
+    } catch (error) {
+      console.error('Error exporting DD Excel:', error);
+      alert('Error exporting DD Excel. Please try again.');
+    } finally {
+      setShowExportDropdown(false);
+    }
+  };
+
+  const handleAddMemberClick = () => {
+    if (onAddMember) {
+      onAddMember();
+      return;
+    }
+    router.push('/dashboard?openAddMember=1');
   };
 
   const navItems = [
@@ -171,17 +209,15 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
               gap: '12px',
               fontSize: '13px',
               color: showExportDropdown ? '#f0f0f0' : '#888888',
-              cursor: (onExportTxt || onExportExcel) ? 'pointer' : 'default',
+              cursor: 'pointer',
               borderLeft: '2px solid transparent',
               background: showExportDropdown ? '#1a1a1a' : 'transparent',
               transition: 'all 0.2s',
               whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
-              if (onExportTxt || onExportExcel) {
-                (e.currentTarget as HTMLElement).style.color = '#f0f0f0';
-                if (!showExportDropdown) (e.currentTarget as HTMLElement).style.background = '#1a1a1a';
-              }
+              (e.currentTarget as HTMLElement).style.color = '#f0f0f0';
+              if (!showExportDropdown) (e.currentTarget as HTMLElement).style.background = '#1a1a1a';
             }}
             onMouseLeave={(e) => {
               if (!showExportDropdown) {
@@ -210,26 +246,22 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
               boxShadow: '4px 4px 16px rgba(0,0,0,0.7)'
             }}
           >
-            {onExportTxt && (
-              <div
-                onClick={() => { onExportTxt(); setShowExportDropdown(false); }}
-                style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer', borderBottom: '1px solid #2a2a2a' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
-              >
-                Export TXT
-              </div>
-            )}
-            {onExportExcel && (
-              <div
-                onClick={() => { onExportExcel(); setShowExportDropdown(false); }}
-                style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
-              >
-                Export Excel
-              </div>
-            )}
+            <div
+              onClick={handleExportTxtClick}
+              style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer', borderBottom: '1px solid #2a2a2a' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
+            >
+              Export TXT
+            </div>
+            <div
+              onClick={handleExportExcelClick}
+              style={{ padding: '10px 16px', fontSize: '12px', color: '#c0c0c0', cursor: 'pointer' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#2a2a2a'; (e.currentTarget as HTMLElement).style.color = '#f0f0f0'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#c0c0c0'; }}
+            >
+              Export Excel
+            </div>
           </div>
         )}
       </nav>
@@ -242,29 +274,27 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
         flexDirection: 'column',
         gap: '12px'
       }}>
-        {onAddMember && (
-          <button
-            onClick={onAddMember}
-            style={{
-              width: '100%',
-              padding: collapsed ? '8px 0' : '9px 10px',
-              fontFamily: '"Barlow Condensed", sans-serif',
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '2px',
-              textTransform: 'uppercase',
-              border: '1px solid #CC0000',
-              background: '#CC0000',
-              color: 'white',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
-          >
-            {collapsed ? '+' : '+ Add Member'}
-          </button>
-        )}
+        <button
+          onClick={handleAddMemberClick}
+          style={{
+            width: '100%',
+            padding: collapsed ? '8px 0' : '9px 10px',
+            fontFamily: '"Barlow Condensed", sans-serif',
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            border: '1px solid #CC0000',
+            background: '#CC0000',
+            color: 'white',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
+          onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
+        >
+          {collapsed ? '+' : '+ Add Member'}
+        </button>
 
         <div style={{
           display: 'flex',

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import MemberProfile from "./MemberProfile";
 import TeacherSidebar from "@/components/members/TeacherSidebar";
 import { Member, calculateMonthlyFee, getBeltOptions } from "../../lib/types";
@@ -38,6 +38,7 @@ const MOOD_OPTIONS: Array<{ value: MoodOption; icon: string; label: string }> = 
 ];
 
 export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
+  const openAddHandledRef = useRef(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [pendingMembers, setPendingMembers] = useState<Member[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -132,6 +133,15 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    if (openAddHandledRef.current) return;
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('openAddMember') === '1') {
+      openAddHandledRef.current = true;
+      setEnrollmentTimestamp(new Date().toISOString());
+      setShowAddModal(true);
+    }
+  }, []);
 
   const openQuickModal = () => {
     const today = new Date().toISOString().split("T")[0];
