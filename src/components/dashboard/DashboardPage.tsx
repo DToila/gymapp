@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { kpis, unpaidPayments, requests, birthdays } from './mockData';
+import { announcements, kpis, unpaidPayments, requests, birthdays } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -12,6 +12,7 @@ import KidsBehaviorPanel from './KidsBehaviorPanel';
 import AttendancePanel from './AttendancePanel';
 import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
+import AnnouncementsPanel from './AnnouncementsPanel';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { AttendanceRecentItem, KidBehaviorItem, NoteItem } from './types';
 import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
@@ -278,6 +279,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
           <div className="space-y-4 lg:col-span-7">
             <RecentNotesList notes={recentNotes} loading={recentNotesLoading} />
             <UnpaidPaymentsTable rows={unpaidPayments} />
+            <AnnouncementsPanel items={announcements} />
           </div>
 
           <div className="space-y-4 lg:col-span-5">

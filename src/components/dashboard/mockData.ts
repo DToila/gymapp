@@ -1,4 +1,4 @@
-import { AttendanceRecentItem, BirthdayItem, KidBehaviorItem, KpiItem, NoteItem, RequestItem, UnpaidPayment } from './types';
+import { AnnouncementItem, AttendanceRecentItem, BirthdayItem, KidBehaviorItem, KpiItem, NoteItem, RequestItem, UnpaidPayment } from './types';
 
 export const kpis: KpiItem[] = [
   { id: 'active', value: '168', label: 'Active Members', accent: 'neutral' },
@@ -57,4 +57,19 @@ export const birthdays: BirthdayItem[] = [
   { id: '1', name: 'Miguel Araujo', dateLabel: 'Tomorrow' },
   { id: '2', name: 'Joana Costa', dateLabel: '29 Apr' },
   { id: '3', name: 'Pedro Reis', dateLabel: '26 Apr' },
+];
+
+export const announcements: AnnouncementItem[] = [
+  { id: 'a-1', tag: 'URGENT', title: 'Thursday class starts 30 minutes earlier this week.', audience: 'All', expiresAt: '12 Apr', pinned: true },
+  { id: 'a-2', tag: 'EVENT', title: 'Kids belt graduation on Saturday at 10:00.', audience: 'Kids', expiresAt: '19 Apr', pinned: true },
+  { id: 'a-3', tag: 'PAYMENTS', title: 'Monthly fees due by the 5th of each month.', audience: 'Adults', expiresAt: '05 May' },
+  { id: 'a-4', tag: 'INFO', title: 'New water station available near the front desk.', audience: 'All', expiresAt: '30 Apr' },
+  { id: 'a-5', tag: 'EVENT', title: 'Open mat this Sunday for all active members.', audience: 'Adults', expiresAt: '21 Apr' },
+  { id: 'a-6', tag: 'PAYMENTS', title: 'Direct debit update required for expired IBANs.', audience: 'All', expiresAt: '28 Apr' },
+  { id: 'a-7', tag: 'URGENT', title: 'Uniform policy will be strictly enforced from next week.', audience: 'Kids', expiresAt: '16 Apr' },
+  { id: 'a-8', tag: 'INFO', title: 'Parking lot maintenance scheduled for Friday morning.', audience: 'All', expiresAt: '26 Apr' },
+  { id: 'a-9', tag: 'EVENT', title: 'Competition prep workshop registration now open.', audience: 'Adults', expiresAt: '24 Apr' },
+  { id: 'a-10', tag: 'PAYMENTS', title: 'Installment reminder emails sent every Monday.', audience: 'All', expiresAt: '06 May' },
+  { id: 'a-11', tag: 'INFO', title: 'Reception desk closes at 20:30 on weekdays.', audience: 'All', expiresAt: '15 May' },
+  { id: 'a-12', tag: 'URGENT', title: 'Bring mouthguards for all sparring sessions.', audience: 'Kids', expiresAt: '18 Apr' },
 ];

@@ -27,6 +27,18 @@ export interface AttendanceRecentItem {
   time: string;
 }
 
+export type AnnouncementTag = 'URGENT' | 'INFO' | 'EVENT' | 'PAYMENTS';
+export type AnnouncementAudience = 'Kids' | 'Adults' | 'All';
+
+export interface AnnouncementItem {
+  id: string;
+  tag: AnnouncementTag;
+  title: string;
+  audience: AnnouncementAudience;
+  expiresAt: string;
+  pinned?: boolean;
+}
+
 export interface RequestItem {
   id: string;
   name: string;
