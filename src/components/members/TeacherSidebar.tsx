@@ -6,7 +6,7 @@ import GBLogo from '@/components/GBLogo';
 import { exportDDTxt, exportDDExcel } from '../../../lib/ddExport';
 
 interface TeacherSidebarProps {
-  active: 'dashboard' | 'members' | 'attendance';
+  active: 'dashboard' | 'schedule' | 'members' | 'attendance';
   requestsCount?: number;
   onLogout?: () => void;
   onExportTxt?: () => void;
@@ -82,6 +82,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
 
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: '◔', onClick: () => router.push('/dashboard') },
+    { key: 'schedule', label: 'Horário', icon: '📅', onClick: () => router.push('/schedule') },
     { key: 'members', label: 'Membros', icon: '◌', onClick: () => router.push('/members') },
     { key: 'attendance', label: 'Presenças', icon: '◍', onClick: () => router.push('/attendance') },
     { key: 'payments', label: 'Pagamentos', icon: '▣', onClick: () => {} },
