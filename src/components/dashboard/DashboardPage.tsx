@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { announcements, kpis, unpaidPayments, requests, birthdays } from './mockData';
+import { announcements, kpis, unpaidPayments, birthdays } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -14,7 +14,7 @@ import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
 import AnnouncementsPanel from './AnnouncementsPanel';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { AttendanceRecentItem, KidBehaviorItem, NoteItem } from './types';
+import { AttendanceRecentItem, KidBehaviorItem, NoteItem, RequestItem } from './types';
 import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
 
@@ -38,6 +38,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const [todayCheckedIn, setTodayCheckedIn] = useState(0);
   const [todayTotalMembers, setTodayTotalMembers] = useState(0);
   const [todayRecentAttendance, setTodayRecentAttendance] = useState<AttendanceRecentItem[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<RequestItem[]>([]);
 
   const loadDashboardData = useCallback(async () => {
     setRecentNotesLoading(true);
@@ -62,10 +63,31 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
         };
       });
 
+      const mappedPendingRequests: RequestItem[] = members
+        .filter((member) => String((member.status || '')).trim().toLowerCase() === 'pending')
+        .map((member) => {
+          const createdAt = new Date(member.created_at || '');
+          const createdAtMs = Number.isNaN(createdAt.getTime()) ? 0 : createdAt.getTime();
+          const requestedAt = Number.isNaN(createdAt.getTime())
+            ? 'Requested recently'
+            : `Requested ${createdAt.toLocaleDateString('en-GB')}`;
+
+          return {
+            id: member.id,
+            name: member.name,
+            requestedAt,
+            createdAtMs,
+          };
+        })
+        .sort((a, b) => b.createdAtMs - a.createdAtMs)
+        .map(({ id, name, requestedAt }) => ({ id, name, requestedAt }));
+
       setRecentNotes(mapped);
+      setPendingRequests(mappedPendingRequests);
     } catch (error) {
       console.error('Error loading recent notes:', error);
       setRecentNotes([]);
+      setPendingRequests([]);
     } finally {
       setRecentNotesLoading(false);
     }
@@ -246,6 +268,13 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
           fetchTodayAttendance();
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'members' },
+        () => {
+          loadDashboardData();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -259,7 +288,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
-      <TeacherSidebar active="dashboard" requestsCount={requests.length} onLogout={onLogout} />
+      <TeacherSidebar active="dashboard" requestsCount={pendingRequests.length} onLogout={onLogout} />
 
       <main className="flex-1 p-6 lg:p-8">
         <Topbar />
@@ -291,7 +320,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
               onModeChange={setBehaviorMode}
             />
             <AttendancePanel checkedIn={todayCheckedIn} total={todayTotalMembers} recent={todayRecentAttendance} />
-            <PendingRequestsList requests={requests} />
+            <PendingRequestsList requests={pendingRequests} />
             <UpcomingBirthdays items={birthdays} />
           </div>
         </section>
