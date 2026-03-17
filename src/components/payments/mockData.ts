@@ -1,0 +1,145 @@
+import { PaymentRecord, PaymentHistory, DirectDebitRecord, PaymentKpi } from './types';
+
+export const mockUnpaidPayments: PaymentRecord[] = [
+  {
+    id: 'pay-1',
+    name: 'João Silva',
+    amount: 75,
+    dueDate: '2026-02-15',
+    overdueDays: 30,
+    method: 'DD',
+    status: 'Overdue',
+    memberId: 'mem-1',
+  },
+  {
+    id: 'pay-2',
+    name: 'Maria Costa',
+    amount: 65,
+    dueDate: '2026-02-28',
+    overdueDays: 17,
+    method: 'TPA',
+    status: 'Overdue',
+    memberId: 'mem-2',
+  },
+  {
+    id: 'pay-3',
+    name: 'Pedro Oliveira',
+    amount: 80,
+    dueDate: '2026-03-05',
+    overdueDays: 12,
+    method: 'DD',
+    status: 'Unpaid',
+    memberId: 'mem-3',
+  },
+  {
+    id: 'pay-4',
+    name: 'Sofia Martins',
+    amount: 70,
+    dueDate: '2026-03-15',
+    method: 'TPA',
+    status: 'Unpaid',
+    memberId: 'mem-4',
+  },
+  {
+    id: 'pay-5',
+    name: 'Bruno Santos',
+    amount: 75,
+    dueDate: '2026-03-10',
+    overdueDays: 7,
+    method: 'DD',
+    status: 'Unpaid',
+    memberId: 'mem-5',
+  },
+];
+
+export const mockPaymentHistory: PaymentHistory[] = [
+  {
+    id: 'hist-1',
+    name: 'Ana Ferreira',
+    amount: 75,
+    method: 'DD',
+    paidDate: '2026-03-01',
+    reference: 'SEPARef001',
+  },
+  {
+    id: 'hist-2',
+    name: 'Tiago Gonçalves',
+    amount: 80,
+    method: 'TPA Card',
+    paidDate: '2026-03-02',
+    notes: 'Paid via card reader',
+  },
+  {
+    id: 'hist-3',
+    name: 'Mariana Rocha',
+    amount: 65,
+    method: 'Cash',
+    paidDate: '2026-03-03',
+  },
+  {
+    id: 'hist-4',
+    name: 'Lucas Alves',
+    amount: 75,
+    method: 'TPA MBWay',
+    paidDate: '2026-03-04',
+  },
+  {
+    id: 'hist-5',
+    name: 'Catarina Silva',
+    amount: 70,
+    method: 'DD',
+    paidDate: '2026-03-05',
+    reference: 'SEPARef002',
+  },
+  {
+    id: 'hist-6',
+    name: 'Rafael Costa',
+    amount: 150,
+    method: 'TPA Card',
+    paidDate: '2026-03-06',
+    notes: 'Family membership (2 members)',
+  },
+];
+
+export const mockDirectDebit: DirectDebitRecord[] = [
+  {
+    id: 'dd-1',
+    name: 'João Silva',
+    amount: 75,
+    dueDate: '2026-03-20',
+    status: 'Pending',
+    batchId: 'BATCH-001',
+  },
+  {
+    id: 'dd-2',
+    name: 'Pedro Oliveira',
+    amount: 80,
+    dueDate: '2026-03-20',
+    status: 'Pending',
+    batchId: 'BATCH-001',
+  },
+  {
+    id: 'dd-3',
+    name: 'Bruno Santos',
+    amount: 75,
+    dueDate: '2026-03-20',
+    status: 'Failed',
+    batchId: 'BATCH-001',
+  },
+  {
+    id: 'dd-4',
+    name: 'Ricardo Martins',
+    amount: 65,
+    dueDate: '2026-02-20',
+    status: 'Returned',
+    batchId: 'BATCH-000',
+  },
+];
+
+export const mockPaymentKpis: PaymentKpi = {
+  unpaidCount: 12,
+  unpaidTotal: 850,
+  dueThisWeek: 5,
+  ddFailures: 1,
+  collectedThisMonth: 2950,
+};

@@ -9,10 +9,10 @@ interface SidebarProps {
 const navItems: Array<{ key: SidebarItemKey; label: string; href: string; icon: string }> = [
   { key: 'dashboard', label: 'Dashboard', href: '/dashboard', icon: '◔' },
   { key: 'members', label: 'Members', href: '/members', icon: '◌' },
-  { key: 'attendance', label: 'Attendance', href: '#', icon: '◍' },
-  { key: 'payments', label: 'Payments', href: '#', icon: '▣' },
-  { key: 'requests', label: 'Requests', href: '#', icon: '◎' },
-  { key: 'definitions', label: 'Definitions', href: '#', icon: '☰' },
+  { key: 'attendance', label: 'Attendance', href: '/attendance', icon: '◍' },
+  { key: 'leads', label: 'Leads', href: '/leads', icon: '◎' },
+  { key: 'payments', label: 'Payments', href: '/payments', icon: '▣' },
+  { key: 'settings', label: 'Definições', href: '/settings', icon: '☰' },
 ];
 
 export default function Sidebar({ active, onLogout }: SidebarProps) {

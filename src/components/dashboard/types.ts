@@ -1,4 +1,4 @@
-export type SidebarItemKey = 'dashboard' | 'members' | 'attendance' | 'payments' | 'requests' | 'definitions';
+export type SidebarItemKey = 'dashboard' | 'members' | 'attendance' | 'leads' | 'payments' | 'settings';
 
 export interface NoteItem {
   id: string;

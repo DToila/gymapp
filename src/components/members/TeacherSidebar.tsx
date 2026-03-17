@@ -6,7 +6,7 @@ import GBLogo from '@/components/GBLogo';
 import { exportDDTxt, exportDDExcel } from '../../../lib/ddExport';
 
 interface TeacherSidebarProps {
-  active: 'dashboard' | 'schedule' | 'members' | 'attendance';
+  active: 'dashboard' | 'schedule' | 'members' | 'attendance' | 'leads' | 'payments' | 'settings';
   requestsCount?: number;
   onLogout?: () => void;
   onExportTxt?: () => void;
@@ -85,9 +85,9 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
     { key: 'schedule', label: 'Horário', icon: '📅', onClick: () => router.push('/schedule') },
     { key: 'members', label: 'Membros', icon: '◌', onClick: () => router.push('/members') },
     { key: 'attendance', label: 'Presenças', icon: '◍', onClick: () => router.push('/attendance') },
-    { key: 'payments', label: 'Pagamentos', icon: '▣', onClick: () => {} },
-    { key: 'requests', label: 'Pedidos', icon: '◎', onClick: () => {} },
-    { key: 'settings', label: 'Definições', icon: '☰', onClick: () => {} }
+    { key: 'leads', label: 'Leads', icon: '◎', onClick: () => router.push('/leads') },
+    { key: 'payments', label: 'Pagamentos', icon: '▣', onClick: () => router.push('/payments') },
+    { key: 'settings', label: 'Definições', icon: '☰', onClick: () => router.push('/settings') }
   ];
 
   return (
