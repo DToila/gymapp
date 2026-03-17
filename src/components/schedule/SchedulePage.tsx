@@ -156,7 +156,10 @@ export default function SchedulePage() {
       start_time: slot.startTime,
       end_time: slot.endTime,
       program: slot.program,
-      class_label: slot.program === 'GBK' ? `KIDS ${slot.kidsGroup || ''}`.trim() : slot.program,
+      kids_group: slot.kidsGroup || null,
+      gi_type: slot.giType,
+      tags: slot.tags || null,
+      default_coach_id: null,
     }));
 
     ensureScheduleSlots(slotRows)
@@ -300,7 +303,10 @@ export default function SchedulePage() {
             start_time: sourceSlot.startTime,
             end_time: sourceSlot.endTime,
             program: sourceSlot.program,
-            class_label: sourceSlot.program === 'GBK' ? `KIDS ${sourceSlot.kidsGroup || ''}`.trim() : sourceSlot.program,
+            kids_group: sourceSlot.kidsGroup || null,
+            gi_type: sourceSlot.giType,
+            tags: sourceSlot.tags || null,
+            default_coach_id: null,
           },
         ]);
 

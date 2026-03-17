@@ -27,7 +27,10 @@ export interface ScheduleSlotRow {
   start_time: string
   end_time: string
   program: string
-  class_label?: string | null
+  kids_group?: string | null
+  gi_type: string
+  tags?: string[] | null
+  default_coach_id?: string | null
 }
 
 export interface ClassPlanRow {
@@ -316,7 +319,7 @@ export const ensureScheduleSlots = async (
   const codes = slots.map((slot) => slot.code)
   const { data, error: readError } = await supabase
     .from('schedule_slots')
-    .select('id, code, day_of_week, start_time, end_time, program, class_label')
+    .select('id, code, day_of_week, start_time, end_time, program, kids_group, gi_type, tags, default_coach_id')
     .in('code', codes)
 
   if (readError) throw readError
