@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import StudentShell from './StudentShell';
 import { studentSchedule } from './studentData';
 
@@ -65,10 +65,6 @@ export default function StudentSchedulePage() {
 
   const scheduleItems = useMemo(() => studentSchedule as ScheduleViewItem[], []);
 
-  useEffect(() => {
-    console.log('SCHEDULE_TOTAL', scheduleItems.length, scheduleItems.slice(0, 5));
-  }, [scheduleItems]);
-
   const classesByDay = useMemo(() => {
     const byDay: Record<DayKey, ScheduleViewItem[]> = {
       SEG: [],
@@ -93,16 +89,10 @@ export default function StudentSchedulePage() {
 
     for (const day of dayOrder) {
       byDay[day.key].sort((a, b) => parseStartMinutes(a.time) - parseStartMinutes(b.time));
-      console.log('DAY_COUNT', day.key, byDay[day.key].length);
     }
 
     return byDay;
   }, [scheduleItems]);
-
-  useEffect(() => {
-    const totalRendered = dayOrder.reduce((sum, day) => sum + classesByDay[day.key].length, 0);
-    console.log('WEEK_RENDER_TOTAL', totalRendered, 'SOURCE_TOTAL', scheduleItems.length);
-  }, [classesByDay, scheduleItems.length]);
 
   const todayDayKey = useMemo(() => {
     return dayNumberToKey(new Date().getDay()) || 'SEG';
