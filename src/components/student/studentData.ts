@@ -40,7 +40,7 @@ export const officialSchedule: OfficialScheduleClass[] = [
   { id: 'ter-2', dayOfWeek: 'TER', startTime: '12:15', endTime: '13:15', program: 'GB2', giType: 'NOGI' },
   { id: 'ter-3', dayOfWeek: 'TER', startTime: '17:30', endTime: '18:15', program: 'GBK', kidsGroup: 'MC', giType: 'GI' },
   { id: 'ter-4', dayOfWeek: 'TER', startTime: '18:15', endTime: '19:15', program: 'GBK', kidsGroup: 'PC2', giType: 'GI' },
-  { id: 'ter-5', dayOfWeek: 'TER', startTime: '19:15', endTime: '20:15', program: 'GB2', giType: 'GI' },
+  { id: 'ter-5', dayOfWeek: 'TER', startTime: '19:15', endTime: '20:15', program: 'GB2', giType: 'NOGI' },
   { id: 'ter-6', dayOfWeek: 'TER', startTime: '20:15', endTime: '21:15', program: 'GB1', giType: 'GI' },
 
   { id: 'qua-1', dayOfWeek: 'QUA', startTime: '07:00', endTime: '08:00', program: 'GB1', giType: 'GI' },
