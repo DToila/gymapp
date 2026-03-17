@@ -2,7 +2,7 @@ import Panel from './Panel';
 import { AttendanceRecentItem } from './types';
 
 export default function AttendancePanel({ checkedIn, total, recent }: { checkedIn: number; total: number; recent: AttendanceRecentItem[] }) {
-  const progress = Math.round((checkedIn / total) * 100);
+  const progress = total > 0 ? Math.round((checkedIn / total) * 100) : 0;
 
   return (
     <Panel title="Today's Attendance" icon={<span className="text-[#f59e0b]">◔</span>}>

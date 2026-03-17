@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
-import { getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
+import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { kpis, unpaidPayments, attendanceRecent, requests, birthdays } from './mockData';
+import { kpis, unpaidPayments, requests, birthdays } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -13,8 +13,8 @@ import AttendancePanel from './AttendancePanel';
 import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { KidBehaviorItem, NoteItem } from './types';
-import { BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
+import { AttendanceRecentItem, KidBehaviorItem, NoteItem } from './types';
+import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
 
 const getRelativeTime = (isoDate: string): string => {
@@ -34,6 +34,9 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const [behaviorMode, setBehaviorMode] = useState<'now' | 'month'>('now');
   const [kidsMembers, setKidsMembers] = useState<KidBehaviorItem[]>([]);
   const [kidsBehaviorEvents, setKidsBehaviorEvents] = useState<Array<{ kidId: string; createdAt: string; value: 'GOOD' | 'NEUTRAL' | 'BAD' }>>([]);
+  const [todayCheckedIn, setTodayCheckedIn] = useState(0);
+  const [todayTotalMembers, setTodayTotalMembers] = useState(0);
+  const [todayRecentAttendance, setTodayRecentAttendance] = useState<AttendanceRecentItem[]>([]);
 
   const loadDashboardData = useCallback(async () => {
     setRecentNotesLoading(true);
@@ -156,9 +159,43 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
     }
   }, []);
 
+  const fetchTodayAttendance = useCallback(async () => {
+    try {
+      const todayKey = toDateKey(new Date());
+      const [members, checkedInIds] = await Promise.all([
+        getMembers(),
+        getAttendanceForDate(todayKey),
+      ]);
+
+      const memberById = new Map(members.map((member) => [member.id, member]));
+      const recent = checkedInIds
+        .map((memberId, index) => {
+          const member = memberById.get(memberId);
+          if (!member) return null;
+          return {
+            id: `${memberId}-${index}`,
+            name: member.name,
+            time: 'Today',
+          };
+        })
+        .filter((item): item is AttendanceRecentItem => item !== null)
+        .slice(0, 5);
+
+      setTodayCheckedIn(checkedInIds.length);
+      setTodayTotalMembers(members.length);
+      setTodayRecentAttendance(recent);
+    } catch (error) {
+      console.error('Error fetching today attendance:', error);
+      setTodayCheckedIn(0);
+      setTodayTotalMembers(0);
+      setTodayRecentAttendance([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadDashboardData();
-  }, [loadDashboardData]);
+    fetchTodayAttendance();
+  }, [fetchTodayAttendance, loadDashboardData]);
 
   useEffect(() => {
     fetchKidsBehavior(behaviorMode);
@@ -168,6 +205,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
     const handleFocus = () => {
       loadDashboardData();
       fetchKidsBehavior(behaviorMode);
+      fetchTodayAttendance();
     };
 
     const handleBehaviorUpdated = () => {
@@ -178,15 +216,21 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
       if (document.visibilityState === 'visible') {
         loadDashboardData();
         fetchKidsBehavior(behaviorMode);
+        fetchTodayAttendance();
       }
+    };
+
+    const handleAttendanceUpdated = () => {
+      fetchTodayAttendance();
     };
 
     window.addEventListener('focus', handleFocus);
     window.addEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
+    window.addEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
     document.addEventListener('visibilitychange', handleVisibility);
 
     const channel = supabase
-      .channel('kid-behavior')
+      .channel('dashboard-live')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'kid_behavior_events' },
@@ -194,15 +238,23 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
           fetchKidsBehavior(behaviorMode);
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'attendance' },
+        () => {
+          fetchTodayAttendance();
+        }
+      )
       .subscribe();
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener(BEHAVIOR_UPDATED_EVENT, handleBehaviorUpdated);
+      window.removeEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
       document.removeEventListener('visibilitychange', handleVisibility);
       supabase.removeChannel(channel);
     };
-  }, [behaviorMode, fetchKidsBehavior, loadDashboardData]);
+  }, [behaviorMode, fetchKidsBehavior, fetchTodayAttendance, loadDashboardData]);
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
@@ -236,7 +288,7 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
               mode={behaviorMode}
               onModeChange={setBehaviorMode}
             />
-            <AttendancePanel checkedIn={27} total={62} recent={attendanceRecent} />
+            <AttendancePanel checkedIn={todayCheckedIn} total={todayTotalMembers} recent={todayRecentAttendance} />
             <PendingRequestsList requests={requests} />
             <UpcomingBirthdays items={birthdays} />
           </div>
