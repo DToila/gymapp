@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Login from "@/components/Login";
-import TeacherDashboard from "@/components/TeacherDashboard";
+import DashboardPage from "@/components/dashboard/DashboardPage";
 import StudentDashboard from "@/components/StudentDashboard";
 
 type UserType = "teacher" | "student" | null;
@@ -24,7 +24,7 @@ export default function Home() {
   };
 
   if (currentUser.type === "teacher") {
-    return <TeacherDashboard onLogout={handleLogout} />;
+    return <DashboardPage onLogout={handleLogout} />;
   }
 
   if (currentUser.type === "student" && currentUser.studentId) {
