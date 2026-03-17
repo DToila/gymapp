@@ -245,6 +245,25 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     );
   };
 
+  const resolveMemberFee = (member: Member): number => {
+    const customFee = Number((member as any).custom_fee_amount || 0);
+    if ((member as any).custom_fee && customFee > 0) {
+      return customFee;
+    }
+
+    const persistedFee = Number(member.fee || 0);
+    if (persistedFee > 0) {
+      return persistedFee;
+    }
+
+    const calculated = calculateMonthlyFee((member as any).date_of_birth, member.payment_type);
+    if (calculated > 0) {
+      return calculated;
+    }
+
+    return String(member.payment_type || '').trim().toLowerCase() === 'direct debit' ? 75 : 80;
+  };
+
   // Export DD function
   const handleExportDD = async () => {
     try {
@@ -258,7 +277,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
       // Build tab-separated rows (7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME)
       const rowColumns = ddMembers.map(m => {
-        const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
+        const feeToUse = resolveMemberFee(m);
         const exportDate = new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-');
         if (ddMembers[0]?.id === m.id) {
           console.log('DD date debug:', { created_at: m.created_at, exportDate });
@@ -319,7 +338,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
       // Build data for Excel - 7 columns: IBAN, CGDIPTL, VALOR, RCUR, REF, DATA, NOME (no headers)
       const excelData = ddMembers.map(m => {
-        const feeToUse = (m as any).custom_fee_amount && (m as any).custom_fee ? (m as any).custom_fee_amount : (m.fee || 75);
+        const feeToUse = resolveMemberFee(m);
         const exportDate = new Date().toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\//g,'-');
         return [
           sanitizeIban(m.iban),

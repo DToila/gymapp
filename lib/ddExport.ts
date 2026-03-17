@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { getMembers } from './database';
-import { Member } from './types';
+import { calculateMonthlyFee, Member } from './types';
 
 const normalizeText = (value: string): string => {
   const withoutAccents = value
@@ -48,6 +48,26 @@ const isEligibleDirectDebitMember = (member: Member): boolean => {
   );
 };
 
+const resolveMemberFee = (member: Member): number => {
+  const customFee = Number((member as any).custom_fee_amount || 0);
+  if ((member as any).custom_fee && customFee > 0) {
+    return customFee;
+  }
+
+  const persistedFee = Number((member as any).fee || 0);
+  if (persistedFee > 0) {
+    return persistedFee;
+  }
+
+  const calculated = calculateMonthlyFee((member as any).date_of_birth, (member as any).payment_type);
+  if (calculated > 0) {
+    return calculated;
+  }
+
+  const paymentType = String((member as any).payment_type || '').trim().toLowerCase();
+  return paymentType === 'direct debit' ? 75 : 80;
+};
+
 const getMonthNamePt = (date: Date): string => {
   const monthNames = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   return monthNames[date.getMonth()];
@@ -58,9 +78,7 @@ export const exportDDTxt = async (): Promise<void> => {
   const ddMembers = allMembers.filter(isEligibleDirectDebitMember);
 
   const rowColumns = ddMembers.map((member) => {
-    const feeToUse = (member as any).custom_fee_amount && (member as any).custom_fee
-      ? (member as any).custom_fee_amount
-      : ((member as any).fee || 75);
+    const feeToUse = resolveMemberFee(member);
 
     const exportDate = new Date()
       .toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -105,9 +123,7 @@ export const exportDDExcel = async (): Promise<void> => {
   const ddMembers = allMembers.filter(isEligibleDirectDebitMember);
 
   const excelData = ddMembers.map((member) => {
-    const feeToUse = (member as any).custom_fee_amount && (member as any).custom_fee
-      ? (member as any).custom_fee_amount
-      : ((member as any).fee || 75);
+    const feeToUse = resolveMemberFee(member);
 
     const exportDate = new Date()
       .toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
