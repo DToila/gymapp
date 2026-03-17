@@ -1,7 +1,7 @@
 "use client";
 
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { officialSchedule, studentSchedule } from '@/components/student/studentData';
@@ -198,14 +198,21 @@ export default function SchedulePage() {
     if (!editingSlot) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        attemptCloseEditor();
+      if (event.key !== 'Escape') return;
+
+      if (hasUnsavedChanges) {
+        const shouldClose = window.confirm('You have unsaved changes. Close anyway?');
+        if (!shouldClose) return;
       }
+
+      setEditingSlot(null);
+      setIsEditorLoading(false);
+      setInitialPlanSnapshot('');
     };
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [editingSlot, attemptCloseEditor]);
+  }, [editingSlot, hasUnsavedChanges]);
 
   const openModal = () => {
     setZoom(1);
@@ -250,7 +257,7 @@ export default function SchedulePage() {
     return byDay;
   }, []);
 
-  const attemptCloseEditor = useCallback(() => {
+  function attemptCloseEditor() {
     if (hasUnsavedChanges) {
       const shouldClose = window.confirm('You have unsaved changes. Close anyway?');
       if (!shouldClose) return;
@@ -259,7 +266,7 @@ export default function SchedulePage() {
     setEditingSlot(null);
     setIsEditorLoading(false);
     setInitialPlanSnapshot('');
-  }, [hasUnsavedChanges]);
+  }
 
   const openClassPlanEditor = async (
     item: (typeof studentSchedule)[number],
