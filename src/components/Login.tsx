@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getMemberByEmail } from "../../lib/database";
 import GBLogo from "@/components/GBLogo";
+import { writeStudentSessionId } from "@/components/student/studentSession";
 
 type UserType = "teacher" | "student" | null;
 
@@ -45,16 +46,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           setIsLoading(false);
           return;
         }
-        if (onLoginSuccess) {
-          onLoginSuccess("student", student.id);
-        }
+        writeStudentSessionId(student.id);
+        if (onLoginSuccess) onLoginSuccess("student", student.id);
+        router.push('/student/dashboard');
       } else {
-        // Teacher login (keep existing behavior)
-        setTimeout(() => {
-          if (userType && onLoginSuccess) {
-            onLoginSuccess(userType);
-          }
-        }, 500);
+        if (onLoginSuccess) onLoginSuccess("teacher");
+        router.push('/dashboard');
       }
     } catch (err) {
       console.error("Login error:", err);

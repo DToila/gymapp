@@ -82,6 +82,17 @@ export const getMemberByEmail = async (email: string): Promise<Member | null> =>
   return data || null
 }
 
+export const getMemberById = async (id: string): Promise<Member | null> => {
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data || null
+}
+
 // Attendance
 export const getAttendanceForMember = async (memberId: string): Promise<Attendance[]> => {
   const { data, error } = await supabase
