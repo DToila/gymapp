@@ -13,6 +13,35 @@ export interface KidBehaviorEvent {
   updated_at?: string
 }
 
+export interface CoachProfile {
+  id: string
+  full_name: string | null
+  avatar_url?: string | null
+  role?: string | null
+}
+
+export interface ScheduleSlotRow {
+  id: string
+  code: string
+  day_of_week: string
+  start_time: string
+  end_time: string
+  program: string
+  class_label?: string | null
+}
+
+export interface ClassPlanRow {
+  id: string
+  slot_id: string
+  date: string
+  topic?: string | null
+  techniques?: string | null
+  coach_primary_id?: string | null
+  coach_secondary_id?: string | null
+  updated_at?: string
+  updated_by?: string | null
+}
+
 // Members
 export const getMembers = async (): Promise<Member[]> => {
   const { data, error } = await supabase
@@ -251,4 +280,106 @@ export const deleteKidBehaviorForDate = async ({ kidId, dateKey }: { kidId: stri
     .eq('date', dateKey)
 
   if (error) throw error
+}
+
+export const getCoachProfiles = async (): Promise<CoachProfile[]> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, avatar_url, role')
+    .in('role', ['coach', 'admin'])
+    .order('full_name', { ascending: true })
+
+  if (error) {
+    console.error('Supabase getCoachProfiles failed', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    })
+    return []
+  }
+
+  return (data || []) as CoachProfile[]
+}
+
+export const ensureScheduleSlots = async (
+  slots: Array<Omit<ScheduleSlotRow, 'id'>>
+): Promise<ScheduleSlotRow[]> => {
+  if (slots.length === 0) return []
+
+  const { error } = await supabase
+    .from('schedule_slots')
+    .upsert(slots, { onConflict: 'code' })
+
+  if (error) throw error
+
+  const codes = slots.map((slot) => slot.code)
+  const { data, error: readError } = await supabase
+    .from('schedule_slots')
+    .select('id, code, day_of_week, start_time, end_time, program, class_label')
+    .in('code', codes)
+
+  if (readError) throw readError
+  return (data || []) as ScheduleSlotRow[]
+}
+
+export const getClassPlan = async (slotId: string, dateKey: string): Promise<ClassPlanRow | null> => {
+  const { data, error } = await supabase
+    .from('class_plans')
+    .select('*')
+    .eq('slot_id', slotId)
+    .eq('date', dateKey)
+    .maybeSingle()
+
+  if (error) throw error
+  return (data as ClassPlanRow | null) || null
+}
+
+export const getClassPlansForSlotsAndDates = async (
+  slotIds: string[],
+  dateKeys: string[]
+): Promise<ClassPlanRow[]> => {
+  if (slotIds.length === 0 || dateKeys.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('class_plans')
+    .select('*')
+    .in('slot_id', slotIds)
+    .in('date', dateKeys)
+
+  if (error) throw error
+  return (data || []) as ClassPlanRow[]
+}
+
+export const upsertClassPlan = async (
+  slotId: string,
+  dateKey: string,
+  payload: {
+    topic?: string
+    techniques?: string
+    coach_primary_id: string
+    coach_secondary_id?: string | null
+    updated_by?: string | null
+  }
+): Promise<ClassPlanRow> => {
+  const { data, error } = await supabase
+    .from('class_plans')
+    .upsert(
+      {
+        slot_id: slotId,
+        date: dateKey,
+        topic: payload.topic || null,
+        techniques: payload.techniques || null,
+        coach_primary_id: payload.coach_primary_id,
+        coach_secondary_id: payload.coach_secondary_id || null,
+        updated_by: payload.updated_by || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'slot_id,date' }
+    )
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data as ClassPlanRow
 }
