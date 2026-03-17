@@ -28,15 +28,21 @@ export interface AttendanceRecentItem {
 }
 
 export type AnnouncementTag = 'URGENT' | 'INFO' | 'EVENT' | 'PAYMENTS';
-export type AnnouncementAudience = 'Kids' | 'Adults' | 'All';
+export type AnnouncementAudience = 'ALL' | 'ADULTS' | 'KIDS' | 'STAFF';
+export type KidsGroup = 'Kids 1' | 'Kids 2' | 'Teens';
 
 export interface AnnouncementItem {
   id: string;
   tag: AnnouncementTag;
   title: string;
+  details?: string;
   audience: AnnouncementAudience;
+  kidsGroup?: KidsGroup | null;
   expiresAt: string;
   pinned?: boolean;
+  ackRequired?: boolean;
+  createdAt?: string;
+  createdBy?: string;
 }
 
 export interface RequestItem {

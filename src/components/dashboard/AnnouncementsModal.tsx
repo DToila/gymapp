@@ -1,0 +1,507 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { AnnouncementAudience, AnnouncementItem, AnnouncementTag, KidsGroup } from './types';
+
+type ModalMode = 'create' | 'manage';
+type TabKey = 'create' | 'manage';
+
+interface DraftState {
+  title: string;
+  details: string;
+  tag: AnnouncementTag;
+  audience: AnnouncementAudience;
+  kidsGroup: KidsGroup | '';
+  expiresAt: string;
+  pinned: boolean;
+  ackRequired: boolean;
+}
+
+const DEFAULT_TITLE_MAX = 160;
+const DEFAULT_DETAILS_MAX = 800;
+
+const emptyDraft: DraftState = {
+  title: '',
+  details: '',
+  tag: 'INFO',
+  audience: 'ALL',
+  kidsGroup: '',
+  expiresAt: '',
+  pinned: false,
+  ackRequired: false,
+};
+
+const tagChipClass: Record<AnnouncementTag, string> = {
+  URGENT: 'border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] text-[#fda4af]',
+  INFO: 'border-[#3f3f46] bg-[rgba(63,63,70,0.28)] text-zinc-300',
+  EVENT: 'border-[#581c87] bg-[rgba(88,28,135,0.26)] text-violet-300',
+  PAYMENTS: 'border-[#7c2d12] bg-[rgba(124,45,18,0.3)] text-orange-300',
+};
+
+const audienceLabel: Record<AnnouncementAudience, string> = {
+  ALL: 'All',
+  ADULTS: 'Adults',
+  KIDS: 'Kids',
+  STAFF: 'Staff',
+};
+
+const formatDateLabel = (dateValue: string): string => {
+  if (!dateValue) return '—';
+  const parsed = new Date(`${dateValue}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return dateValue;
+  return parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+};
+
+const toDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export default function AnnouncementsModal({
+  isOpen,
+  mode,
+  announcements,
+  onClose,
+  onCreate,
+  onUpdate,
+  onDelete,
+  onTogglePin,
+  titleMaxChars = DEFAULT_TITLE_MAX,
+  detailsMaxChars = DEFAULT_DETAILS_MAX,
+}: {
+  isOpen: boolean;
+  mode: ModalMode;
+  announcements: AnnouncementItem[];
+  onClose: () => void;
+  onCreate: (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => void;
+  onUpdate: (id: string, announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => void;
+  onDelete: (id: string) => void;
+  onTogglePin: (id: string) => void;
+  titleMaxChars?: number;
+  detailsMaxChars?: number;
+}) {
+  const [activeTab, setActiveTab] = useState<TabKey>('create');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<DraftState>(emptyDraft);
+  const [showDetails, setShowDetails] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterTag, setFilterTag] = useState<'all' | AnnouncementTag>('all');
+  const [filterAudience, setFilterAudience] = useState<'all' | AnnouncementAudience>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expired'>('all');
+  const [filterPinned, setFilterPinned] = useState<'all' | 'pinned' | 'unpinned'>('all');
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const detailsRef = useRef<HTMLTextAreaElement>(null);
+
+  const resetDraft = () => {
+    setDraft(emptyDraft);
+    setEditingId(null);
+    setShowDetails(false);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setActiveTab(mode === 'manage' ? 'manage' : 'create');
+    if (mode === 'create') {
+      resetDraft();
+    }
+  }, [isOpen, mode]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (!editingId) {
+          resetDraft();
+        }
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [editingId, isOpen, onClose]);
+
+  useEffect(() => {
+    if (!titleRef.current) return;
+    titleRef.current.style.height = 'auto';
+    titleRef.current.style.height = `${titleRef.current.scrollHeight}px`;
+  }, [draft.title, isOpen]);
+
+  useEffect(() => {
+    if (!detailsRef.current) return;
+    detailsRef.current.style.height = 'auto';
+    detailsRef.current.style.height = `${detailsRef.current.scrollHeight}px`;
+  }, [draft.details, isOpen, showDetails]);
+
+  const isPastExpiry = useMemo(() => {
+    if (!draft.expiresAt) return false;
+    const today = toDateKey(new Date());
+    return draft.expiresAt < today;
+  }, [draft.expiresAt]);
+
+  const canUseAckToggle = draft.tag === 'URGENT' || draft.audience === 'STAFF';
+
+  const canPublish =
+    draft.title.trim().length > 0 &&
+    draft.title.length <= titleMaxChars &&
+    draft.details.length <= detailsMaxChars &&
+    Boolean(draft.tag) &&
+    Boolean(draft.audience) &&
+    Boolean(draft.expiresAt) &&
+    !isPastExpiry;
+
+  const handleQuickExpiry = (days: number) => {
+    const next = new Date();
+    next.setDate(next.getDate() + days);
+    setDraft((prev) => ({ ...prev, expiresAt: toDateKey(next) }));
+  };
+
+  const handlePublish = () => {
+    if (!canPublish) return;
+
+    const payload: Omit<AnnouncementItem, 'id' | 'createdAt'> = {
+      tag: draft.tag,
+      title: draft.title.trim(),
+      details: draft.details.trim() || undefined,
+      audience: draft.audience,
+      kidsGroup: draft.audience === 'KIDS' && draft.kidsGroup ? draft.kidsGroup : null,
+      expiresAt: draft.expiresAt,
+      pinned: draft.pinned,
+      ackRequired: draft.ackRequired,
+      createdBy: 'Admin',
+    };
+
+    if (editingId) {
+      onUpdate(editingId, payload);
+    } else {
+      onCreate(payload);
+    }
+
+    resetDraft();
+    onClose();
+  };
+
+  const handleCancel = () => {
+    if (!editingId) {
+      resetDraft();
+    }
+    onClose();
+  };
+
+  const manageRows = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    return announcements
+      .filter((item) => {
+        if (!normalizedSearch) return true;
+        return `${item.title} ${item.details || ''}`.toLowerCase().includes(normalizedSearch);
+      })
+      .filter((item) => filterTag === 'all' || item.tag === filterTag)
+      .filter((item) => filterAudience === 'all' || item.audience === filterAudience)
+      .filter((item) => {
+        if (filterPinned === 'all') return true;
+        return filterPinned === 'pinned' ? Boolean(item.pinned) : !item.pinned;
+      })
+      .filter((item) => {
+        if (filterStatus === 'all') return true;
+        const today = toDateKey(new Date());
+        return filterStatus === 'active' ? item.expiresAt >= today : item.expiresAt < today;
+      });
+  }, [announcements, filterAudience, filterPinned, filterStatus, filterTag, search]);
+
+  const loadIntoComposer = (item: AnnouncementItem) => {
+    setDraft({
+      title: item.title,
+      details: item.details || '',
+      tag: item.tag,
+      audience: item.audience,
+      kidsGroup: item.kidsGroup || '',
+      expiresAt: item.expiresAt,
+      pinned: Boolean(item.pinned),
+      ackRequired: Boolean(item.ackRequired),
+    });
+    setEditingId(item.id);
+    setShowDetails(Boolean(item.details));
+    setActiveTab('create');
+  };
+
+  if (!isOpen || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-[1px] transition-opacity duration-200"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          if (!editingId) {
+            resetDraft();
+          }
+          onClose();
+        }
+      }}
+    >
+      <div className="w-full max-w-2xl rounded-2xl border border-[#2a2a2a] bg-[#121212] shadow-[0_18px_50px_rgba(0,0,0,0.55)] transition-all duration-200">
+        <div className="flex items-center justify-between border-b border-[#202020] px-5 py-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-white">{mode === 'create' ? 'Create announcement' : 'Manage announcements'}</h3>
+            <div className="hidden items-center gap-2 sm:flex">
+              <button
+                onClick={() => setActiveTab('create')}
+                className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${activeTab === 'create' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] text-white' : 'border-[#2a2a2a] bg-[#171717] text-zinc-400'}`}
+              >
+                Create
+              </button>
+              <button
+                onClick={() => setActiveTab('manage')}
+                className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${activeTab === 'manage' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] text-white' : 'border-[#2a2a2a] bg-[#171717] text-zinc-400'}`}
+              >
+                Manage
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={handleCancel} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-3 py-1.5 text-sm text-zinc-300 hover:border-[#3a3a3a]">
+              Cancel
+            </button>
+            <button
+              onClick={handlePublish}
+              disabled={!canPublish || activeTab !== 'create'}
+              className="rounded-md border border-[#c81d25] bg-[#c81d25] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#ac1820] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Publish
+            </button>
+            <button onClick={handleCancel} className="grid h-8 w-8 place-items-center rounded-md border border-[#2a2a2a] bg-[#171717] text-zinc-400 hover:text-white">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[78vh] overflow-y-auto p-4">
+          {activeTab === 'create' ? (
+            <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+              <div className="space-y-4">
+                <div className="rounded-xl border border-[#242424] bg-[#101010] p-3">
+                  <textarea
+                    ref={titleRef}
+                    value={draft.title}
+                    onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value.slice(0, titleMaxChars) }))}
+                    placeholder="Write an announcement..."
+                    rows={2}
+                    className="w-full resize-none bg-transparent text-base text-zinc-100 placeholder:text-zinc-500 outline-none"
+                  />
+                  <div className="mt-2 text-right text-xs text-zinc-500">{draft.title.length}/{titleMaxChars}</div>
+                </div>
+
+                <div>
+                  <button
+                    onClick={() => setShowDetails((prev) => !prev)}
+                    className="text-xs font-medium text-[#c81d25] hover:text-[#ef3a43]"
+                  >
+                    {showDetails ? 'Hide details' : 'Add details (optional)'}
+                  </button>
+                  {showDetails ? (
+                    <div className="mt-2 rounded-xl border border-[#242424] bg-[#101010] p-3">
+                      <textarea
+                        ref={detailsRef}
+                        value={draft.details}
+                        onChange={(event) => setDraft((prev) => ({ ...prev, details: event.target.value.slice(0, detailsMaxChars) }))}
+                        placeholder="Add more details (optional)..."
+                        rows={3}
+                        className="w-full resize-none bg-transparent text-sm text-zinc-200 placeholder:text-zinc-500 outline-none"
+                      />
+                      <div className="mt-2 text-right text-xs text-zinc-500">{draft.details.length}/{detailsMaxChars}</div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="rounded-xl border border-[#242424] bg-[#101010] p-3 space-y-3">
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-500">Type</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(['URGENT', 'INFO', 'EVENT', 'PAYMENTS'] as AnnouncementTag[]).map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => setDraft((prev) => ({ ...prev, tag }))}
+                          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${tagChipClass[tag]} ${draft.tag === tag ? 'ring-1 ring-[#f0f0f0]/30' : 'opacity-80'}`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-500">Audience</p>
+                      <select
+                        value={draft.audience}
+                        onChange={(event) => setDraft((prev) => ({ ...prev, audience: event.target.value as AnnouncementAudience, kidsGroup: event.target.value === 'KIDS' ? prev.kidsGroup : '' }))}
+                        className="w-full rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none"
+                      >
+                        <option value="ALL">All</option>
+                        <option value="ADULTS">Adults</option>
+                        <option value="KIDS">Kids</option>
+                        <option value="STAFF">Staff</option>
+                      </select>
+                    </div>
+
+                    {draft.audience === 'KIDS' ? (
+                      <div>
+                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-500">Kids group</p>
+                        <select
+                          value={draft.kidsGroup}
+                          onChange={(event) => setDraft((prev) => ({ ...prev, kidsGroup: event.target.value as KidsGroup }))}
+                          className="w-full rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none"
+                        >
+                          <option value="">All kids</option>
+                          <option value="Kids 1">Kids 1</option>
+                          <option value="Kids 2">Kids 2</option>
+                          <option value="Teens">Teens</option>
+                        </select>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-500">Expiration</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="date"
+                        value={draft.expiresAt}
+                        onChange={(event) => setDraft((prev) => ({ ...prev, expiresAt: event.target.value }))}
+                        className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none"
+                      />
+                      <button onClick={() => handleQuickExpiry(1)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1.5 text-xs text-zinc-300">1 day</button>
+                      <button onClick={() => handleQuickExpiry(3)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1.5 text-xs text-zinc-300">3 days</button>
+                      <button onClick={() => handleQuickExpiry(7)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1.5 text-xs text-zinc-300">1 week</button>
+                      <button onClick={() => handleQuickExpiry(30)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1.5 text-xs text-zinc-300">1 month</button>
+                    </div>
+                    {isPastExpiry ? <p className="mt-1 text-xs text-red-400">Expiration cannot be in the past.</p> : null}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="flex items-center justify-between rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-200">
+                      <span>Pin to top</span>
+                      <input
+                        type="checkbox"
+                        checked={draft.pinned}
+                        onChange={(event) => setDraft((prev) => ({ ...prev, pinned: event.target.checked }))}
+                        className="h-4 w-4 accent-[#c81d25]"
+                      />
+                    </label>
+                    {draft.pinned ? <p className="text-xs text-zinc-500">Pinned announcements appear first.</p> : null}
+
+                    <label className={`flex items-center justify-between rounded-md border px-2.5 py-2 text-sm ${canUseAckToggle ? 'border-[#2a2a2a] bg-[#151515] text-zinc-200' : 'border-[#232323] bg-[#121212] text-zinc-500'}`}>
+                      <span>Require staff acknowledgement</span>
+                      <input
+                        type="checkbox"
+                        checked={draft.ackRequired}
+                        disabled={!canUseAckToggle}
+                        onChange={(event) => setDraft((prev) => ({ ...prev, ackRequired: event.target.checked }))}
+                        className="h-4 w-4 accent-[#c81d25]"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <aside className="rounded-xl border border-[#242424] bg-[#101010] p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-500">Live preview</p>
+                <div className="rounded-lg border border-[#222] bg-[#0e0e0e] px-3 py-2.5">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${tagChipClass[draft.tag]}`}>
+                      {draft.tag}
+                    </span>
+                    {draft.pinned ? <span className="text-xs text-zinc-300">📌</span> : null}
+                  </div>
+                  <p className="truncate text-sm font-medium text-zinc-100">{draft.title || 'Announcement title preview'}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Audience: {audienceLabel[draft.audience]} <span className="mx-1.5">•</span> Expires: {formatDateLabel(draft.expiresAt)}
+                  </p>
+                </div>
+              </aside>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search announcements..."
+                  className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none lg:col-span-2"
+                />
+                <select value={filterTag} onChange={(event) => setFilterTag(event.target.value as 'all' | AnnouncementTag)} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
+                  <option value="all">All types</option>
+                  <option value="URGENT">Urgent</option>
+                  <option value="INFO">Info</option>
+                  <option value="EVENT">Event</option>
+                  <option value="PAYMENTS">Payments</option>
+                </select>
+                <select value={filterAudience} onChange={(event) => setFilterAudience(event.target.value as 'all' | AnnouncementAudience)} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
+                  <option value="all">All audiences</option>
+                  <option value="ALL">All</option>
+                  <option value="ADULTS">Adults</option>
+                  <option value="KIDS">Kids</option>
+                  <option value="STAFF">Staff</option>
+                </select>
+                <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value as 'all' | 'active' | 'expired')} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
+                  <option value="all">All status</option>
+                  <option value="active">Active</option>
+                  <option value="expired">Expired</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end">
+                <select value={filterPinned} onChange={(event) => setFilterPinned(event.target.value as 'all' | 'pinned' | 'unpinned')} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
+                  <option value="all">All pin states</option>
+                  <option value="pinned">Pinned</option>
+                  <option value="unpinned">Unpinned</option>
+                </select>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-[#242424]">
+                {manageRows.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-sm text-zinc-500">No announcements match these filters.</p>
+                ) : (
+                  <ul>
+                    {manageRows.map((item) => (
+                      <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1f1f1f] bg-[#101010] px-3 py-2.5 last:border-b-0">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${tagChipClass[item.tag]}`}>
+                              {item.tag}
+                            </span>
+                            {item.pinned ? <span className="text-xs text-zinc-300">📌</span> : null}
+                          </div>
+                          <p className="truncate text-sm text-zinc-100">{item.title}</p>
+                          <p className="text-xs text-zinc-500">Audience: {audienceLabel[item.audience]} • Expires: {formatDateLabel(item.expiresAt)}</p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => loadIntoComposer(item)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1 text-xs text-zinc-200">Edit</button>
+                          <button onClick={() => onTogglePin(item.id)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1 text-xs text-zinc-200">
+                            {item.pinned ? 'Unpin' : 'Pin'}
+                          </button>
+                          <button onClick={() => onDelete(item.id)} className="rounded-md border border-[#5b1f24] bg-[rgba(91,31,36,0.25)] px-2.5 py-1 text-xs text-rose-300">Delete</button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
