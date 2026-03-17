@@ -34,10 +34,10 @@ export const officialSchedule: OfficialScheduleClass[] = [
   { id: 'seg-3', dayOfWeek: 'SEG', startTime: '13:15', endTime: '13:45', program: 'GB1', giType: 'GI', tags: ['SPARRING'] },
   { id: 'seg-4', dayOfWeek: 'SEG', startTime: '18:15', endTime: '19:15', program: 'GBK', kidsGroup: 'PC1', giType: 'GI' },
   { id: 'seg-5', dayOfWeek: 'SEG', startTime: '19:15', endTime: '20:15', program: 'GB1', giType: 'GI' },
-  { id: 'seg-6', dayOfWeek: 'SEG', startTime: '20:15', endTime: '21:15', program: 'GB2', giType: 'NOGI' },
+  { id: 'seg-6', dayOfWeek: 'SEG', startTime: '20:15', endTime: '21:15', program: 'GB2', giType: 'GI' },
 
   { id: 'ter-1', dayOfWeek: 'TER', startTime: '07:00', endTime: '08:00', program: 'GB1', giType: 'GI' },
-  { id: 'ter-2', dayOfWeek: 'TER', startTime: '12:15', endTime: '13:15', program: 'GB2', giType: 'NOGI' },
+  { id: 'ter-2', dayOfWeek: 'TER', startTime: '12:15', endTime: '13:15', program: 'GB2', giType: 'GI' },
   { id: 'ter-3', dayOfWeek: 'TER', startTime: '17:30', endTime: '18:15', program: 'GBK', kidsGroup: 'MC', giType: 'GI' },
   { id: 'ter-4', dayOfWeek: 'TER', startTime: '18:15', endTime: '19:15', program: 'GBK', kidsGroup: 'PC2', giType: 'GI' },
   { id: 'ter-5', dayOfWeek: 'TER', startTime: '19:15', endTime: '20:15', program: 'GB2', giType: 'NOGI' },
@@ -64,7 +64,7 @@ export const officialSchedule: OfficialScheduleClass[] = [
   { id: 'sex-5', dayOfWeek: 'SEX', startTime: '19:15', endTime: '20:15', program: 'GB1', giType: 'GI' },
 
   { id: 'sab-1', dayOfWeek: 'SAB', startTime: '10:00', endTime: '11:00', program: 'GB1', giType: 'GI' },
-  { id: 'sab-2', dayOfWeek: 'SAB', startTime: '10:00', endTime: '11:00', program: 'GB2', giType: 'NOGI' },
+  { id: 'sab-2', dayOfWeek: 'SAB', startTime: '10:00', endTime: '11:00', program: 'GB2', giType: 'GI' },
   { id: 'sab-3', dayOfWeek: 'SAB', startTime: '11:00', endTime: '11:30', program: 'GB1', giType: 'GI', tags: ['SPARRING'] },
 ];
 
