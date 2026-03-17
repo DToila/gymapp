@@ -1,54 +1,120 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import StudentShell from './StudentShell';
 import { studentSchedule } from './studentData';
 
-const dayOrder = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'] as const;
+const dayOrder = [
+  { key: 'SEG', label: 'Seg' },
+  { key: 'TER', label: 'Ter' },
+  { key: 'QUA', label: 'Qua' },
+  { key: 'QUI', label: 'Qui' },
+  { key: 'SEX', label: 'Sex' },
+  { key: 'SAB', label: 'Sáb' },
+  { key: 'DOM', label: 'Dom' },
+] as const;
 
-const dayMeta: Record<(typeof dayOrder)[number], { label: string; dayNumber: number }> = {
-  SEG: { label: 'Seg', dayNumber: 1 },
-  TER: { label: 'Ter', dayNumber: 2 },
-  QUA: { label: 'Qua', dayNumber: 3 },
-  QUI: { label: 'Qui', dayNumber: 4 },
-  SEX: { label: 'Sex', dayNumber: 5 },
-  'SÁB': { label: 'Sáb', dayNumber: 6 },
-  DOM: { label: 'Dom', dayNumber: 0 },
+type DayKey = (typeof dayOrder)[number]['key'];
+
+type ScheduleViewItem = {
+  id: string;
+  day: string | number;
+  time: string;
+  room: 'GBK' | 'GB1' | 'GB2';
+  level: string;
+  type: 'Gi' | 'No-Gi' | 'Sparring';
+  notes?: string;
 };
 
-const getStartMinutes = (timeRange: string) => {
-  const [start] = timeRange.split('-');
-  const [hour, minute] = start.split(':').map(Number);
-  return hour * 60 + minute;
-};
+function normalizeDayKey(day: string): DayKey | null {
+  const d = day.trim().toUpperCase();
+  if (d === 'SÁB' || d === 'SAB' || d === 'SABADO' || d === 'SÁBADO') return 'SAB';
+  if (d === 'SEGUNDA' || d === 'SEG') return 'SEG';
+  if (d === 'TERCA' || d === 'TERÇA' || d === 'TER') return 'TER';
+  if (d === 'QUARTA' || d === 'QUA') return 'QUA';
+  if (d === 'QUINTA' || d === 'QUI') return 'QUI';
+  if (d === 'SEXTA' || d === 'SEX') return 'SEX';
+  if (d === 'DOMINGO' || d === 'DOM') return 'DOM';
+  if (d === 'SEG-SEX') return null;
+  return (['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB', 'DOM'] as const).includes(d as DayKey)
+    ? (d as DayKey)
+    : null;
+}
+
+function dayNumberToKey(day: number): DayKey | null {
+  if (day === 1) return 'SEG';
+  if (day === 2) return 'TER';
+  if (day === 3) return 'QUA';
+  if (day === 4) return 'QUI';
+  if (day === 5) return 'SEX';
+  if (day === 6) return 'SAB';
+  if (day === 0) return 'DOM';
+  return null;
+}
+
+function parseStartMinutes(timeRange: string): number {
+  const m = (timeRange || '').replace(/\s/g, '').split('-')[0] || '00:00';
+  const [hh, mm] = m.split(':').map(Number);
+  const safeHour = Number.isFinite(hh) ? hh : 0;
+  const safeMinute = Number.isFinite(mm) ? mm : 0;
+  return safeHour * 60 + safeMinute;
+}
 
 export default function StudentSchedulePage() {
   const [view, setView] = useState<'today' | 'week'>('today');
 
-  const sortedSchedule = useMemo(() => {
-    return [...studentSchedule].sort((a, b) => getStartMinutes(a.time) - getStartMinutes(b.time));
-  }, []);
+  const scheduleItems = useMemo(() => studentSchedule as ScheduleViewItem[], []);
+
+  useEffect(() => {
+    console.log('SCHEDULE_TOTAL', scheduleItems.length, scheduleItems.slice(0, 5));
+  }, [scheduleItems]);
 
   const classesByDay = useMemo(() => {
-    return dayOrder.reduce((acc, dayKey) => {
-      const rows = sortedSchedule.filter((item) => item.day === dayMeta[dayKey].dayNumber);
-      acc[dayKey] = rows;
-      return acc;
-    }, {} as Record<(typeof dayOrder)[number], typeof studentSchedule>);
-  }, [sortedSchedule]);
+    const byDay: Record<DayKey, ScheduleViewItem[]> = {
+      SEG: [],
+      TER: [],
+      QUA: [],
+      QUI: [],
+      SEX: [],
+      SAB: [],
+      DOM: [],
+    };
+
+    for (const item of scheduleItems) {
+      const dayKey =
+        typeof item.day === 'number'
+          ? dayNumberToKey(item.day)
+          : normalizeDayKey(String(item.day));
+
+      if (dayKey) {
+        byDay[dayKey].push(item);
+      }
+    }
+
+    for (const day of dayOrder) {
+      byDay[day.key].sort((a, b) => parseStartMinutes(a.time) - parseStartMinutes(b.time));
+      console.log('DAY_COUNT', day.key, byDay[day.key].length);
+    }
+
+    return byDay;
+  }, [scheduleItems]);
+
+  useEffect(() => {
+    const totalRendered = dayOrder.reduce((sum, day) => sum + classesByDay[day.key].length, 0);
+    console.log('WEEK_RENDER_TOTAL', totalRendered, 'SOURCE_TOTAL', scheduleItems.length);
+  }, [classesByDay, scheduleItems.length]);
 
   const todayDayKey = useMemo(() => {
-    const todayNumber = new Date().getDay();
-    return dayOrder.find((key) => dayMeta[key].dayNumber === todayNumber) || 'SEG';
+    return dayNumberToKey(new Date().getDay()) || 'SEG';
   }, []);
 
-  const renderDayCard = (dayKey: (typeof dayOrder)[number]) => {
+  const renderDayCard = (dayKey: DayKey, label: string) => {
     const rows = classesByDay[dayKey] || [];
 
     return (
       <article key={dayKey} className="h-full rounded-2xl border border-[#222] bg-[#121212] shadow-[0_10px_24px_rgba(0,0,0,0.34)]">
         <div className="sticky top-0 z-10 rounded-t-2xl border-b border-[#262626] bg-[#161616] px-3 py-2.5">
-          <p className="text-sm font-semibold tracking-wide text-zinc-200">{dayMeta[dayKey].label}</p>
+          <p className="text-sm font-semibold tracking-wide text-zinc-200">{label}</p>
         </div>
 
         <div className="space-y-2 p-3">
@@ -106,11 +172,11 @@ export default function StudentSchedulePage() {
 
         {view === 'today' ? (
           <div className="grid grid-cols-1 gap-4">
-            {renderDayCard(todayDayKey)}
+            {renderDayCard(todayDayKey, dayOrder.find((d) => d.key === todayDayKey)?.label || 'Seg')}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
-            {dayOrder.map((dayKey) => renderDayCard(dayKey))}
+            {dayOrder.map((day) => renderDayCard(day.key, day.label))}
           </div>
         )}
       </section>
