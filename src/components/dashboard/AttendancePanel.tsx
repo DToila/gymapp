@@ -1,7 +1,10 @@
 import Panel from './Panel';
 import { AttendanceRecentItem } from './types';
+import { useRouter } from 'next/navigation';
+import { toDateKey } from '@/lib/attendanceState';
 
 export default function AttendancePanel({ checkedIn, total, recent }: { checkedIn: number; total: number; recent: AttendanceRecentItem[] }) {
+  const router = useRouter();
   const progress = total > 0 ? Math.round((checkedIn / total) * 100) : 0;
 
   return (
@@ -18,7 +21,10 @@ export default function AttendancePanel({ checkedIn, total, recent }: { checkedI
         </div>
 
         <button
-          onClick={() => console.log('start attendance')}
+          onClick={() => {
+            const todayKey = toDateKey(new Date());
+            router.push(`/attendance?date=${todayKey}`);
+          }}
           className="mb-4 w-full rounded-xl bg-[#c81d25] px-4 py-3 text-sm font-semibold text-white hover:bg-[#ad1920]"
         >
           Start Attendance

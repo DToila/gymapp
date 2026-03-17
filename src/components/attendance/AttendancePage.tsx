@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getKidBehaviorEvents, getMembers, upsertKidBehavior, getAttendanceForDate, setAttendance } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
@@ -91,6 +92,7 @@ const buildCalendarDays = (visibleMonth: Date): Array<{ key: string; label: numb
 };
 
 export default function AttendancePage() {
+  const searchParams = useSearchParams();
   const todayKey = useMemo(() => getDateKey(new Date()), []);
   const [activeTab, setActiveTab] = useState<AttendanceTab>('adults');
   const [search, setSearch] = useState('');
@@ -102,6 +104,13 @@ export default function AttendancePage() {
   const [attendanceByDate, setAttendanceByDate] = useState<Record<string, string[]>>({});
   const [kidBehaviorByDate, setKidBehaviorByDate] = useState<KidBehaviorByDate>({});
   const datePickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (!dateParam || !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) return;
+    setSelectedDate(dateParam);
+    setVisibleMonth(getMonthStart(parseDateKey(dateParam)));
+  }, [searchParams]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
