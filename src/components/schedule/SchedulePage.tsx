@@ -7,6 +7,7 @@ import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { officialSchedule, studentSchedule } from '@/components/student/studentData';
 import {
   CoachProfile,
+  ClassPlanRow,
   ensureScheduleSlots,
   getClassPlan,
   getClassPlansForSlotsAndDates,
@@ -61,8 +62,11 @@ export default function SchedulePage() {
   const [coaches, setCoaches] = useState<CoachProfile[]>([]);
   const [slotIdByCode, setSlotIdByCode] = useState<Record<string, string>>({});
   const [planExistsMap, setPlanExistsMap] = useState<Record<string, boolean>>({});
+  const [openSlotId, setOpenSlotId] = useState<string | null>(null);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+  const [plan, setPlan] = useState<ClassPlanRow | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [editingSlot, setEditingSlot] = useState<EditingSlot | null>(null);
-  const [isEditorLoading, setIsEditorLoading] = useState(false);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [topic, setTopic] = useState('');
   const [techniques, setTechniques] = useState('');
@@ -206,7 +210,10 @@ export default function SchedulePage() {
       }
 
       setEditingSlot(null);
-      setIsEditorLoading(false);
+      setOpenSlotId(null);
+      setIsLoadingPlan(false);
+      setPlan(null);
+      setError(null);
       setInitialPlanSnapshot('');
     };
 
@@ -264,37 +271,60 @@ export default function SchedulePage() {
     }
 
     setEditingSlot(null);
-    setIsEditorLoading(false);
+    setOpenSlotId(null);
+    setIsLoadingPlan(false);
+    setPlan(null);
+    setError(null);
     setInitialPlanSnapshot('');
   }
 
-  const openClassPlanEditor = async (
-    item: (typeof studentSchedule)[number],
-    dayKey: DayKey,
-    dayLabel: string,
-    anchorRect: DOMRect
-  ) => {
-    const slotDbId = slotIdByCode[item.id];
-    if (!slotDbId) {
-      setToast({ type: 'error', message: 'Slot is still loading. Try again.' });
-      return;
-    }
+  const fetchSlotAndPlan = async (slotCode: string, dateKey: string) => {
+    setIsLoadingPlan(true);
+    setError(null);
+    setPlan(null);
 
-    const dateKey = weekDatesByDay[dayKey].dateKey;
-    setEditingSlot({
-      slotCode: item.id,
-      slotDbId,
-      dayKey,
-      dayLabel,
-      dateKey,
-      timeRange: item.time.replace('-', '–'),
-      className: `${item.room} • ${item.level}`,
-      anchorRect,
-    });
+    let slotDbId: string | undefined = slotIdByCode[slotCode];
+    console.log('FETCH_SLOT_START', slotCode);
 
-    setIsEditorLoading(true);
     try {
-      const existing = await getClassPlan(slotDbId, dateKey);
+      if (!slotDbId) {
+        const sourceSlot = officialSchedule.find((slot) => slot.id === slotCode);
+        if (!sourceSlot) {
+          throw new Error('Slot definition not found.');
+        }
+
+        const rows = await ensureScheduleSlots([
+          {
+            code: sourceSlot.id,
+            day_of_week: sourceSlot.dayOfWeek,
+            start_time: sourceSlot.startTime,
+            end_time: sourceSlot.endTime,
+            program: sourceSlot.program,
+            class_label: sourceSlot.program === 'GBK' ? `KIDS ${sourceSlot.kidsGroup || ''}`.trim() : sourceSlot.program,
+          },
+        ]);
+
+        const found = rows.find((row) => row.code === slotCode);
+        slotDbId = found?.id;
+
+        if (!slotDbId) {
+          throw new Error('Could not resolve slot id.');
+        }
+
+        setSlotIdByCode((prev) => ({
+          ...prev,
+          [slotCode]: slotDbId as string,
+        }));
+      }
+
+      const resolvedSlotId = slotDbId;
+
+      console.log('FETCH_SLOT_OK', { slotId: resolvedSlotId, slotCode });
+      const existing = await getClassPlan(resolvedSlotId, dateKey);
+      console.log('FETCH_PLAN_OK', existing);
+
+      setPlan(existing);
+
       const nextTopic = existing?.topic || '';
       const nextTechniques = existing?.techniques || '';
       const nextPrimary = existing?.coach_primary_id || '';
@@ -312,8 +342,14 @@ export default function SchedulePage() {
           coachSecondaryId: nextSecondary,
         })
       );
-    } catch (error) {
-      console.error('Error loading class plan:', error);
+
+      setEditingSlot((prev) => {
+        if (!prev || prev.slotCode !== slotCode || prev.dateKey !== dateKey) return prev;
+        return { ...prev, slotDbId: resolvedSlotId };
+      });
+    } catch (err: any) {
+      console.error('FETCH_SLOT_ERR', err);
+      setPlan(null);
       setTopic('');
       setTechniques('');
       setCoachPrimaryId('');
@@ -321,14 +357,55 @@ export default function SchedulePage() {
       setInitialPlanSnapshot(
         JSON.stringify({ topic: '', techniques: '', coachPrimaryId: '', coachSecondaryId: '' })
       );
-      setToast({ type: 'error', message: 'Could not load class plan.' });
+      setError(err?.message || 'Could not load class plan.');
     } finally {
-      setIsEditorLoading(false);
+      setIsLoadingPlan(false);
     }
+  };
+
+  const openClassPlanEditor = async (
+    item: (typeof studentSchedule)[number],
+    dayKey: DayKey,
+    dayLabel: string,
+    anchorRect: DOMRect
+  ) => {
+    const dateKey = weekDatesByDay[dayKey].dateKey;
+
+    console.log('SLOT_CLICK', {
+      slotId: slotIdByCode[item.id] ?? null,
+      slot: item,
+      dateKey,
+    });
+
+    if (!slotIdByCode[item.id]) {
+      console.log('SLOT_CLICK_SLOT_ID_UNDEFINED', { slotCode: item.id, slotId: slotIdByCode[item.id] });
+    }
+
+    setOpenSlotId(item.id);
+    setIsLoadingPlan(true);
+    setError(null);
+    setPlan(null);
+
+    setEditingSlot({
+      slotCode: item.id,
+      slotDbId: slotIdByCode[item.id] || '',
+      dayKey,
+      dayLabel,
+      dateKey,
+      timeRange: item.time.replace('-', '–'),
+      className: `${item.room} • ${item.level}`,
+      anchorRect,
+    });
+
+    await fetchSlotAndPlan(item.id, dateKey);
   };
 
   const saveClassPlan = async () => {
     if (!editingSlot) return;
+    if (!editingSlot.slotDbId) {
+      setError('Slot id is not ready yet. Please retry.');
+      return;
+    }
     if (!coachPrimaryId) {
       setToast({ type: 'error', message: 'Primary coach is required.' });
       return;
@@ -350,6 +427,10 @@ export default function SchedulePage() {
 
       setToast({ type: 'success', message: 'Saved' });
       setEditingSlot(null);
+      setOpenSlotId(null);
+      setIsLoadingPlan(false);
+      setPlan(saved);
+      setError(null);
       setInitialPlanSnapshot('');
     } catch (error) {
       console.error('Error saving class plan:', error);
@@ -373,10 +454,33 @@ export default function SchedulePage() {
           </p>
         </div>
 
-        {isEditorLoading ? (
-          <div className="rounded-xl border border-[#242424] bg-[#151515] px-3 py-4 text-sm text-zinc-400">Loading...</div>
+        {isLoadingPlan ? (
+          <div className="rounded-xl border border-[#242424] bg-[#151515] px-3 py-4 text-sm text-zinc-300">
+            <div className="flex items-center gap-2">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-transparent" />
+              <span>Loading...</span>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-[#5b1f24] bg-[#2a1214] px-3 py-3 text-sm text-rose-300">
+            <p>{error}</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (!editingSlot) return;
+                fetchSlotAndPlan(editingSlot.slotCode, editingSlot.dateKey);
+              }}
+              className="mt-2 rounded-lg border border-[#7a2a31] bg-[#3a1619] px-3 py-1.5 text-xs font-semibold text-rose-200"
+            >
+              Retry
+            </button>
+          </div>
         ) : (
           <>
+            <div className="rounded-xl border border-[#242424] bg-[#151515] px-3 py-2 text-xs text-zinc-400">
+              {plan ? 'Saved plan found for this class/date.' : 'No saved plan yet for this class/date.'}
+            </div>
+
             <div>
               <label className="mb-1 block text-xs font-medium text-zinc-400">Topic</label>
               <input
@@ -443,7 +547,7 @@ export default function SchedulePage() {
               <button
                 type="button"
                 onClick={saveClassPlan}
-                disabled={isSavingPlan || !coachPrimaryId}
+                disabled={isSavingPlan || !coachPrimaryId || !openSlotId}
                 className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {isSavingPlan ? 'Saving...' : 'Save'}
