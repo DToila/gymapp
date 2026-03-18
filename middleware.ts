@@ -3,6 +3,19 @@ import { createServerClient } from '@supabase/ssr'
 
 type AppRole = 'admin' | 'staff' | 'coach'
 
+const isRole = (value: string): value is AppRole => {
+  return value === 'admin' || value === 'staff' || value === 'coach'
+}
+
+const roleFromMetadata = (metadata: unknown): AppRole | null => {
+  if (!metadata || typeof metadata !== 'object') return null
+  const value = (metadata as { role?: unknown }).role
+  if (typeof value === 'string' && isRole(value)) {
+    return value
+  }
+  return null
+}
+
 const ROLE_RULES: Array<{ pattern: RegExp; allowed: AppRole[] }> = [
   { pattern: /^\/settings(?:\/.*)?$/, allowed: ['admin'] },
   { pattern: /^\/(payments|leads)(?:\/.*)?$/, allowed: ['admin', 'staff'] },
@@ -69,7 +82,9 @@ export async function middleware(request: NextRequest) {
     .eq('id', user.id)
     .maybeSingle()
 
-  const role = (profile?.role || 'coach') as AppRole
+  const profileRole = profile?.role && isRole(profile.role) ? profile.role : null
+  const metadataRole = roleFromMetadata(user.user_metadata)
+  const role = profileRole || metadataRole || 'coach'
   const allowed = allowedRolesForPath(pathname)
 
   if (allowed && !allowed.includes(role)) {

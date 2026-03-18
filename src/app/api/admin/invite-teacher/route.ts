@@ -8,6 +8,28 @@ const isRole = (value: string): value is AppRole => {
   return value === 'admin' || value === 'staff' || value === 'coach'
 }
 
+const roleFromMetadata = (metadata: unknown): AppRole | null => {
+  if (!metadata || typeof metadata !== 'object') return null
+  const roleValue = (metadata as { role?: unknown }).role
+  if (typeof roleValue === 'string' && isRole(roleValue)) {
+    return roleValue
+  }
+  return null
+}
+
+const fullNameFromMetadata = (metadata: unknown): string | null => {
+  if (!metadata || typeof metadata !== 'object') return null
+  const fullNameValue = (metadata as { full_name?: unknown }).full_name
+  return typeof fullNameValue === 'string' && fullNameValue.trim() ? fullNameValue : null
+}
+
+const isProfilesTableMissingError = (error: { message?: string; code?: string } | null | undefined): boolean => {
+  if (!error) return false
+  if (error.code === 'PGRST205') return true
+  const msg = error.message || ''
+  return msg.includes("Could not find the table 'public.profiles'") || msg.includes('relation "profiles" does not exist')
+}
+
 const getEnv = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const serviceRoleKey =
@@ -46,7 +68,15 @@ const ensureAdmin = async () => {
     .eq('id', user.id)
     .maybeSingle()
 
-  if (profileError || profile?.role !== 'admin') {
+  const profileRole = profile?.role && isRole(profile.role) ? profile.role : null
+  const metadataRole = roleFromMetadata(user.user_metadata)
+  const effectiveRole = profileRole || metadataRole
+
+  if (profileError && !isProfilesTableMissingError(profileError)) {
+    return { error: NextResponse.json({ error: profileError.message }, { status: 500 }) }
+  }
+
+  if (effectiveRole !== 'admin') {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
@@ -69,7 +99,24 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!isProfilesTableMissingError(error)) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    const listed = await adminClient.auth.admin.listUsers()
+    if (listed.error) {
+      return NextResponse.json({ error: listed.error.message }, { status: 500 })
+    }
+
+    const fallbackItems = (listed.data.users || []).map((user) => ({
+      id: user.id,
+      email: user.email || null,
+      full_name: fullNameFromMetadata(user.user_metadata),
+      role: roleFromMetadata(user.user_metadata) || 'coach',
+      created_at: user.created_at || new Date().toISOString(),
+    }))
+
+    return NextResponse.json({ items: fallbackItems })
   }
 
   return NextResponse.json({ items: data || [] })
@@ -134,7 +181,7 @@ export async function POST(request: Request) {
           { onConflict: 'id' }
         )
 
-      if (profileUpsertError) {
+      if (profileUpsertError && !isProfilesTableMissingError(profileUpsertError)) {
         return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
       }
 
@@ -172,7 +219,7 @@ export async function POST(request: Request) {
         { onConflict: 'id' }
       )
 
-    if (profileUpsertError) {
+    if (profileUpsertError && !isProfilesTableMissingError(profileUpsertError)) {
       return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
     }
 
@@ -208,7 +255,7 @@ export async function POST(request: Request) {
       { onConflict: 'id' }
     )
 
-  if (profileUpsertError) {
+  if (profileUpsertError && !isProfilesTableMissingError(profileUpsertError)) {
     return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
   }
 

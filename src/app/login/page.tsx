@@ -7,6 +7,19 @@ import { supabase } from '../../../lib/supabase';
 
 type AppRole = 'admin' | 'staff' | 'coach';
 
+const isRole = (value: string): value is AppRole => {
+  return value === 'admin' || value === 'staff' || value === 'coach';
+};
+
+const roleFromMetadata = (metadata: unknown): AppRole | null => {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const value = (metadata as { role?: unknown }).role;
+  if (typeof value === 'string' && isRole(value)) {
+    return value;
+  }
+  return null;
+};
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,21 +50,18 @@ function LoginForm() {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError || !profile?.role) {
+      const profileRole = profile?.role && isRole(profile.role) ? profile.role : null;
+      const metadataRole = roleFromMetadata(user.user_metadata);
+      const role = profileRole || metadataRole;
+
+      if (!role) {
         setError('Profile role not found. Contact admin.');
-        await supabase.auth.signOut();
-        return;
-      }
-
-      const role = profile.role as AppRole;
-      if (!['admin', 'staff', 'coach'].includes(role)) {
-        setError('Invalid role assigned. Contact admin.');
         await supabase.auth.signOut();
         return;
       }
