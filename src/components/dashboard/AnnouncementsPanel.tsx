@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import AnnouncementsModal from './AnnouncementsModal';
-import { AnnouncementAudience, AnnouncementItem } from './types';
+import { AnnouncementAudience, AnnouncementItem, AppRole } from './types';
 
 const tagChipClass: Record<AnnouncementItem['tag'], string> = {
   URGENT: 'border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] text-[#fda4af]',
@@ -28,10 +28,16 @@ export default function AnnouncementsPanel({
   items,
   maxVisible = 3,
   canCreate = true,
+  currentUserRole = 'admin',
+  currentUserName = 'Professor',
+  currentUserId = 'local-user',
 }: {
   items: AnnouncementItem[];
   maxVisible?: number;
   canCreate?: boolean;
+  currentUserRole?: AppRole;
+  currentUserName?: string;
+  currentUserId?: string;
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'manage'>('create');
@@ -48,7 +54,24 @@ export default function AnnouncementsPanel({
     });
   }, [announcements]);
 
-  const visible = sortedAnnouncements.slice(0, maxVisible);
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  const publishedActiveAnnouncements = useMemo(
+    () =>
+      sortedAnnouncements.filter(
+        (item) => item.approvalStatus === 'approved' && item.expiresAt >= today
+      ),
+    [sortedAnnouncements, today]
+  );
+
+  const pendingApprovals = useMemo(
+    () => sortedAnnouncements.filter((item) => item.approvalStatus === 'pending'),
+    [sortedAnnouncements]
+  );
+
+  const visible = publishedActiveAnnouncements.slice(0, maxVisible);
+
+  const canApprove = currentUserRole === 'staff' || currentUserRole === 'admin';
 
   const openCreate = () => {
     setModalMode('create');
@@ -61,18 +84,38 @@ export default function AnnouncementsPanel({
   };
 
   const handleCreate = (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
+    const isCoach = currentUserRole === 'coach';
+    const approvalStatus: AnnouncementItem['approvalStatus'] = isCoach ? 'pending' : 'approved';
+
     setAnnouncements((prev) => [
       {
         ...announcement,
         id: `a-${Date.now()}`,
         createdAt: new Date().toISOString(),
+        approvalStatus,
+        createdBy: currentUserName,
+        createdById: currentUserId,
+        approvedBy: approvalStatus === 'approved' ? currentUserName : null,
+        approvedById: approvalStatus === 'approved' ? currentUserId : null,
+        approvedAt: approvalStatus === 'approved' ? new Date().toISOString() : null,
+        rejectionReason: null,
       },
       ...prev,
     ]);
   };
 
   const handleUpdate = (id: string, announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
-    setAnnouncements((prev) => prev.map((item) => (item.id === id ? { ...item, ...announcement } : item)));
+    setAnnouncements((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...announcement,
+              approvalStatus: item.approvalStatus,
+            }
+          : item
+      )
+    );
   };
 
   const handleDelete = (id: string) => {
@@ -83,6 +126,42 @@ export default function AnnouncementsPanel({
     setAnnouncements((prev) => prev.map((item) => (item.id === id ? { ...item, pinned: !item.pinned } : item)));
   };
 
+  const handleApprove = (id: string) => {
+    if (!canApprove) return;
+    setAnnouncements((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              approvalStatus: 'approved',
+              approvedBy: currentUserName,
+              approvedById: currentUserId,
+              approvedAt: new Date().toISOString(),
+              rejectionReason: null,
+            }
+          : item
+      )
+    );
+  };
+
+  const handleReject = (id: string, reason?: string) => {
+    if (!canApprove) return;
+    setAnnouncements((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              approvalStatus: 'rejected',
+              approvedBy: currentUserName,
+              approvedById: currentUserId,
+              approvedAt: new Date().toISOString(),
+              rejectionReason: reason?.trim() || null,
+            }
+          : item
+      )
+    );
+  };
+
   return (
     <>
       <section className="rounded-2xl border border-[#252525] bg-[#121212] shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
@@ -90,6 +169,11 @@ export default function AnnouncementsPanel({
           <div className="flex items-center gap-2 text-lg font-semibold text-white">
             <span className="text-[#c81d25]">📣</span>
             <h3>Announcements</h3>
+            {canApprove && pendingApprovals.length > 0 ? (
+              <span className="inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[#c81d25] px-1.5 text-[10px] font-bold text-white">
+                {pendingApprovals.length}
+              </span>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-3">
@@ -134,7 +218,7 @@ export default function AnnouncementsPanel({
           </div>
 
           <div className="mt-3 flex items-center justify-between border-t border-[#1f1f1f] pt-3 text-sm">
-            <span className="text-zinc-500">Showing {visible.length} of {announcements.length}</span>
+            <span className="text-zinc-500">Showing {visible.length} of {publishedActiveAnnouncements.length} published</span>
             <button onClick={openManage} className="font-medium text-[#c81d25] hover:text-[#ef3a43]">
               Manage
             </button>
@@ -151,6 +235,10 @@ export default function AnnouncementsPanel({
         onUpdate={handleUpdate}
         onDelete={handleDelete}
         onTogglePin={handleTogglePin}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        canApprove={canApprove}
+        currentUserRole={currentUserRole}
       />
     </>
   );

@@ -22,6 +22,7 @@ export default function StudentAnnouncementsPage() {
     const nowKey = new Date().toISOString().split('T')[0];
 
     return announcements
+      .filter((item) => item.approvalStatus === 'approved')
       .filter((item) => item.expiresAt >= nowKey)
       .filter((item) => audienceMatchesStudent(item, isKid))
       .filter((item) => {

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnnouncementAudience, AnnouncementItem, AnnouncementTag, KidsGroup } from './types';
+import { AnnouncementAudience, AnnouncementItem, AnnouncementTag, AppRole, KidsGroup } from './types';
 
 type ModalMode = 'create' | 'manage';
-type TabKey = 'create' | 'manage';
+type TabKey = 'create' | 'manage' | 'pending';
 
 interface DraftState {
   title: string;
@@ -69,6 +69,10 @@ export default function AnnouncementsModal({
   onUpdate,
   onDelete,
   onTogglePin,
+  onApprove,
+  onReject,
+  canApprove,
+  currentUserRole,
   titleMaxChars = DEFAULT_TITLE_MAX,
   detailsMaxChars = DEFAULT_DETAILS_MAX,
 }: {
@@ -80,6 +84,10 @@ export default function AnnouncementsModal({
   onUpdate: (id: string, announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => void;
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
+  onApprove: (id: string) => void;
+  onReject: (id: string, reason?: string) => void;
+  canApprove: boolean;
+  currentUserRole: AppRole;
   titleMaxChars?: number;
   detailsMaxChars?: number;
 }) {
@@ -92,6 +100,8 @@ export default function AnnouncementsModal({
   const [filterAudience, setFilterAudience] = useState<'all' | AnnouncementAudience>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expired'>('all');
   const [filterPinned, setFilterPinned] = useState<'all' | 'pinned' | 'unpinned'>('all');
+  const [rejectReasonById, setRejectReasonById] = useState<Record<string, string>>({});
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const detailsRef = useRef<HTMLTextAreaElement>(null);
 
@@ -178,6 +188,11 @@ export default function AnnouncementsModal({
       pinned: draft.pinned,
       ackRequired: draft.ackRequired,
       createdBy: 'Admin',
+      approvalStatus: currentUserRole === 'coach' ? 'pending' : 'approved',
+      approvedBy: currentUserRole === 'coach' ? null : 'Staff',
+      approvedById: null,
+      approvedAt: currentUserRole === 'coach' ? null : new Date().toISOString(),
+      rejectionReason: null,
     };
 
     if (editingId) {
@@ -216,6 +231,14 @@ export default function AnnouncementsModal({
         return filterStatus === 'active' ? item.expiresAt >= today : item.expiresAt < today;
       });
   }, [announcements, filterAudience, filterPinned, filterStatus, filterTag, search]);
+
+  const pendingRows = useMemo(
+    () =>
+      announcements
+        .filter((item) => item.approvalStatus === 'pending')
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()),
+    [announcements]
+  );
 
   const loadIntoComposer = (item: AnnouncementItem) => {
     setDraft({
@@ -264,6 +287,14 @@ export default function AnnouncementsModal({
               >
                 Manage
               </button>
+              {canApprove ? (
+                <button
+                  onClick={() => setActiveTab('pending')}
+                  className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${activeTab === 'pending' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] text-white' : 'border-[#2a2a2a] bg-[#171717] text-zinc-400'}`}
+                >
+                  Pending approvals
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -276,7 +307,7 @@ export default function AnnouncementsModal({
               disabled={!canPublish || activeTab !== 'create'}
               className="rounded-md border border-[#c81d25] bg-[#c81d25] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#ac1820] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Publish
+              {currentUserRole === 'coach' ? 'Submit for approval' : 'Publish'}
             </button>
             <button onClick={handleCancel} className="grid h-8 w-8 place-items-center rounded-md border border-[#2a2a2a] bg-[#171717] text-zinc-400 hover:text-white">
               ✕
@@ -429,7 +460,7 @@ export default function AnnouncementsModal({
                 </div>
               </aside>
             </div>
-          ) : (
+          ) : activeTab === 'manage' ? (
             <div className="space-y-3">
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
                 <input
@@ -482,7 +513,7 @@ export default function AnnouncementsModal({
                             {item.pinned ? <span className="text-xs text-zinc-300">📌</span> : null}
                           </div>
                           <p className="truncate text-sm text-zinc-100">{item.title}</p>
-                          <p className="text-xs text-zinc-500">Audience: {audienceLabel[item.audience]} • Expires: {formatDateLabel(item.expiresAt)}</p>
+                          <p className="text-xs text-zinc-500">Audience: {audienceLabel[item.audience]} • Expires: {formatDateLabel(item.expiresAt)} • Status: {item.approvalStatus}</p>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -494,6 +525,83 @@ export default function AnnouncementsModal({
                         </div>
                       </li>
                     ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-[#242424] bg-[#101010] px-3 py-2 text-xs text-zinc-400">
+                Pending announcements are submitted by coaches and require staff/admin approval before publishing.
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-[#242424]">
+                {pendingRows.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-sm text-zinc-500">No pending announcements.</p>
+                ) : (
+                  <ul>
+                    {pendingRows.map((item) => {
+                      const isRejectingThis = rejectingId === item.id;
+                      return (
+                        <li key={item.id} className="border-b border-[#1f1f1f] bg-[#101010] px-3 py-3 last:border-b-0">
+                          <div className="mb-2 flex items-center gap-2">
+                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${tagChipClass[item.tag]}`}>
+                              {item.tag}
+                            </span>
+                            <span className="rounded-full border border-[#6b4f12] bg-[rgba(107,79,18,0.35)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-300">
+                              Pending
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium text-zinc-100">{item.title}</p>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Audience: {audienceLabel[item.audience]} • Expires: {formatDateLabel(item.expiresAt)} • Created by: {item.createdBy || 'Unknown'}
+                          </p>
+
+                          {isRejectingThis ? (
+                            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                              <input
+                                value={rejectReasonById[item.id] || ''}
+                                onChange={(event) =>
+                                  setRejectReasonById((prev) => ({ ...prev, [item.id]: event.target.value }))
+                                }
+                                placeholder="Rejection reason (optional)"
+                                className="flex-1 rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none"
+                              />
+                              <button
+                                onClick={() => {
+                                  onReject(item.id, rejectReasonById[item.id]);
+                                  setRejectingId(null);
+                                }}
+                                className="rounded-md border border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] px-3 py-2 text-xs font-semibold text-rose-300"
+                              >
+                                Confirm reject
+                              </button>
+                              <button
+                                onClick={() => setRejectingId(null)}
+                                className="rounded-md border border-[#2a2a2a] bg-[#171717] px-3 py-2 text-xs text-zinc-300"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : null}
+
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              onClick={() => onApprove(item.id)}
+                              className="rounded-md border border-[#14532d] bg-[rgba(20,83,45,0.35)] px-2.5 py-1 text-xs font-semibold text-green-300"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => setRejectingId(item.id)}
+                              className="rounded-md border border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] px-2.5 py-1 text-xs font-semibold text-rose-300"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

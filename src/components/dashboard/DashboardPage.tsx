@@ -306,7 +306,12 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-7">
-            <AnnouncementsPanel items={announcements} />
+            <AnnouncementsPanel
+              items={announcements}
+              currentUserRole="admin"
+              currentUserName="Professor"
+              currentUserId="local-admin"
+            />
             <RecentNotesList notes={recentNotes} loading={recentNotesLoading} />
             <UnpaidPaymentsTable rows={unpaidPayments} />
           </div>

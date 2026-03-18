@@ -30,6 +30,8 @@ export interface AttendanceRecentItem {
 export type AnnouncementTag = 'URGENT' | 'INFO' | 'EVENT' | 'PAYMENTS';
 export type AnnouncementAudience = 'ALL' | 'ADULTS' | 'KIDS' | 'STAFF';
 export type KidsGroup = 'Kids 1' | 'Kids 2' | 'Teens';
+export type AppRole = 'coach' | 'staff' | 'admin';
+export type AnnouncementApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface AnnouncementItem {
   id: string;
@@ -43,6 +45,12 @@ export interface AnnouncementItem {
   ackRequired?: boolean;
   createdAt?: string;
   createdBy?: string;
+  createdById?: string;
+  approvalStatus: AnnouncementApprovalStatus;
+  approvedBy?: string | null;
+  approvedById?: string | null;
+  approvedAt?: string | null;
+  rejectionReason?: string | null;
 }
 
 export interface RequestItem {
