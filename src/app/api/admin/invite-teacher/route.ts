@@ -9,14 +9,26 @@ const isRole = (value: string): value is AppRole => {
 }
 
 const getEnv = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SECRET_KEY
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    return { error: 'Missing Supabase environment variables.' }
+  const missing: string[] = []
+  if (!supabaseUrl) {
+    missing.push('NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL)')
+  }
+  if (!serviceRoleKey) {
+    missing.push('SUPABASE_SERVICE_ROLE_KEY')
   }
 
-  return { supabaseUrl, serviceRoleKey }
+  if (missing.length > 0) {
+    return { error: `Missing Supabase environment variables: ${missing.join(', ')}` }
+  }
+
+  return { supabaseUrl: supabaseUrl as string, serviceRoleKey: serviceRoleKey as string }
 }
 
 const ensureAdmin = async () => {
