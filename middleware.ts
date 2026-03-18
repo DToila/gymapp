@@ -16,6 +16,10 @@ const roleFromMetadata = (metadata: unknown): AppRole | null => {
   return null
 }
 
+const roleFromUser = (user: { user_metadata?: unknown; app_metadata?: unknown }): AppRole | null => {
+  return roleFromMetadata(user.user_metadata) || roleFromMetadata(user.app_metadata)
+}
+
 const ROLE_RULES: Array<{ pattern: RegExp; allowed: AppRole[] }> = [
   { pattern: /^\/settings(?:\/.*)?$/, allowed: ['admin'] },
   { pattern: /^\/(payments|leads)(?:\/.*)?$/, allowed: ['admin', 'staff'] },
@@ -83,7 +87,7 @@ export async function middleware(request: NextRequest) {
     .maybeSingle()
 
   const profileRole = profile?.role && isRole(profile.role) ? profile.role : null
-  const metadataRole = roleFromMetadata(user.user_metadata)
+  const metadataRole = roleFromUser(user)
   const role = profileRole || metadataRole || 'coach'
   const allowed = allowedRolesForPath(pathname)
 

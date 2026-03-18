@@ -8,6 +8,20 @@ import { supabase } from '../../../lib/supabase';
 
 type AppRole = 'admin' | 'staff' | 'coach';
 
+const isRole = (value: string): value is AppRole => value === 'admin' || value === 'staff' || value === 'coach';
+
+const roleFromMetadata = (metadata: unknown): AppRole | null => {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const roleValue = (metadata as { role?: unknown }).role;
+  return typeof roleValue === 'string' && isRole(roleValue) ? roleValue : null;
+};
+
+const fullNameFromMetadata = (metadata: unknown): string | null => {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const value = (metadata as { full_name?: unknown }).full_name;
+  return typeof value === 'string' && value.trim() ? value : null;
+};
+
 interface TeacherSidebarProps {
   active: 'dashboard' | 'schedule' | 'members' | 'attendance' | 'leads' | 'payments' | 'settings';
   requestsCount?: number;
@@ -44,12 +58,15 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
         .eq('id', user.id)
         .maybeSingle();
 
-      if (data?.role && ['admin', 'staff', 'coach'].includes(data.role)) {
-        setProfileRole(data.role as AppRole);
-      }
-      if (data?.full_name) {
-        setProfileName(data.full_name);
-      }
+      const roleFromProfile = data?.role && isRole(data.role) ? data.role : null;
+      const roleFromUserMeta = roleFromMetadata(user.user_metadata);
+      const roleFromAppMeta = roleFromMetadata(user.app_metadata);
+      setProfileRole(roleFromProfile || roleFromUserMeta || roleFromAppMeta || 'coach');
+
+      const nameFromProfile = data?.full_name || null;
+      const nameFromUserMeta = fullNameFromMetadata(user.user_metadata);
+      const nameFromAppMeta = fullNameFromMetadata(user.app_metadata);
+      setProfileName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Professor');
     };
 
     loadProfile();

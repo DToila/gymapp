@@ -20,6 +20,10 @@ const roleFromMetadata = (metadata: unknown): AppRole | null => {
   return null;
 };
 
+const roleFromUser = (user: { user_metadata?: unknown; app_metadata?: unknown }): AppRole | null => {
+  return roleFromMetadata(user.user_metadata) || roleFromMetadata(user.app_metadata);
+};
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,7 +61,7 @@ function LoginForm() {
         .maybeSingle();
 
       const profileRole = profile?.role && isRole(profile.role) ? profile.role : null;
-      const metadataRole = roleFromMetadata(user.user_metadata);
+      const metadataRole = roleFromUser(user);
       const role = profileRole || metadataRole;
 
       if (!role) {

@@ -17,6 +17,14 @@ const roleFromMetadata = (metadata: unknown): AppRole | null => {
   return null
 }
 
+const roleFromUser = (user: { user_metadata?: unknown; app_metadata?: unknown }): AppRole | null => {
+  return roleFromMetadata(user.user_metadata) || roleFromMetadata(user.app_metadata)
+}
+
+const fullNameFromUser = (user: { user_metadata?: unknown; app_metadata?: unknown }): string | null => {
+  return fullNameFromMetadata(user.user_metadata) || fullNameFromMetadata(user.app_metadata)
+}
+
 const fullNameFromMetadata = (metadata: unknown): string | null => {
   if (!metadata || typeof metadata !== 'object') return null
   const fullNameValue = (metadata as { full_name?: unknown }).full_name
@@ -69,7 +77,7 @@ const ensureAdmin = async () => {
     .maybeSingle()
 
   const profileRole = profile?.role && isRole(profile.role) ? profile.role : null
-  const metadataRole = roleFromMetadata(user.user_metadata)
+  const metadataRole = roleFromUser(user)
   const effectiveRole = profileRole || metadataRole
 
   if (profileError && !isProfilesTableMissingError(profileError)) {
@@ -111,8 +119,8 @@ export async function GET() {
     const fallbackItems = (listed.data.users || []).map((user) => ({
       id: user.id,
       email: user.email || null,
-      full_name: fullNameFromMetadata(user.user_metadata),
-      role: roleFromMetadata(user.user_metadata) || 'coach',
+      full_name: fullNameFromUser(user),
+      role: roleFromUser(user) || 'coach',
       created_at: user.created_at || new Date().toISOString(),
     }))
 
@@ -159,6 +167,9 @@ export async function POST(request: Request) {
       const updateResult = await adminClient.auth.admin.updateUserById(existingUser.id, {
         password,
         email_confirm: true,
+        app_metadata: {
+          role: roleValue,
+        },
         user_metadata: {
           role: roleValue,
           full_name: fullName || null,
@@ -192,6 +203,9 @@ export async function POST(request: Request) {
       email,
       password,
       email_confirm: true,
+      app_metadata: {
+        role: roleValue,
+      },
       user_metadata: {
         role: roleValue,
         full_name: fullName || null,
@@ -231,6 +245,7 @@ export async function POST(request: Request) {
       role: roleValue,
       full_name: fullName || null,
     },
+    redirectTo: process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/login` : undefined,
   })
 
   if (invite.error) {

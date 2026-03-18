@@ -18,6 +18,20 @@ import { AppRole, AttendanceRecentItem, KidBehaviorItem, NoteItem, RequestItem }
 import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
 
+const isRole = (value: string): value is AppRole => value === 'admin' || value === 'staff' || value === 'coach';
+
+const roleFromMetadata = (metadata: unknown): AppRole | null => {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const roleValue = (metadata as { role?: unknown }).role;
+  return typeof roleValue === 'string' && isRole(roleValue) ? roleValue : null;
+};
+
+const fullNameFromMetadata = (metadata: unknown): string | null => {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const value = (metadata as { full_name?: unknown }).full_name;
+  return typeof value === 'string' && value.trim() ? value : null;
+};
+
 const getRelativeTime = (isoDate: string): string => {
   const then = new Date(isoDate).getTime();
   if (Number.isNaN(then)) return 'Just now';
@@ -56,13 +70,15 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         .eq('id', user.id)
         .maybeSingle();
 
-      if (data?.role && ['admin', 'staff', 'coach'].includes(data.role)) {
-        setCurrentRole(data.role as AppRole);
-      }
+      const roleFromProfile = data?.role && isRole(data.role) ? data.role : null;
+      const roleFromUserMeta = roleFromMetadata(user.user_metadata);
+      const roleFromAppMeta = roleFromMetadata(user.app_metadata);
+      setCurrentRole(roleFromProfile || roleFromUserMeta || roleFromAppMeta || 'coach');
 
-      if (data?.full_name) {
-        setCurrentName(data.full_name);
-      }
+      const nameFromProfile = data?.full_name || null;
+      const nameFromUserMeta = fullNameFromMetadata(user.user_metadata);
+      const nameFromAppMeta = fullNameFromMetadata(user.app_metadata);
+      setCurrentName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Professor');
     };
 
     loadProfileRole();
