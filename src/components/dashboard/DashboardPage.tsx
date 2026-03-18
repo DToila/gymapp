@@ -188,6 +188,21 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         })),
       ];
 
+      const eventDates = Array.from(new Set(events.map((event) => event.date)));
+      const attendanceByDate = new Map<string, Set<string>>();
+
+      await Promise.all(
+        eventDates.map(async (dateKey) => {
+          try {
+            const attendedIds = await getAttendanceForDate(dateKey);
+            attendanceByDate.set(dateKey, new Set(attendedIds));
+          } catch (error) {
+            console.error('dashboard attendance filter fetch error', { dateKey, error });
+            attendanceByDate.set(dateKey, new Set<string>());
+          }
+        })
+      );
+
       console.log('dashboard behavior fetch', {
         fromDateKey,
         toDateKey: toKey,
@@ -201,6 +216,9 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       events
         .filter((event) => kidIds.has(event.kid_id))
         .forEach((event) => {
+          const attendedSet = attendanceByDate.get(event.date);
+          if (attendedSet && !attendedSet.has(event.kid_id)) return;
+
           const createdAt = event.created_at || new Date(`${event.date}T12:00:00`).toISOString();
           const key = `${event.kid_id}:${event.date}`;
           const existing = dedupedByKidAndDate.get(key);

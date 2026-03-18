@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getKidBehaviorEvents, getMembers, upsertKidBehavior, getAttendanceForDate, setAttendance } from '../../../lib/database';
+import { deleteKidBehaviorForDate, getKidBehaviorEvents, getMembers, upsertKidBehavior, getAttendanceForDate, setAttendance } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import {
@@ -9,6 +9,7 @@ import {
   BEHAVIOR_UPDATED_EVENT,
   readBehaviorEvents,
   readAttendanceByDate,
+  removeBehaviorEvent,
   setMemberAttendanceForDate,
   toDateKey,
   upsertBehaviorEvent,
@@ -301,6 +302,33 @@ export default function AttendancePage() {
 
   const uncheckIn = (id: string) => {
     setAttendanceByDate((prev) => setMemberAttendanceForDate(prev, selectedDate, id, false));
+
+    if (activeTab === 'kids') {
+      setKidBehaviorByDate((prev) => {
+        const dateMap = prev[selectedDate];
+        if (!dateMap || !(id in dateMap)) return prev;
+
+        const nextDateMap = { ...dateMap };
+        delete nextDateMap[id];
+
+        return {
+          ...prev,
+          [selectedDate]: nextDateMap,
+        };
+      });
+
+      try {
+        const nextEvents = removeBehaviorEvent(readBehaviorEvents(), id, selectedDate);
+        writeBehaviorEvents(nextEvents);
+      } catch (error) {
+        console.error('Error removing local kid behavior after uncheck:', error);
+      }
+
+      deleteKidBehaviorForDate({ kidId: id, dateKey: selectedDate }).catch((error) => {
+        console.error('Error removing DB kid behavior after uncheck:', error);
+      });
+    }
+
     setAttendance(id, selectedDate, false)
       .then(() => {
         const nextAttendanceByDate = setMemberAttendanceForDate(readAttendanceByDate(), selectedDate, id, false);
