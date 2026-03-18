@@ -20,13 +20,14 @@ import {
   mapDdBatchItemToMember,
   MemberPaymentView,
   PaymentMethod,
+  PaymentRow,
   recomputeMemberPaidThrough,
   setDdFailedFlag,
   updateDdBatchItemPaymentLink,
   voidPayment,
 } from '@/lib/payments'
 
-type TabKey = 'unpaid' | 'dd'
+type TabKey = 'unpaid' | 'paid' | 'dd'
 type ParsedStatus = 'success' | 'failed'
 
 interface ParsedDdRow {
@@ -139,18 +140,30 @@ const resolveMemberMatch = (
   return { memberId: null, matchKey: null, reason: 'Unmatched member (missing member_id/phone/email match).' }
 }
 
+const sumAmount = (rows: Array<{ amount: number }>): number => rows.reduce((total, row) => total + Number(row.amount || 0), 0)
+
+const mapMethodLabel = (method: PaymentMethod): string => {
+  if (method === 'TPA_CARD') return 'TPA'
+  if (method === 'TPA_MBWAY') return 'TPA MBWAY'
+  if (method === 'CASH') return 'Cash'
+  return 'DD'
+}
+
 export default function PaymentsPage() {
   const currentMonth = getCurrentMonthKey()
   const todayIso = getTodayDateKey()
 
   const [activeTab, setActiveTab] = useState<TabKey>('unpaid')
   const [members, setMembers] = useState<MemberPaymentView[]>([])
-  const [paymentsCurrentMonth, setPaymentsCurrentMonth] = useState<Record<string, boolean>>({})
+  const [currentMonthPayments, setCurrentMonthPayments] = useState<PaymentRow[]>([])
+  const [paidMonth, setPaidMonth] = useState(currentMonth)
+  const [paidMonthPayments, setPaidMonthPayments] = useState<PaymentRow[]>([])
   const [latestBatchId, setLatestBatchId] = useState<string | null>(null)
   const [ddItems, setDdItems] = useState<DdBatchItemRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [errorDismissed, setErrorDismissed] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
   const [showMarkPaidModal, setShowMarkPaidModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -165,12 +178,21 @@ export default function PaymentsPage() {
     note: '',
   })
 
+  const paidMonthMemberMap = useMemo(() => {
+    const map: Record<string, boolean> = {}
+    currentMonthPayments.forEach((payment) => {
+      if (payment.member_id && !payment.voided) map[payment.member_id] = true
+    })
+    return map
+  }, [currentMonthPayments])
+
   const overdueDays = getOverdueDays()
   const showOverdueList = new Date().getDate() >= 8
 
-  const refreshAll = useCallback(async () => {
+  const refreshCore = useCallback(async () => {
     setLoading(true)
     setError(null)
+    setErrorDismissed(false)
 
     try {
       const [membersData, monthPayments, monthBatches] = await Promise.all([
@@ -180,12 +202,7 @@ export default function PaymentsPage() {
       ])
 
       setMembers(membersData)
-
-      const paidMap: Record<string, boolean> = {}
-      monthPayments.forEach((payment) => {
-        if (payment.member_id) paidMap[payment.member_id] = true
-      })
-      setPaymentsCurrentMonth(paidMap)
+      setCurrentMonthPayments(monthPayments)
 
       const latestBatch = monthBatches[0] || null
       setLatestBatchId(latestBatch?.id || null)
@@ -196,30 +213,89 @@ export default function PaymentsPage() {
       } else {
         setDdItems([])
       }
-    } catch (loadError) {
-      console.error('Payments page load error:', loadError)
-      setError(loadError instanceof Error ? loadError.message : 'Failed to load payments data.')
+    } catch (fetchError) {
+      console.error('PAYMENTS_FETCH_ERROR', fetchError)
+      setError("Couldn't load payments. Retry")
     } finally {
       setLoading(false)
     }
   }, [currentMonth])
 
+  const refreshPaidMonth = useCallback(async () => {
+    try {
+      const rows = await getPaymentsForMonth(paidMonth)
+      setPaidMonthPayments(rows.filter((row) => !row.voided))
+    } catch (fetchError) {
+      console.error('PAYMENTS_FETCH_ERROR', fetchError)
+      setError("Couldn't load payments. Retry")
+      setErrorDismissed(false)
+      setPaidMonthPayments([])
+    }
+  }, [paidMonth])
+
   useEffect(() => {
-    refreshAll()
-  }, [refreshAll])
+    refreshCore()
+  }, [refreshCore])
+
+  useEffect(() => {
+    refreshPaidMonth()
+  }, [refreshPaidMonth])
+
+  const memberNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    members.forEach((member) => {
+      map.set(member.id, member.name)
+    })
+    return map
+  }, [members])
 
   const unpaidRows = useMemo(() => {
     if (!showOverdueList) return []
 
     return members
       .filter((member) => !member.dd)
-      .filter((member) => !paymentsCurrentMonth[member.id])
+      .filter((member) => !paidMonthMemberMap[member.id])
       .map((member) => ({ ...member, overdueDays }))
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [members, paymentsCurrentMonth, overdueDays, showOverdueList])
+  }, [members, overdueDays, paidMonthMemberMap, showOverdueList])
 
-  const failedRows = useMemo(() => ddItems.filter((item) => item.status === 'failed' && !item.ignored), [ddItems])
   const unmatchedRows = useMemo(() => ddItems.filter((item) => !item.member_id && !item.ignored), [ddItems])
+
+  const ddSummary = useMemo(() => {
+    const activeItems = ddItems.filter((item) => !item.ignored)
+    const successRows = activeItems.filter((item) => item.status === 'success')
+    const failed = activeItems.filter((item) => item.status === 'failed')
+    const unmatched = activeItems.filter((item) => !item.member_id)
+
+    return {
+      successCount: successRows.length,
+      failedCount: failed.length,
+      unmatchedCount: unmatched.length,
+      successAmount: sumAmount(successRows.map((row) => ({ amount: Number(row.amount || 0) }))),
+      failedAmount: sumAmount(failed.map((row) => ({ amount: Number(row.amount || 0) }))),
+    }
+  }, [ddItems])
+
+  const kpi = useMemo(() => {
+    const unpaidTotal = unpaidRows.reduce((total, row) => total + Number(row.amount_due || 0), 0)
+    const paidRows = currentMonthPayments.filter((row) => !row.voided)
+    const paidTotal = sumAmount(paidRows.map((row) => ({ amount: Number(row.amount || 0) })))
+
+    return {
+      unpaidCount: unpaidRows.length,
+      unpaidTotal,
+      paidCount: paidRows.length,
+      paidTotal,
+      ddSuccessCount: ddItems.length > 0 ? ddSummary.successCount : null,
+      ddSuccessTotal: ddItems.length > 0 ? ddSummary.successAmount : null,
+      ddFailedCount: ddItems.length > 0 ? ddSummary.failedCount : null,
+      ddFailedTotal: ddItems.length > 0 ? ddSummary.failedAmount : null,
+    }
+  }, [currentMonthPayments, ddItems.length, ddSummary.failedAmount, ddSummary.failedCount, ddSummary.successAmount, ddSummary.successCount, unpaidRows])
+
+  const handleRetry = async () => {
+    await Promise.all([refreshCore(), refreshPaidMonth()])
+  }
 
   const handleOpenMarkPaid = (member: MemberPaymentView) => {
     setMarkPaidForm({
@@ -242,21 +318,22 @@ export default function PaymentsPage() {
     setMessage(null)
 
     try {
-      const paidAtIso = new Date(markPaidForm.paidAt).toISOString()
       await createManualPayment({
         memberId: markPaidForm.memberId,
         amount: Number(markPaidForm.amount || 0),
         month: markPaidForm.month,
-        paidAt: paidAtIso,
+        paidAt: new Date(markPaidForm.paidAt).toISOString(),
         method: markPaidForm.method,
         note: markPaidForm.note,
       })
 
       setShowMarkPaidModal(false)
       setMessage('Payment marked as paid successfully.')
-      await refreshAll()
+      await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Failed to mark payment as paid.')
+      console.error('PAYMENTS_FETCH_ERROR', submitError)
+      setError("Couldn't load payments. Retry")
+      setErrorDismissed(false)
     } finally {
       setSubmitting(false)
     }
@@ -293,8 +370,7 @@ export default function PaymentsPage() {
 
       const buffer = await file.arrayBuffer()
       const workbook = XLSX.read(buffer, { type: 'array' })
-      const firstSheetName = workbook.SheetNames[0]
-      const firstSheet = workbook.Sheets[firstSheetName]
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
       const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: '' })
 
       const parsedRows: ParsedDdRow[] = rawRows.map((rawRow) => {
@@ -336,12 +412,11 @@ export default function PaymentsPage() {
 
       setLatestBatchId(batch.id)
       setMessage(`DD file processed: ${inserted.length} rows imported.`)
-      const nextItems = await listDdBatchItems(batch.id)
-      setDdItems(nextItems)
-      await refreshAll()
+      await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (uploadError) {
-      console.error('DD upload failed:', uploadError)
-      setError(uploadError instanceof Error ? uploadError.message : 'Failed to process DD upload.')
+      console.error('PAYMENTS_FETCH_ERROR', uploadError)
+      setError("Couldn't load payments. Retry")
+      setErrorDismissed(false)
     } finally {
       setUploading(false)
       event.target.value = ''
@@ -367,13 +442,11 @@ export default function PaymentsPage() {
         await setDdFailedFlag(item.member_id, currentMonth, otherFailed)
       }
 
-      if (latestBatchId) {
-        const nextItems = await listDdBatchItems(latestBatchId)
-        setDdItems(nextItems)
-      }
-      await refreshAll()
+      await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (ignoreError) {
-      setError(ignoreError instanceof Error ? ignoreError.message : 'Failed to ignore DD row.')
+      console.error('PAYMENTS_FETCH_ERROR', ignoreError)
+      setError("Couldn't load payments. Retry")
+      setErrorDismissed(false)
     }
   }
 
@@ -381,7 +454,6 @@ export default function PaymentsPage() {
     const selectedMemberId = mappingByItemId[item.id]
     if (!selectedMemberId) return
 
-    setError(null)
     setSubmitting(true)
 
     try {
@@ -393,18 +465,23 @@ export default function PaymentsPage() {
       })
 
       await applyDdEffectsForItem({ ...item, member_id: selectedMemberId })
-
-      if (latestBatchId) {
-        const nextItems = await listDdBatchItems(latestBatchId)
-        setDdItems(nextItems)
-      }
-      await refreshAll()
+      await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (mapError) {
-      setError(mapError instanceof Error ? mapError.message : 'Failed to map unmatched row.')
+      console.error('PAYMENTS_FETCH_ERROR', mapError)
+      setError("Couldn't load payments. Retry")
+      setErrorDismissed(false)
     } finally {
       setSubmitting(false)
     }
   }
+
+  const renderKpiCard = (title: string, count: string, amount: string) => (
+    <article className="rounded-2xl border border-[#252525] bg-[#131313] p-4 shadow-[0_6px_20px_rgba(0,0,0,0.3)]">
+      <p className="text-xs uppercase tracking-wide text-zinc-500">{title}</p>
+      <p className="mt-2 text-2xl font-bold text-white">{count}</p>
+      <p className="mt-1 text-sm text-zinc-300">{amount}</p>
+    </article>
+  )
 
   return (
     <div className="flex h-screen bg-[#0b0b0b]">
@@ -413,11 +490,60 @@ export default function PaymentsPage() {
       <main className="ml-[260px] flex-1 flex flex-col overflow-hidden">
         <div className="border-b border-[#222] bg-[#0d0d0d] px-8 py-6">
           <h1 className="text-3xl font-bold text-white">Payments</h1>
-          <p className="mt-1 text-sm text-zinc-500">Unpaid (Non-DD) and Direct Debit follow-up flow</p>
+          <p className="mt-1 text-sm text-zinc-500">Unpaid(Non-DD) and Direct Debit follow-up flow</p>
         </div>
 
-        <div className="flex-1 overflow-auto p-8">
-          <div className="mb-6 flex gap-2 border-b border-[#222]">
+        <div className="flex-1 overflow-auto p-8 space-y-6">
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {loading
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <div key={`kpi-skeleton-${index}`} className="h-[108px] animate-pulse rounded-2xl border border-[#252525] bg-[#131313]" />
+                ))
+              : (
+                  <>
+                    {renderKpiCard('Unpaid (Non-DD)', String(kpi.unpaidCount), `€${kpi.unpaidTotal.toFixed(2)}`)}
+                    {renderKpiCard('Paid (This month)', String(kpi.paidCount), `€${kpi.paidTotal.toFixed(2)}`)}
+                    {renderKpiCard(
+                      'DD Success (This month)',
+                      kpi.ddSuccessCount === null ? '—' : String(kpi.ddSuccessCount),
+                      kpi.ddSuccessTotal === null ? '—' : `€${kpi.ddSuccessTotal.toFixed(2)}`
+                    )}
+                    {renderKpiCard(
+                      'DD Failed (This month)',
+                      kpi.ddFailedCount === null ? '—' : String(kpi.ddFailedCount),
+                      kpi.ddFailedTotal === null ? '—' : `€${kpi.ddFailedTotal.toFixed(2)}`
+                    )}
+                  </>
+                )}
+          </section>
+
+          {error && !errorDismissed ? (
+            <section className="rounded-xl border border-[#7f1d1d] bg-[#450a0a]/40 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-[#fecaca]">{error}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleRetry}
+                    className="rounded-md border border-[#ef4444]/50 px-3 py-1 text-xs font-semibold text-[#fecaca] hover:bg-[#7f1d1d]/30"
+                  >
+                    Retry
+                  </button>
+                  <button
+                    onClick={() => setErrorDismissed(true)}
+                    className="rounded-md border border-[#2a2a2a] px-3 py-1 text-xs font-semibold text-zinc-300 hover:bg-[#161616]"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {message ? (
+            <div className="rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-4 py-3 text-sm text-[#22c55e]">{message}</div>
+          ) : null}
+
+          <div className="flex gap-2 border-b border-[#222]">
             <button
               onClick={() => setActiveTab('unpaid')}
               className={`px-4 py-3 font-medium transition ${
@@ -425,6 +551,14 @@ export default function PaymentsPage() {
               }`}
             >
               Unpaid
+            </button>
+            <button
+              onClick={() => setActiveTab('paid')}
+              className={`px-4 py-3 font-medium transition ${
+                activeTab === 'paid' ? 'border-b-2 border-[#c81d25] text-white' : 'text-zinc-400 hover:text-zinc-300'
+              }`}
+            >
+              Paid
             </button>
             <button
               onClick={() => setActiveTab('dd')}
@@ -436,33 +570,29 @@ export default function PaymentsPage() {
             </button>
           </div>
 
-          {message ? (
-            <div className="mb-4 rounded-xl border border-[#22c55e]/40 bg-[#22c55e]/10 px-4 py-3 text-sm text-[#22c55e]">{message}</div>
+          {loading ? (
+            <div className="space-y-3">
+              <div className="h-11 animate-pulse rounded-xl bg-[#131313]" />
+              <div className="h-11 animate-pulse rounded-xl bg-[#131313]" />
+              <div className="h-11 animate-pulse rounded-xl bg-[#131313]" />
+            </div>
           ) : null}
-          {error ? (
-            <div className="mb-4 rounded-xl border border-[#c81d25]/40 bg-[#c81d25]/10 px-4 py-3 text-sm text-[#fda4af]">{error}</div>
-          ) : null}
-          {loading ? <div className="text-zinc-400">Loading payments...</div> : null}
 
           {!loading && activeTab === 'unpaid' ? (
             <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold text-white">Unpaid (Non-DD)</h2>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Members without DD, unpaid this month ({currentMonth}), overdue after day 8.
-                </p>
-              </div>
+              <h2 className="text-xl font-semibold text-white">Unpaid(Non-DD)</h2>
+              <p className="mt-1 text-xs text-zinc-500">Members without DD, unpaid this month ({currentMonth}), overdue after day 8.</p>
 
               {!showOverdueList ? (
-                <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
+                <div className="mt-4 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
                   Overdue unpaid list becomes active on day 8 of the month.
                 </div>
               ) : unpaidRows.length === 0 ? (
-                <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
+                <div className="mt-4 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
                   No non-DD unpaid members for this month.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-[#222]">
@@ -497,6 +627,59 @@ export default function PaymentsPage() {
             </section>
           ) : null}
 
+          {!loading && activeTab === 'paid' ? (
+            <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Paid</h2>
+                  <p className="mt-1 text-xs text-zinc-500">Payments recorded for selected month.</p>
+                </div>
+                <div>
+                  <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Month</label>
+                  <input
+                    type="month"
+                    value={paidMonth}
+                    onChange={(event) => setPaidMonth(event.target.value)}
+                    className="rounded-lg border border-[#222] bg-[#121212] px-3 py-2 text-sm text-white"
+                  />
+                </div>
+              </div>
+
+              {paidMonthPayments.length === 0 ? (
+                <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
+                  No payments recorded for this month yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[#222]">
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Member</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Amount</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Method</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Paid at</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paidMonthPayments.map((payment) => (
+                        <tr key={payment.id} className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition">
+                          <td className="px-4 py-3 font-medium text-white">
+                            {payment.member_id ? memberNameMap.get(payment.member_id) || 'Unknown member' : 'Unknown member'}
+                          </td>
+                          <td className="px-4 py-3 text-white">€{Number(payment.amount || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-zinc-300">{mapMethodLabel(payment.method)}</td>
+                          <td className="px-4 py-3 text-zinc-400">{new Date(payment.paid_at).toLocaleString('en-GB')}</td>
+                          <td className="px-4 py-3 text-zinc-400">{payment.note || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          ) : null}
+
           {!loading && activeTab === 'dd' ? (
             <div className="space-y-6">
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
@@ -513,6 +696,14 @@ export default function PaymentsPage() {
               </section>
 
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
+                <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-zinc-300">
+                  <span>Success: {ddSummary.successCount}</span>
+                  <span>•</span>
+                  <span>Failed: {ddSummary.failedCount}</span>
+                  <span>•</span>
+                  <span>Unmatched: {ddSummary.unmatchedCount}</span>
+                </div>
+
                 <h3 className="mb-3 text-lg font-semibold text-white">DD Results</h3>
                 {ddItems.length === 0 ? (
                   <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">No DD items yet.</div>
@@ -611,25 +802,6 @@ export default function PaymentsPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
-                )}
-              </section>
-
-              <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
-                <h3 className="mb-3 text-lg font-semibold text-white">DD Failed (Follow-up)</h3>
-                {failedRows.length === 0 ? (
-                  <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">No DD failures this month.</div>
-                ) : (
-                  <div className="space-y-2">
-                    {failedRows.map((item) => {
-                      const member = members.find((row) => row.id === item.member_id)
-                      return (
-                        <div key={`failed-${item.id}`} className="rounded-lg border border-[#ef4444]/30 bg-[#7f1d1d]/20 px-4 py-3 text-sm">
-                          <p className="font-semibold text-[#fecaca]">{member?.name || 'Unmatched member'}</p>
-                          <p className="text-xs text-zinc-300">Reason: {item.reason || 'No reason provided'}</p>
-                        </div>
-                      )
-                    })}
                   </div>
                 )}
               </section>

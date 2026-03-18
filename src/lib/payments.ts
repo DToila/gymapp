@@ -153,12 +153,30 @@ const getMemberType = (member: Member): 'Adult' | 'Kids' => {
 }
 
 export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('members')
     .select('id, name, phone, email, payment_type, fee, date_of_birth, paid_through, dd_failed_this_month, dd_failed_month')
     .order('name', { ascending: true })
 
-  if (error) throw error
+  if (error) {
+    const message = error.message || ''
+    const missingMemberColumns =
+      message.includes('paid_through') ||
+      message.includes('dd_failed_this_month') ||
+      message.includes('dd_failed_month')
+
+    if (!missingMemberColumns) {
+      throw error
+    }
+
+    const retry = await supabase
+      .from('members')
+      .select('id, name, phone, email, payment_type, fee, date_of_birth')
+      .order('name', { ascending: true })
+
+    if (retry.error) throw retry.error
+    data = retry.data as typeof data
+  }
 
   const local = readLocalState()
 
