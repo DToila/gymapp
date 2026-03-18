@@ -48,6 +48,7 @@ export interface MemberPaymentView {
   phone?: string
   email?: string
   type: 'Adult' | 'Kids'
+  status?: 'Active' | 'Paused' | 'Unpaid' | 'Pending' | null
   dd: boolean
   amount_due: number
   paid_through?: string | null
@@ -155,7 +156,7 @@ const getMemberType = (member: Member): 'Adult' | 'Kids' => {
 export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
   let { data, error } = await supabase
     .from('members')
-    .select('id, name, phone, email, payment_type, fee, date_of_birth, paid_through, dd_failed_this_month, dd_failed_month')
+    .select('id, name, phone, email, status, payment_type, fee, date_of_birth, paid_through, dd_failed_this_month, dd_failed_month')
     .order('name', { ascending: true })
 
   if (error) {
@@ -171,7 +172,7 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
 
     const retry = await supabase
       .from('members')
-      .select('id, name, phone, email, payment_type, fee, date_of_birth')
+      .select('id, name, phone, email, status, payment_type, fee, date_of_birth')
       .order('name', { ascending: true })
 
     if (retry.error) throw retry.error
@@ -191,6 +192,7 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
         name: member.name,
         phone: member.phone,
         email: member.email,
+        status: member.status,
         type: getMemberType(member),
         dd,
         amount_due: monthlyFee,

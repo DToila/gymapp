@@ -253,6 +253,7 @@ export default function PaymentsPage() {
     if (!showOverdueList) return []
 
     return members
+      .filter((member) => member.status !== 'Pending')
       .filter((member) => !member.dd)
       .filter((member) => !paidMonthMemberMap[member.id])
       .map((member) => ({ ...member, overdueDays }))
