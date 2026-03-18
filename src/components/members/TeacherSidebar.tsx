@@ -40,37 +40,69 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
   const [profileName, setProfileName] = useState('Professor');
   const exportTriggerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+  const profileLoadedRef = useRef(!!roleProp);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (roleProp) {
       setProfileRole(roleProp);
+      profileLoadedRef.current = true;
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('cached_profile_role', roleProp);
+      }
+      return;
+    }
+
+    if (profileLoadedRef.current) {
       return;
     }
 
     const loadProfile = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData?.user;
-      if (!user) return;
+      try {
+        // Try to get cached role first
+        let cachedRole: AppRole | null = null;
+        if (typeof window !== 'undefined') {
+          const cached = sessionStorage.getItem('cached_profile_role');
+          if (cached && isRole(cached)) {
+            cachedRole = cached;
+            setProfileRole(cachedRole);
+            profileLoadedRef.current = true;
+            return;
+          }
+        }
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('role, full_name')
-        .eq('id', user.id)
-        .maybeSingle();
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user;
+        if (!user) return;
 
-      const roleFromProfile = data?.role && isRole(data.role) ? data.role : null;
-      const roleFromUserMeta = roleFromMetadata(user.user_metadata);
-      const roleFromAppMeta = roleFromMetadata(user.app_metadata);
-      setProfileRole(roleFromProfile || roleFromUserMeta || roleFromAppMeta || 'coach');
+        const { data } = await supabase
+          .from('profiles')
+          .select('role, full_name')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      const nameFromProfile = data?.full_name || null;
-      const nameFromUserMeta = fullNameFromMetadata(user.user_metadata);
-      const nameFromAppMeta = fullNameFromMetadata(user.app_metadata);
-      setProfileName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Professor');
+        const roleFromProfile = data?.role && isRole(data.role) ? data.role : null;
+        const roleFromUserMeta = roleFromMetadata(user.user_metadata);
+        const roleFromAppMeta = roleFromMetadata(user.app_metadata);
+        const resolvedRole = roleFromProfile || roleFromUserMeta || roleFromAppMeta || 'coach';
+        setProfileRole(resolvedRole);
+
+        const nameFromProfile = data?.full_name || null;
+        const nameFromUserMeta = fullNameFromMetadata(user.user_metadata);
+        const nameFromAppMeta = fullNameFromMetadata(user.app_metadata);
+        setProfileName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Professor');
+
+        // Cache the role for fast retrieval on sidebar remounts
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('cached_profile_role', resolvedRole);
+        }
+      } finally {
+        profileLoadedRef.current = true;
+      }
     };
 
     loadProfile();
-  }, [roleProp]);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
