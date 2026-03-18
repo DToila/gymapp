@@ -14,7 +14,7 @@ import PendingRequestsList from './PendingRequestsList';
 import UpcomingBirthdays from './UpcomingBirthdays';
 import AnnouncementsPanel from './AnnouncementsPanel';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { AttendanceRecentItem, KidBehaviorItem, NoteItem, RequestItem } from './types';
+import { AppRole, AttendanceRecentItem, KidBehaviorItem, NoteItem, RequestItem } from './types';
 import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
 
@@ -29,7 +29,7 @@ const getRelativeTime = (isoDate: string): string => {
   return 'Yesterday';
 };
 
-export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
+export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const [recentNotes, setRecentNotes] = useState<NoteItem[]>([]);
   const [recentNotesLoading, setRecentNotesLoading] = useState(true);
   const [behaviorMode, setBehaviorMode] = useState<'now' | 'month'>('now');
@@ -39,6 +39,34 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
   const [todayTotalMembers, setTodayTotalMembers] = useState(0);
   const [todayRecentAttendance, setTodayRecentAttendance] = useState<AttendanceRecentItem[]>([]);
   const [pendingRequests, setPendingRequests] = useState<RequestItem[]>([]);
+  const [currentRole, setCurrentRole] = useState<AppRole>('coach');
+  const [currentName, setCurrentName] = useState('Professor');
+
+  const isCoach = currentRole === 'coach';
+
+  useEffect(() => {
+    const loadProfileRole = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (data?.role && ['admin', 'staff', 'coach'].includes(data.role)) {
+        setCurrentRole(data.role as AppRole);
+      }
+
+      if (data?.full_name) {
+        setCurrentName(data.full_name);
+      }
+    };
+
+    loadProfileRole();
+  }, []);
 
   const loadDashboardData = useCallback(async () => {
     setRecentNotesLoading(true);
@@ -288,32 +316,34 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
-      <TeacherSidebar active="dashboard" requestsCount={pendingRequests.length} onLogout={onLogout} />
+      <TeacherSidebar
+        active="dashboard"
+        role={currentRole}
+        requestsCount={pendingRequests.length}
+        onLogout={onLogout}
+      />
 
       <main className="flex-1 p-6 lg:p-8">
         <Topbar />
 
         <header className="mb-6">
           <h1 className="text-4xl font-bold text-white">Dashboard</h1>
-          <p className="mt-1 text-lg text-zinc-400">Welcome back, Professor</p>
+          <p className="mt-1 text-lg text-zinc-400">Welcome back, {currentName}</p>
         </header>
 
-        <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {kpis.map((item) => (
-            <KpiCard key={item.id} item={item} />
-          ))}
-        </section>
+        {!isCoach ? (
+          <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {kpis.map((item) => (
+              <KpiCard key={item.id} item={item} />
+            ))}
+          </section>
+        ) : null}
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-7">
-            <AnnouncementsPanel
-              items={announcements}
-              currentUserRole="admin"
-              currentUserName="Professor"
-              currentUserId="local-admin"
-            />
+            <AnnouncementsPanel items={announcements} currentUserRole={currentRole} currentUserName={currentName} />
             <RecentNotesList notes={recentNotes} loading={recentNotesLoading} />
-            <UnpaidPaymentsTable rows={unpaidPayments} />
+            {!isCoach ? <UnpaidPaymentsTable rows={unpaidPayments} /> : null}
           </div>
 
           <div className="space-y-4 lg:col-span-5">
@@ -325,8 +355,8 @@ export default function DashboardPage({ onLogout }: { onLogout: () => void }) {
               onModeChange={setBehaviorMode}
             />
             <AttendancePanel checkedIn={todayCheckedIn} total={todayTotalMembers} recent={todayRecentAttendance} />
-            <PendingRequestsList requests={pendingRequests} />
-            <UpcomingBirthdays items={birthdays} />
+            {!isCoach ? <PendingRequestsList requests={pendingRequests} /> : null}
+            {!isCoach ? <UpcomingBirthdays items={birthdays} /> : null}
           </div>
         </section>
       </main>

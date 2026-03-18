@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { defaultAcademySettings, mockStaffMembers, defaultPricingRules } from '@/components/settings/mockData';
 import { AcademySettings, PricingRules } from '@/components/settings/types';
@@ -42,9 +43,17 @@ export default function SettingsPage() {
       <main className="ml-[260px] flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="border-b border-[#222] bg-[#0d0d0d] px-8 py-6">
-          <div>
+          <div className="flex items-center justify-between">
+            <div>
             <h1 className="text-3xl font-bold text-white">Definições</h1>
             <p className="mt-1 text-sm text-zinc-500">Manage academy config, staff roles, and pricing rules</p>
+            </div>
+            <Link
+              href="/settings/staff"
+              className="rounded-lg border border-[#222] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#111]"
+            >
+              Staff Management
+            </Link>
           </div>
         </div>
 

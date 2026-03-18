@@ -4,22 +4,56 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import GBLogo from '@/components/GBLogo';
 import { exportDDTxt, exportDDExcel } from '../../../lib/ddExport';
+import { supabase } from '../../../lib/supabase';
+
+type AppRole = 'admin' | 'staff' | 'coach';
 
 interface TeacherSidebarProps {
   active: 'dashboard' | 'schedule' | 'members' | 'attendance' | 'leads' | 'payments' | 'settings';
   requestsCount?: number;
+  role?: AppRole;
   onLogout?: () => void;
   onExportTxt?: () => void;
   onExportExcel?: () => void;
   onAddMember?: () => void;
 }
 
-export default function TeacherSidebar({ active, requestsCount = 0, onLogout, onExportTxt, onExportExcel, onAddMember }: TeacherSidebarProps) {
+export default function TeacherSidebar({ active, requestsCount = 0, role: roleProp, onLogout, onExportTxt, onExportExcel, onAddMember }: TeacherSidebarProps) {
   const router = useRouter();
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const [profileRole, setProfileRole] = useState<AppRole>(roleProp || 'coach');
+  const [profileName, setProfileName] = useState('Professor');
   const exportTriggerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (roleProp) {
+      setProfileRole(roleProp);
+      return;
+    }
+
+    const loadProfile = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (data?.role && ['admin', 'staff', 'coach'].includes(data.role)) {
+        setProfileRole(data.role as AppRole);
+      }
+      if (data?.full_name) {
+        setProfileName(data.full_name);
+      }
+    };
+
+    loadProfile();
+  }, [roleProp]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -80,6 +114,16 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
     router.push('/members?openAddMember=1');
   };
 
+  const handleLogoutClick = async () => {
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: '◔', onClick: () => router.push('/dashboard') },
     { key: 'schedule', label: 'Horário', icon: '📅', onClick: () => router.push('/schedule') },
@@ -89,6 +133,16 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
     { key: 'payments', label: 'Pagamentos', icon: '▣', onClick: () => router.push('/payments') },
     { key: 'settings', label: 'Definições', icon: '☰', onClick: () => router.push('/settings') }
   ];
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (profileRole === 'coach') {
+      return !['leads', 'payments', 'settings'].includes(item.key);
+    }
+    return true;
+  });
+
+  const canExportDd = profileRole !== 'coach';
+  const roleLabel = profileRole.toUpperCase();
 
   return (
     <aside className="sticky top-0 z-10 flex h-screen w-[260px] min-w-[260px] flex-col border-r border-[#222] bg-[#0d0d0d]">
@@ -103,7 +157,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
       </div>
 
       <nav className="flex-1 overflow-visible px-3 py-4">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive = active === (item.key as any);
           return (
             <div
@@ -128,41 +182,45 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
           );
         })}
 
-        <div ref={exportTriggerRef}>
-          <div
-            onClick={handleExportToggle}
-            className={`mb-1 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
-              showExportDropdown ? 'bg-[#161616] text-zinc-100' : 'text-zinc-400 hover:bg-[#161616] hover:text-zinc-200'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <span className="text-xs">⬇</span>
-              <span>Export DD</span>
-            </span>
-            <span className="text-[10px] text-zinc-500">{showExportDropdown ? '▲' : '▼'}</span>
-          </div>
-        </div>
+        {canExportDd ? (
+          <>
+            <div ref={exportTriggerRef}>
+              <div
+                onClick={handleExportToggle}
+                className={`mb-1 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
+                  showExportDropdown ? 'bg-[#161616] text-zinc-100' : 'text-zinc-400 hover:bg-[#161616] hover:text-zinc-200'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-xs">⬇</span>
+                  <span>Export DD</span>
+                </span>
+                <span className="text-[10px] text-zinc-500">{showExportDropdown ? '▲' : '▼'}</span>
+              </div>
+            </div>
 
-        {showExportDropdown && dropdownPos && (
-          <div
-            ref={exportRef}
-            className="fixed z-[9999] min-w-[148px] border border-[#2a2a2a] bg-[#1a1a1a] shadow-[4px_4px_16px_rgba(0,0,0,0.7)]"
-            style={{ top: dropdownPos.top, left: dropdownPos.left }}
-          >
-            <div
-              onClick={handleExportTxtClick}
-              className="cursor-pointer border-b border-[#2a2a2a] px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#2a2a2a] hover:text-zinc-100"
-            >
-              Export TXT
-            </div>
-            <div
-              onClick={handleExportExcelClick}
-              className="cursor-pointer px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#2a2a2a] hover:text-zinc-100"
-            >
-              Export Excel
-            </div>
-          </div>
-        )}
+            {showExportDropdown && dropdownPos && (
+              <div
+                ref={exportRef}
+                className="fixed z-[9999] min-w-[148px] border border-[#2a2a2a] bg-[#1a1a1a] shadow-[4px_4px_16px_rgba(0,0,0,0.7)]"
+                style={{ top: dropdownPos.top, left: dropdownPos.left }}
+              >
+                <div
+                  onClick={handleExportTxtClick}
+                  className="cursor-pointer border-b border-[#2a2a2a] px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#2a2a2a] hover:text-zinc-100"
+                >
+                  Export TXT
+                </div>
+                <div
+                  onClick={handleExportExcelClick}
+                  className="cursor-pointer px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#2a2a2a] hover:text-zinc-100"
+                >
+                  Export Excel
+                </div>
+              </div>
+            )}
+          </>
+        ) : null}
       </nav>
 
       <div className="flex flex-col gap-3 border-t border-[#202020] p-4">
@@ -176,17 +234,15 @@ export default function TeacherSidebar({ active, requestsCount = 0, onLogout, on
         <div className="flex items-center gap-3 rounded-lg bg-[#111] p-2.5">
           <div className="grid h-8 w-8 place-items-center rounded-full bg-[#c81d25] text-xs font-bold text-white">P</div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm text-zinc-100">Professor</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-[#c81d25]">Admin</div>
+            <div className="truncate text-sm text-zinc-100">{profileName}</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[#c81d25]">{roleLabel}</div>
           </div>
-          {onLogout ? (
-            <button
-              onClick={onLogout}
-              className="rounded-md border border-[#2a2a2a] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-zinc-400 hover:border-zinc-200 hover:text-zinc-100"
-            >
-              Logout
-            </button>
-          ) : null}
+          <button
+            onClick={handleLogoutClick}
+            className="rounded-md border border-[#2a2a2a] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-zinc-400 hover:border-zinc-200 hover:text-zinc-100"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </aside>
