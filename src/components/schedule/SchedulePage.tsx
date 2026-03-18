@@ -27,6 +27,15 @@ const DAY_ORDER = [
 
 type DayKey = (typeof DAY_ORDER)[number]['key'];
 type ToastState = { type: 'success' | 'error'; message: string } | null;
+type PlanMode = 'remote' | 'local';
+
+interface LocalClassPlanDraft {
+  topic: string;
+  techniques: string;
+  coach_primary_id: string;
+  coach_secondary_id: string | null;
+  updated_at: string;
+}
 
 interface EditingSlot {
   slotCode: string;
@@ -49,6 +58,7 @@ function parseStartMinutes(t: string): number {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const LOCAL_CLASS_PLAN_STORAGE_KEY = 'gymapp_schedule_class_plans_local_v1';
 
 export default function SchedulePage() {
   const router = useRouter();
@@ -62,6 +72,7 @@ export default function SchedulePage() {
   const [coaches, setCoaches] = useState<CoachProfile[]>([]);
   const [slotIdByCode, setSlotIdByCode] = useState<Record<string, string>>({});
   const [planExistsMap, setPlanExistsMap] = useState<Record<string, boolean>>({});
+  const [planMode, setPlanMode] = useState<PlanMode>('remote');
   const [openSlotId, setOpenSlotId] = useState<string | null>(null);
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
   const [plan, setPlan] = useState<ClassPlanRow | null>(null);
@@ -121,6 +132,57 @@ export default function SchedulePage() {
 
   const planExistsKey = (slotId: string, dateKey: string) => `${slotId}|${dateKey}`;
 
+  const readLocalClassPlans = (): Record<string, LocalClassPlanDraft> => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(LOCAL_CLASS_PLAN_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const writeLocalClassPlans = (data: Record<string, LocalClassPlanDraft>) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(LOCAL_CLASS_PLAN_STORAGE_KEY, JSON.stringify(data));
+  };
+
+  const loadLocalClassPlan = (slotCode: string, dateKey: string): ClassPlanRow | null => {
+    const all = readLocalClassPlans();
+    const key = `${slotCode}|${dateKey}`;
+    const draft = all[key];
+    if (!draft) return null;
+    return {
+      id: key,
+      slot_id: slotCode,
+      date: dateKey,
+      topic: draft.topic,
+      techniques: draft.techniques,
+      coach_primary_id: draft.coach_primary_id,
+      coach_secondary_id: draft.coach_secondary_id,
+      updated_at: draft.updated_at,
+      updated_by: null,
+    };
+  };
+
+  const saveLocalClassPlan = (
+    slotCode: string,
+    dateKey: string,
+    payload: { topic: string; techniques: string; coach_primary_id: string; coach_secondary_id: string | null }
+  ) => {
+    const all = readLocalClassPlans();
+    all[`${slotCode}|${dateKey}`] = {
+      topic: payload.topic,
+      techniques: payload.techniques,
+      coach_primary_id: payload.coach_primary_id,
+      coach_secondary_id: payload.coach_secondary_id,
+      updated_at: new Date().toISOString(),
+    };
+    writeLocalClassPlans(all);
+  };
+
   useEffect(() => {
     if (!isModalOpen) return;
     const handleEscape = (event: KeyboardEvent) => {
@@ -150,6 +212,23 @@ export default function SchedulePage() {
   }, []);
 
   useEffect(() => {
+    if (planMode !== 'local') return;
+
+    const localPlans = readLocalClassPlans();
+    const next: Record<string, boolean> = {};
+
+    officialSchedule.forEach((slot) => {
+      const dayDate = weekDatesByDay[slot.dayOfWeek].dateKey;
+      if (!dayDate) return;
+      if (localPlans[`${slot.id}|${dayDate}`]) {
+        next[planExistsKey(slot.id, dayDate)] = true;
+      }
+    });
+
+    setPlanExistsMap(next);
+  }, [planMode, weekDatesByDay]);
+
+  useEffect(() => {
     const slotRows = officialSchedule.map((slot) => ({
       code: slot.id,
       day_of_week: slot.dayOfWeek,
@@ -162,6 +241,8 @@ export default function SchedulePage() {
       default_coach_id: null,
     }));
 
+    if (planMode === 'local') return;
+
     ensureScheduleSlots(slotRows)
       .then((rows) => {
         const nextMap: Record<string, string> = {};
@@ -172,11 +253,18 @@ export default function SchedulePage() {
       })
       .catch((error) => {
         console.error('Error ensuring schedule slots:', error);
+        const message = String(error?.message || error || '');
+        if (/schema cache|schedule_slots|class_plans/i.test(message)) {
+          setPlanMode('local');
+          setToast({ type: 'error', message: 'Schedule DB tables missing. Using local class-plan mode.' });
+          return;
+        }
         setToast({ type: 'error', message: 'Could not load schedule slots.' });
       });
-  }, []);
+  }, [planMode]);
 
   useEffect(() => {
+    if (planMode !== 'remote') return;
     if (Object.keys(slotIdByCode).length === 0) return;
 
     const slotIds = Object.values(slotIdByCode);
@@ -193,7 +281,7 @@ export default function SchedulePage() {
       .catch((error) => {
         console.error('Error loading plan indicators:', error);
       });
-  }, [slotIdByCode, weekDatesByDay]);
+  }, [planMode, slotIdByCode, weekDatesByDay]);
 
   useEffect(() => {
     if (!toast) return;
@@ -286,6 +374,37 @@ export default function SchedulePage() {
     setError(null);
     setPlan(null);
 
+    if (planMode === 'local') {
+      const local = loadLocalClassPlan(slotCode, dateKey);
+      console.log('FETCH_SLOT_START', slotCode);
+      console.log('FETCH_SLOT_OK', { slotId: slotCode, slotCode, mode: 'local' });
+      console.log('FETCH_PLAN_OK', local);
+      const nextTopic = local?.topic || '';
+      const nextTechniques = local?.techniques || '';
+      const nextPrimary = local?.coach_primary_id || '';
+      const nextSecondary = local?.coach_secondary_id || '';
+
+      setPlan(local);
+      setTopic(nextTopic);
+      setTechniques(nextTechniques);
+      setCoachPrimaryId(nextPrimary);
+      setCoachSecondaryId(nextSecondary);
+      setInitialPlanSnapshot(
+        JSON.stringify({
+          topic: nextTopic,
+          techniques: nextTechniques,
+          coachPrimaryId: nextPrimary,
+          coachSecondaryId: nextSecondary,
+        })
+      );
+      setEditingSlot((prev) => {
+        if (!prev || prev.slotCode !== slotCode || prev.dateKey !== dateKey) return prev;
+        return { ...prev, slotDbId: slotCode };
+      });
+      setIsLoadingPlan(false);
+      return;
+    }
+
     let slotDbId: string | undefined = slotIdByCode[slotCode];
     console.log('FETCH_SLOT_START', slotCode);
 
@@ -355,15 +474,45 @@ export default function SchedulePage() {
       });
     } catch (err: any) {
       console.error('FETCH_SLOT_ERR', err);
-      setPlan(null);
-      setTopic('');
-      setTechniques('');
-      setCoachPrimaryId('');
-      setCoachSecondaryId('');
-      setInitialPlanSnapshot(
-        JSON.stringify({ topic: '', techniques: '', coachPrimaryId: '', coachSecondaryId: '' })
-      );
-      setError(err?.message || 'Could not load class plan.');
+      const message = String(err?.message || 'Could not load class plan.');
+      if (/schema cache|schedule_slots|class_plans/i.test(message)) {
+        setPlanMode('local');
+        const local = loadLocalClassPlan(slotCode, dateKey);
+        const nextTopic = local?.topic || '';
+        const nextTechniques = local?.techniques || '';
+        const nextPrimary = local?.coach_primary_id || '';
+        const nextSecondary = local?.coach_secondary_id || '';
+
+        setPlan(local);
+        setTopic(nextTopic);
+        setTechniques(nextTechniques);
+        setCoachPrimaryId(nextPrimary);
+        setCoachSecondaryId(nextSecondary);
+        setInitialPlanSnapshot(
+          JSON.stringify({
+            topic: nextTopic,
+            techniques: nextTechniques,
+            coachPrimaryId: nextPrimary,
+            coachSecondaryId: nextSecondary,
+          })
+        );
+        setEditingSlot((prev) => {
+          if (!prev || prev.slotCode !== slotCode || prev.dateKey !== dateKey) return prev;
+          return { ...prev, slotDbId: slotCode };
+        });
+        setError(null);
+        setToast({ type: 'error', message: 'Schedule DB tables missing. Editing in local mode.' });
+      } else {
+        setPlan(null);
+        setTopic('');
+        setTechniques('');
+        setCoachPrimaryId('');
+        setCoachSecondaryId('');
+        setInitialPlanSnapshot(
+          JSON.stringify({ topic: '', techniques: '', coachPrimaryId: '', coachSecondaryId: '' })
+        );
+        setError(message);
+      }
     } finally {
       setIsLoadingPlan(false);
     }
@@ -394,7 +543,7 @@ export default function SchedulePage() {
 
     setEditingSlot({
       slotCode: item.id,
-      slotDbId: slotIdByCode[item.id] || '',
+      slotDbId: slotIdByCode[item.id] || item.id,
       dayKey,
       dayLabel,
       dateKey,
@@ -408,12 +557,35 @@ export default function SchedulePage() {
 
   const saveClassPlan = async () => {
     if (!editingSlot) return;
-    if (!editingSlot.slotDbId) {
-      setError('Slot id is not ready yet. Please retry.');
-      return;
-    }
     if (!coachPrimaryId) {
       setToast({ type: 'error', message: 'Primary coach is required.' });
+      return;
+    }
+
+    if (planMode === 'local') {
+      saveLocalClassPlan(editingSlot.slotCode, editingSlot.dateKey, {
+        topic,
+        techniques,
+        coach_primary_id: coachPrimaryId,
+        coach_secondary_id: coachSecondaryId || null,
+      });
+
+      setPlanExistsMap((prev) => ({
+        ...prev,
+        [planExistsKey(editingSlot.slotCode, editingSlot.dateKey)]: true,
+      }));
+
+      setToast({ type: 'success', message: 'Saved locally' });
+      setEditingSlot(null);
+      setOpenSlotId(null);
+      setIsLoadingPlan(false);
+      setError(null);
+      setInitialPlanSnapshot('');
+      return;
+    }
+
+    if (!editingSlot.slotDbId) {
+      setError('Slot id is not ready yet. Please retry.');
       return;
     }
 
@@ -458,6 +630,9 @@ export default function SchedulePage() {
           <p className="mt-0.5 text-xs text-zinc-400">
             {dateLabel} • {editingSlot.timeRange} • {editingSlot.className}
           </p>
+          {planMode === 'local' ? (
+            <p className="mt-1 text-xs text-amber-300">Local mode active (database table missing).</p>
+          ) : null}
         </div>
 
         {isLoadingPlan ? (
@@ -672,9 +847,8 @@ export default function SchedulePage() {
                                 openClassPlanEditor(item, key, label, rect);
                               }}
                             >
-                              {slotIdByCode[item.id] &&
-                              planExistsMap[
-                                planExistsKey(slotIdByCode[item.id], weekDatesByDay[key].dateKey)
+                              {planExistsMap[
+                                planExistsKey(slotIdByCode[item.id] || item.id, weekDatesByDay[key].dateKey)
                               ] ? (
                                 <span className="absolute right-2 top-2 inline-block h-2 w-2 rounded-full bg-[#c81d25]" />
                               ) : null}
