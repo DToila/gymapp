@@ -76,12 +76,96 @@ export async function POST(request: Request) {
   const email = String(body?.email || '').trim().toLowerCase()
   const roleValue = String(body?.role || '').trim()
   const fullName = String(body?.fullName || '').trim()
+  const password = String(body?.password || '').trim()
 
   if (!email || !isRole(roleValue)) {
     return NextResponse.json({ error: 'Valid email and role are required.' }, { status: 400 })
   }
 
+  if (password && password.length < 8) {
+    return NextResponse.json({ error: 'Temporary password must be at least 8 characters.' }, { status: 400 })
+  }
+
   const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)
+
+  if (password) {
+    const listed = await adminClient.auth.admin.listUsers()
+    if (listed.error) {
+      return NextResponse.json({ error: listed.error.message }, { status: 500 })
+    }
+
+    const existingUser = listed.data.users.find((user) => user.email?.toLowerCase() === email)
+
+    if (existingUser) {
+      const updateResult = await adminClient.auth.admin.updateUserById(existingUser.id, {
+        password,
+        email_confirm: true,
+        user_metadata: {
+          role: roleValue,
+          full_name: fullName || null,
+        },
+      })
+
+      if (updateResult.error) {
+        return NextResponse.json({ error: updateResult.error.message }, { status: 500 })
+      }
+
+      const { error: profileUpsertError } = await adminClient
+        .from('profiles')
+        .upsert(
+          {
+            id: existingUser.id,
+            email,
+            full_name: fullName || null,
+            role: roleValue,
+          },
+          { onConflict: 'id' }
+        )
+
+      if (profileUpsertError) {
+        return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true, mode: 'password_updated' })
+    }
+
+    const createResult = await adminClient.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        role: roleValue,
+        full_name: fullName || null,
+      },
+    })
+
+    if (createResult.error) {
+      return NextResponse.json({ error: createResult.error.message }, { status: 500 })
+    }
+
+    const createdId = createResult.data.user?.id
+    if (!createdId) {
+      return NextResponse.json({ error: 'User created but no user id returned.' }, { status: 500 })
+    }
+
+    const { error: profileUpsertError } = await adminClient
+      .from('profiles')
+      .upsert(
+        {
+          id: createdId,
+          email,
+          full_name: fullName || null,
+          role: roleValue,
+        },
+        { onConflict: 'id' }
+      )
+
+    if (profileUpsertError) {
+      return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, mode: 'created_with_password' })
+  }
 
   const invite = await adminClient.auth.admin.inviteUserByEmail(email, {
     data: {
@@ -116,5 +200,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, mode: 'invite_sent' })
 }

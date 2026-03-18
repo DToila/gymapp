@@ -28,6 +28,7 @@ export default function StaffSettingsPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteFullName, setInviteFullName] = useState('')
   const [inviteRole, setInviteRole] = useState<AppRole>('coach')
+  const [invitePassword, setInvitePassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -79,6 +80,7 @@ export default function StaffSettingsPage() {
           email: inviteEmail,
           fullName: inviteFullName,
           role: inviteRole,
+          password: invitePassword || undefined,
         }),
       })
       const json = await res.json()
@@ -87,10 +89,18 @@ export default function StaffSettingsPage() {
         throw new Error(json?.error || 'Failed to send invitation.')
       }
 
-      setSuccess(`Invitation sent to ${inviteEmail}.`)
+      const mode = String(json?.mode || '')
+      if (mode === 'created_with_password') {
+        setSuccess(`Account created for ${inviteEmail} with temporary password.`)
+      } else if (mode === 'password_updated') {
+        setSuccess(`Temporary password updated for ${inviteEmail}.`)
+      } else {
+        setSuccess(`Invitation sent to ${inviteEmail}.`)
+      }
       setInviteEmail('')
       setInviteFullName('')
       setInviteRole('coach')
+      setInvitePassword('')
       await loadProfiles()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send invitation.')
@@ -128,7 +138,7 @@ export default function StaffSettingsPage() {
 
           <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
             <h2 className="mb-4 text-xl font-semibold text-white">Invite Teacher</h2>
-            <form className="grid grid-cols-1 gap-4 md:grid-cols-3" onSubmit={onSubmitInvite}>
+            <form className="grid grid-cols-1 gap-4 md:grid-cols-4" onSubmit={onSubmitInvite}>
               <div>
                 <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Email</label>
                 <input
@@ -165,14 +175,28 @@ export default function StaffSettingsPage() {
                 </select>
               </div>
 
-              <div className="md:col-span-3">
+              <div>
+                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Temporary Password (optional)</label>
+                <input
+                  type="text"
+                  value={invitePassword}
+                  onChange={(e) => setInvitePassword(e.target.value)}
+                  placeholder="min 8 chars"
+                  className="w-full rounded-lg border border-[#222] bg-[#0f0f0f] px-3 py-2.5 text-white focus:border-[#c81d25] focus:outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-4">
                 <button
                   type="submit"
                   disabled={submitting}
                   className="rounded-lg bg-[#c81d25] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#b01720] disabled:opacity-60"
                 >
-                  {submitting ? 'Sending Invite...' : 'Send Invitation'}
+                  {submitting ? 'Submitting...' : 'Invite / Create Account'}
                 </button>
+                <p className="mt-2 text-xs text-zinc-500">
+                  Leave password empty to send email invite. Fill password to create/update access instantly without email.
+                </p>
               </div>
             </form>
           </section>
