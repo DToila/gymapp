@@ -51,6 +51,13 @@ interface MarkPaidFormState {
 const normalizeText = (value: unknown): string => String(value || '').trim()
 const normalizeEmail = (value: unknown): string => normalizeText(value).toLowerCase()
 const normalizePhone = (value: unknown): string => normalizeText(value).replace(/\D/g, '')
+const normalizeMemberStatus = (value: unknown): string => normalizeText(value).toLowerCase()
+
+const isRequestMember = (member: MemberPaymentView): boolean => {
+  const status = normalizeMemberStatus(member.status)
+  const requestStatus = normalizeMemberStatus(member.request_status)
+  return status === 'pending' || status === 'request' || requestStatus === 'pending' || requestStatus === 'request'
+}
 
 const normalizeStatus = (value: unknown): ParsedStatus => {
   const text = normalizeText(value).toLowerCase()
@@ -253,7 +260,7 @@ export default function PaymentsPage() {
     if (!showOverdueList) return []
 
     return members
-      .filter((member) => member.status !== 'Pending')
+      .filter((member) => !isRequestMember(member))
       .filter((member) => !member.dd)
       .filter((member) => !paidMonthMemberMap[member.id])
       .map((member) => ({ ...member, overdueDays }))
@@ -263,7 +270,7 @@ export default function PaymentsPage() {
   const activeMemberIds = useMemo(() => {
     const ids = new Set<string>()
     members.forEach((member) => {
-      if (member.status !== 'Pending') {
+      if (!isRequestMember(member)) {
         ids.add(member.id)
       }
     })

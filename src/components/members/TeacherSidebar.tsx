@@ -36,41 +36,31 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
   const router = useRouter();
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
-  const [profileRole, setProfileRole] = useState<AppRole>(roleProp || 'coach');
+  const [profileRole, setProfileRole] = useState<AppRole>(() => {
+    if (roleProp) return roleProp;
+    if (typeof window !== 'undefined') {
+      const cached = window.sessionStorage.getItem('cached_profile_role');
+      if (cached && isRole(cached)) return cached;
+    }
+    return 'coach';
+  });
   const [profileName, setProfileName] = useState('Professor');
   const exportTriggerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
-  const profileLoadedRef = useRef(!!roleProp);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (roleProp) {
       setProfileRole(roleProp);
-      profileLoadedRef.current = true;
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cached_profile_role', roleProp);
+        window.sessionStorage.setItem('cached_profile_role', roleProp);
       }
       return;
     }
 
-    if (profileLoadedRef.current) {
-      return;
-    }
+    let cancelled = false;
 
     const loadProfile = async () => {
       try {
-        // Try to get cached role first
-        let cachedRole: AppRole | null = null;
-        if (typeof window !== 'undefined') {
-          const cached = sessionStorage.getItem('cached_profile_role');
-          if (cached && isRole(cached)) {
-            cachedRole = cached;
-            setProfileRole(cachedRole);
-            profileLoadedRef.current = true;
-            return;
-          }
-        }
-
         const { data: authData } = await supabase.auth.getUser();
         const user = authData?.user;
         if (!user) return;
@@ -85,24 +75,31 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
         const roleFromUserMeta = roleFromMetadata(user.user_metadata);
         const roleFromAppMeta = roleFromMetadata(user.app_metadata);
         const resolvedRole = roleFromProfile || roleFromUserMeta || roleFromAppMeta || 'coach';
-        setProfileRole(resolvedRole);
+        if (!cancelled) {
+          setProfileRole(resolvedRole);
+        }
 
         const nameFromProfile = data?.full_name || null;
         const nameFromUserMeta = fullNameFromMetadata(user.user_metadata);
         const nameFromAppMeta = fullNameFromMetadata(user.app_metadata);
-        setProfileName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Professor');
-
-        // Cache the role for fast retrieval on sidebar remounts
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('cached_profile_role', resolvedRole);
+        if (!cancelled) {
+          setProfileName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Professor');
         }
-      } finally {
-        profileLoadedRef.current = true;
+
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem('cached_profile_role', resolvedRole);
+        }
+      } catch (error) {
+        console.error('Failed to load profile for sidebar:', error);
       }
     };
 
     loadProfile();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [roleProp]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

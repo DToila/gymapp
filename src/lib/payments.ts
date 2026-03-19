@@ -49,6 +49,7 @@ export interface MemberPaymentView {
   email?: string
   type: 'Adult' | 'Kids'
   status?: 'Active' | 'Paused' | 'Unpaid' | 'Pending' | null
+  request_status?: string | null
   dd: boolean
   amount_due: number
   paid_through?: string | null
@@ -148,7 +149,7 @@ const todayIsoDate = (): string => {
   return `${year}-${month}-${day}`
 }
 
-const getMemberType = (member: Member): 'Adult' | 'Kids' => {
+const getMemberType = (member: Pick<Member, 'date_of_birth'>): 'Adult' | 'Kids' => {
   const age = getAgeFromDateOfBirth(member.date_of_birth)
   return age !== null && age < 16 ? 'Kids' : 'Adult'
 }
@@ -156,12 +157,13 @@ const getMemberType = (member: Member): 'Adult' | 'Kids' => {
 export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
   let { data, error } = await supabase
     .from('members')
-    .select('id, name, phone, email, status, payment_type, fee, date_of_birth, paid_through, dd_failed_this_month, dd_failed_month')
+    .select('id, name, phone, email, status, request_status, payment_type, fee, date_of_birth, paid_through, dd_failed_this_month, dd_failed_month')
     .order('name', { ascending: true })
 
   if (error) {
     const message = error.message || ''
     const missingMemberColumns =
+      message.includes('request_status') ||
       message.includes('paid_through') ||
       message.includes('dd_failed_this_month') ||
       message.includes('dd_failed_month')
@@ -172,7 +174,7 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
 
     const retry = await supabase
       .from('members')
-      .select('id, name, phone, email, status, payment_type, fee, date_of_birth')
+      .select('id, name, phone, email, status, request_status, payment_type, fee, date_of_birth')
       .order('name', { ascending: true })
 
     if (retry.error) throw retry.error
@@ -181,7 +183,14 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
 
   const local = readLocalState()
 
-  return ((data || []) as Array<Member & { paid_through?: string | null; dd_failed_this_month?: boolean; dd_failed_month?: string | null }>)
+  type MemberPaymentsRow = Pick<Member, 'id' | 'name' | 'phone' | 'email' | 'status' | 'payment_type' | 'fee' | 'date_of_birth'> & {
+    request_status?: string | null
+    paid_through?: string | null
+    dd_failed_this_month?: boolean
+    dd_failed_month?: string | null
+  }
+
+  return ((data || []) as MemberPaymentsRow[])
     .map((member) => {
       const localOverride = local.memberOverrides[member.id] || {}
       const paymentType = String(member.payment_type || '').toLowerCase()
@@ -193,6 +202,7 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
         phone: member.phone,
         email: member.email,
         status: member.status,
+        request_status: member.request_status || null,
         type: getMemberType(member),
         dd,
         amount_due: monthlyFee,
