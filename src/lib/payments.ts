@@ -174,7 +174,7 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
 
     const retry = await supabase
       .from('members')
-      .select('id, name, phone, email, status, request_status, payment_type, fee, date_of_birth')
+      .select('id, name, phone, email, status, payment_type, fee, date_of_birth')
       .order('name', { ascending: true })
 
     if (retry.error) throw retry.error

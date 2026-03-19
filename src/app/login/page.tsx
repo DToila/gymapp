@@ -130,33 +130,33 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-[#0b0b0b] text-zinc-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-md items-center px-6">
-        <div className="w-full rounded-2xl border border-[#222] bg-[#121212] p-6 shadow-[0_12px_30px_rgba(0,0,0,0.45)]">
-          <div className="mb-6 flex items-center gap-3">
-            <GBLogo size={42} />
+      <div className={`mx-auto flex min-h-screen w-full items-center px-6 ${mode === null ? 'max-w-4xl' : 'max-w-md'}`}>
+        <div className={`w-full rounded-2xl border border-[#222] bg-[#121212] shadow-[0_12px_30px_rgba(0,0,0,0.45)] ${mode === null ? 'p-10' : 'p-6'}`}>
+          <div className={`flex items-center gap-3 ${mode === null ? 'mb-8' : 'mb-6'}`}>
+            <GBLogo size={mode === null ? 56 : 42} />
             <div>
-              <p className="text-sm font-extrabold tracking-[0.18em] text-zinc-100">GRACIE BARRA</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">GymApp Login</p>
+              <p className={`${mode === null ? 'text-lg tracking-[0.2em]' : 'text-sm tracking-[0.18em]'} font-extrabold text-zinc-100`}>GRACIE BARRA</p>
+              <p className={`${mode === null ? 'text-xs' : 'text-[10px]'} uppercase tracking-[0.2em] text-zinc-500`}>GymApp Login</p>
             </div>
           </div>
 
           {mode === null ? (
             <>
-              <h1 className="mb-1 text-2xl font-bold text-white">Acesso</h1>
-              <p className="mb-5 text-sm text-zinc-400">Escolhe o tipo de conta para entrar.</p>
+              <h1 className="mb-2 text-4xl font-bold text-white">Acesso</h1>
+              <p className="mb-8 text-lg text-zinc-400">Escolhe o tipo de conta para entrar.</p>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <button
                   type="button"
                   onClick={() => setMode('teacher')}
-                  className="w-full rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a8141c]"
+                  className="w-full rounded-xl border border-[#c81d25] bg-[#c81d25] px-6 py-5 text-2xl font-semibold text-white transition hover:bg-[#a8141c]"
                 >
                   Professor
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('student')}
-                  className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-4 py-2.5 text-sm font-semibold text-zinc-100 transition hover:border-[#c81d25]"
+                  className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-6 py-5 text-2xl font-semibold text-zinc-100 transition hover:border-[#c81d25]"
                 >
                   Aluno
                 </button>
