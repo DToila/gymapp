@@ -1,15 +1,15 @@
 export type LeadStatus =
-  | 'new'
-  | 'contacted'
-  | 'trial_booked'
-  | 'trial_done'
-  | 'lost'
-  | 'converted_to_request';
+  | 'Por contactar'
+  | 'Contactado'
+  | 'Aula agendada'
+  | 'Aula realizada'
+  | 'Inscrito'
+  | 'Nao inscrito';
 
 export type LeadContactSource =
   | 'Website'
   | 'Instagram'
-  | 'Walk-in'
+  | 'Walk in'
   | 'Outros'
   | 'Alunos GBCQ'
   | 'WhatsApp'
@@ -18,14 +18,12 @@ export type LeadContactSource =
 export type LeadClassType = 'GBK' | 'GB1' | 'GB2';
 
 export type NotEnrolledReasonCode =
-  | 'No time'
-  | 'Too expensive'
-  | 'No interest'
-  | 'Chose another gym'
-  | 'Health reasons'
+  | 'Sem tempo'
+  | 'Muito caro'
+  | 'Sem interesse'
+  | 'Escolheu outro ginasio'
+  | 'Motivos de saude'
   | 'Outros';
-
-export type RequestStatus = 'Trial Pending' | 'Trial Done' | 'Accepted' | 'Rejected' | 'No-show';
 
 export interface Lead {
   id: string;
@@ -45,30 +43,10 @@ export interface Lead {
   not_enrolled_reason_text?: string;
 }
 
-export interface LeadRequest {
-  id: string;
-  name: string;
-  email?: string;
-  phone: string;
-  status: RequestStatus;
-  trialDate?: string;
-  requestedAt?: string;
-  notes?: string;
-}
-
-export interface LeadStats {
-  leadsThisWeek: number;
-  leadsThisMonth: number;
-  conversionRate: string;
-  noShowRate: string;
-  avgTimeToConvert: string;
-  leadsBySource: Partial<Record<LeadContactSource, number>>;
-}
-
 export const LEAD_SOURCES: LeadContactSource[] = [
   'Website',
   'Instagram',
-  'Walk-in',
+  'Walk in',
   'Outros',
   'Alunos GBCQ',
   'WhatsApp',
@@ -78,19 +56,19 @@ export const LEAD_SOURCES: LeadContactSource[] = [
 export const LEAD_CLASS_TYPES: LeadClassType[] = ['GBK', 'GB1', 'GB2'];
 
 export const LEAD_STATUSES: LeadStatus[] = [
-  'new',
-  'contacted',
-  'trial_booked',
-  'trial_done',
-  'lost',
-  'converted_to_request',
+  'Por contactar',
+  'Contactado',
+  'Aula agendada',
+  'Aula realizada',
+  'Inscrito',
+  'Nao inscrito',
 ];
 
 export const NOT_ENROLLED_REASONS: NotEnrolledReasonCode[] = [
-  'No time',
-  'Too expensive',
-  'No interest',
-  'Chose another gym',
-  'Health reasons',
+  'Sem tempo',
+  'Muito caro',
+  'Sem interesse',
+  'Escolheu outro ginasio',
+  'Motivos de saude',
   'Outros',
 ];
