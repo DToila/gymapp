@@ -260,6 +260,20 @@ export default function PaymentsPage() {
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [members, overdueDays, paidMonthMemberMap, showOverdueList])
 
+  const activeMemberIds = useMemo(() => {
+    const ids = new Set<string>()
+    members.forEach((member) => {
+      if (member.status !== 'Pending') {
+        ids.add(member.id)
+      }
+    })
+    return ids
+  }, [members])
+
+  const filteredPaidMonthPayments = useMemo(() => {
+    return paidMonthPayments.filter((payment) => payment.member_id && activeMemberIds.has(payment.member_id))
+  }, [paidMonthPayments, activeMemberIds])
+
   const unmatchedRows = useMemo(() => ddItems.filter((item) => !item.member_id && !item.ignored), [ddItems])
 
   const ddSummary = useMemo(() => {
@@ -279,20 +293,19 @@ export default function PaymentsPage() {
 
   const kpi = useMemo(() => {
     const unpaidTotal = unpaidRows.reduce((total, row) => total + Number(row.amount_due || 0), 0)
-    const paidRows = currentMonthPayments.filter((row) => !row.voided)
-    const paidTotal = sumAmount(paidRows.map((row) => ({ amount: Number(row.amount || 0) })))
+    const paidTotal = sumAmount(filteredPaidMonthPayments.map((row) => ({ amount: Number(row.amount || 0) })))
 
     return {
       unpaidCount: unpaidRows.length,
       unpaidTotal,
-      paidCount: paidRows.length,
+      paidCount: filteredPaidMonthPayments.length,
       paidTotal,
       ddSuccessCount: ddItems.length > 0 ? ddSummary.successCount : null,
       ddSuccessTotal: ddItems.length > 0 ? ddSummary.successAmount : null,
       ddFailedCount: ddItems.length > 0 ? ddSummary.failedCount : null,
       ddFailedTotal: ddItems.length > 0 ? ddSummary.failedAmount : null,
     }
-  }, [currentMonthPayments, ddItems.length, ddSummary.failedAmount, ddSummary.failedCount, ddSummary.successAmount, ddSummary.successCount, unpaidRows])
+  }, [ddItems.length, ddSummary.failedAmount, ddSummary.failedCount, ddSummary.successAmount, ddSummary.successCount, unpaidRows, filteredPaidMonthPayments])
 
   const handleRetry = async () => {
     await Promise.all([refreshCore(), refreshPaidMonth()])
@@ -646,7 +659,7 @@ export default function PaymentsPage() {
                 </div>
               </div>
 
-              {paidMonthPayments.length === 0 ? (
+              {filteredPaidMonthPayments.length === 0 ? (
                 <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
                   No payments recorded for this month yet.
                 </div>
@@ -663,7 +676,7 @@ export default function PaymentsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {paidMonthPayments.map((payment) => (
+                      {filteredPaidMonthPayments.map((payment) => (
                         <tr key={payment.id} className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition">
                           <td className="px-4 py-3 font-medium text-white">
                             {payment.member_id ? memberNameMap.get(payment.member_id) || 'Unknown member' : 'Unknown member'}
