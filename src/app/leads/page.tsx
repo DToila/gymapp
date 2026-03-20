@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { mockLeads } from '@/components/leads/mockData';
 import LeadsTable from '@/components/leads/LeadsTable';
@@ -58,6 +58,11 @@ export default function LeadsPage() {
   const [isCreatingLead, setIsCreatingLead] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [dedupeWarning, setDedupeWarning] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isOverdueFollowup = (lead: Lead) =>
     Boolean(lead.next_contact_date && lead.next_contact_date < todayKey());
@@ -80,6 +85,113 @@ export default function LeadsPage() {
     setIsCreatingLead(true);
     setSelectedLead(emptyLead());
     setIsLeadDrawerOpen(true);
+    setIsDropdownOpen(false);
+  };
+
+  const openScanModal = () => {
+    setScanError(null);
+    setIsScanModalOpen(true);
+    setIsDropdownOpen(false);
+  };
+
+  const closeScanModal = () => {
+    setIsScanModalOpen(false);
+    setScanError(null);
+    setIsScanning(false);
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const scanWelcomeForm = async (file: File) => {
+    try {
+      setIsScanning(true);
+      setScanError(null);
+
+      const base64Data = await fileToBase64(file);
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: file.type,
+                    data: base64Data,
+                  },
+                },
+                {
+                  type: 'text',
+                  text: 'This is a Gracie Barra welcome form. Extract these fields and return ONLY valid JSON with no markdown: name, date_of_birth (YYYY-MM-DD), nif, phone, email, address, emergency_contact, how_they_found_us, parent_name (if minor). If a field is not visible or legible return null.',
+                },
+              ],
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || 'Failed to process image');
+      }
+
+      const data = await response.json();
+      const content = data.content[0]?.text;
+
+      if (!content) {
+        throw new Error('No response from API');
+      }
+
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Could not extract data from form');
+      }
+
+      const extractedData = JSON.parse(jsonMatch[0]);
+
+      const newLead = emptyLead();
+      if (extractedData.name) newLead.name = extractedData.name;
+      if (extractedData.phone) newLead.phone = extractedData.phone;
+      if (extractedData.email) newLead.email = extractedData.email;
+
+      setSelectedLead(newLead);
+      setIsCreatingLead(true);
+      setIsLeadDrawerOpen(true);
+      closeScanModal();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error processing image. Please try again.';
+      setScanError(errorMessage);
+      setIsScanning(false);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await scanWelcomeForm(file);
+    }
   };
 
   const openEditLead = (lead: Lead) => {
@@ -169,9 +281,32 @@ export default function LeadsPage() {
               <h1 className="text-3xl font-bold text-white">Leads</h1>
               <p className="mt-1 text-sm text-zinc-500">Gestao de contactos, follow-up, aula experimental e inscricao.</p>
             </div>
-            <button onClick={openNewLead} className="rounded-xl bg-[#c81d25] px-6 py-2.5 font-semibold text-white hover:bg-[#b01720] transition">
-              + Novo Lead
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="rounded-xl bg-[#c81d25] px-6 py-2.5 font-semibold text-white hover:bg-[#b01720] transition"
+              >
+                + Novo Lead
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-xl border border-[#222] bg-[#121212] shadow-lg z-20">
+                  <button
+                    onClick={openNewLead}
+                    className="w-full px-4 py-3 text-left text-sm text-white hover:bg-[#1a1a1a] transition border-b border-[#222] first:rounded-t-xl"
+                  >
+                    <p className="font-semibold">Preencher manualmente</p>
+                    <p className="text-xs text-zinc-400 mt-1">Criar novo lead preenchendo o formulario</p>
+                  </button>
+                  <button
+                    onClick={openScanModal}
+                    className="w-full px-4 py-3 text-left text-sm text-white hover:bg-[#1a1a1a] transition last:rounded-b-xl"
+                  >
+                    <p className="font-semibold">Scan da folha de boas-vindas</p>
+                    <p className="text-xs text-zinc-400 mt-1">Fotografe ou carregue a folha de boas-vindas</p>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -407,6 +542,62 @@ export default function LeadsPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isScanModalOpen && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50" onClick={closeScanModal}>
+          <div
+            className="w-full max-w-md rounded-2xl border border-[#222] bg-[#121212] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-white">Scan da folha de boas-vindas</h2>
+              <p className="mt-1 text-sm text-zinc-400">Carregue uma imagem da folha de boas-vindas para extrair dados automaticamente</p>
+            </div>
+
+            {scanError && (
+              <div className="mb-4 rounded-xl border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fca5a5]">
+                {scanError}
+              </div>
+            )}
+
+            <div className="mb-6">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                disabled={isScanning}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isScanning}
+                className="w-full rounded-xl border-2 border-dashed border-[#c81d25] bg-[#0d0d0d] px-4 py-8 text-center hover:bg-[#161616] transition disabled:opacity-60"
+              >
+                {isScanning ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#c81d25] border-t-transparent"></div>
+                    <span className="text-white">A processar imagem...</span>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-white font-semibold">Carregue uma imagem</p>
+                    <p className="text-xs text-zinc-400 mt-2">Clique para selecionar ou arraste uma imagem aqui</p>
+                  </div>
+                )}
+              </button>
+            </div>
+
+            <button
+              onClick={closeScanModal}
+              disabled={isScanning}
+              className="w-full rounded-xl border border-[#222] px-4 py-2 font-semibold text-white hover:bg-[#161616] transition disabled:opacity-60"
+            >
+              Cancelar
+            </button>
           </div>
         </div>
       )}
