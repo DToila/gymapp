@@ -162,8 +162,8 @@ export default function LeadsPage() {
     <div className="flex h-screen bg-[#0b0b0b]">
       <TeacherSidebar active="leads" />
 
-      <main className="ml-[260px] flex-1 flex flex-col overflow-hidden">
-        <div className="border-b border-[#222] bg-[#0d0d0d] px-8 py-6">
+      <main className="ml-[240px] flex-1 flex flex-col overflow-hidden">
+        <div className="border-b border-[#222] bg-[#0d0d0d] px-5 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white">Leads</h1>
@@ -176,21 +176,21 @@ export default function LeadsPage() {
         </div>
 
         <div className="flex-1 overflow-auto">
-          <div className="p-8">
-            <div className="mb-6 flex gap-4">
+          <div className="p-5">
+            <div className="mb-6 flex gap-3">
               <div className="flex-1">
                 <input
                   type="text"
                   placeholder="Pesquisar leads..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-full border border-[#222] bg-[#121212] px-4 py-2.5 text-white placeholder-zinc-500 focus:border-[#c81d25] focus:outline-none transition"
+                  className="w-full rounded-full border border-[#222] bg-[#121212] px-4 py-2 text-white placeholder-zinc-500 focus:border-[#c81d25] focus:outline-none transition"
                 />
               </div>
               <select
                 value={followupFilter}
                 onChange={(e) => setFollowupFilter(e.target.value as 'all' | 'overdue')}
-                className="rounded-xl border border-[#222] bg-[#121212] px-4 py-2.5 text-sm text-white focus:border-[#c81d25] focus:outline-none"
+                className="rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-sm text-white focus:border-[#c81d25] focus:outline-none whitespace-nowrap"
               >
                 <option value="all">Todos os follow-ups</option>
                 <option value="overdue">Follow-ups em atraso</option>

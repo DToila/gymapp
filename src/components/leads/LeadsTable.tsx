@@ -37,19 +37,19 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#222]">
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Nome</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Via de Contacto</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Data de Contacto</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Numero de Telefone</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">E-mail</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Aula</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Observacoes</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Data Proximo Contacto</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Followup</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Estado</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Data Aula Experimental</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Inscrito (S/N)</th>
-            <th className="px-4 py-3 text-left font-semibold text-zinc-300">Motivo Nao Inscricao</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Nome</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Via</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Data Contacto</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Telefone</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">E-mail</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Aula</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Obs.</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Prox. Contacto</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Follow-up</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Estado</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Aula Exp.</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Inscrito</th>
+            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Motivo</th>
           </tr>
         </thead>
         <tbody>
@@ -59,36 +59,36 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
               className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition cursor-pointer"
               onClick={() => onRowClick(lead)}
             >
-              <td className="px-4 py-3 font-medium text-white">{lead.name}</td>
-              <td className="px-4 py-3">
-                <span className={`inline-block rounded-full border px-3 py-1 text-xs font-medium ${sourceChipColor(lead.contact_source)}`}>
+              <td className="px-2 py-2 font-medium text-white whitespace-nowrap">{lead.name}</td>
+              <td className="px-2 py-2">
+                <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${sourceChipColor(lead.contact_source)}`}>
                   {lead.contact_source}
                 </span>
               </td>
-              <td className="px-4 py-3 text-zinc-300">{lead.contact_date || '-'}</td>
-              <td className="px-4 py-3 text-zinc-300">{lead.phone || '-'}</td>
-              <td className="px-4 py-3 text-zinc-300">{lead.email || '-'}</td>
-              <td className="px-4 py-3 text-zinc-300">{lead.class_type}</td>
-              <td className="px-4 py-3 text-zinc-300">{lead.notes || '-'}</td>
-              <td className="px-4 py-3 text-zinc-300">
-                <div className="flex items-center gap-2">
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.contact_date || '-'}</td>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.phone || '-'}</td>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.email || '-'}</td>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.class_type}</td>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap max-w-xs truncate">{lead.notes || '-'}</td>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">
+                <div className="flex items-center gap-1">
                   <span>{lead.next_contact_date || '-'}</span>
                   {isOverdue(lead.next_contact_date) ? (
-                    <span className="inline-block rounded-full border border-[#ef4444]/30 bg-[#ef4444]/20 px-2 py-0.5 text-[10px] font-semibold text-[#fca5a5]">
-                      Overdue
+                    <span className="inline-block rounded-full border border-[#ef4444]/30 bg-[#ef4444]/20 px-2 py-0.5 text-[10px] font-semibold text-[#fca5a5]" title="Overdue">
+                      OD
                     </span>
                   ) : null}
                 </div>
               </td>
-              <td className="px-4 py-3 text-zinc-300">{lead.followup_note || '-'}</td>
-              <td className="px-4 py-3">
-                <span className={`inline-block rounded-full border px-3 py-1 text-xs font-medium ${statusBadgeColor(lead.status)}`}>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap max-w-xs truncate">{lead.followup_note || '-'}</td>
+              <td className="px-2 py-2 whitespace-nowrap">
+                <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadgeColor(lead.status)}`}>
                   {lead.status}
                 </span>
               </td>
-              <td className="px-4 py-3 text-zinc-300">{lead.trial_date || '-'}</td>
-              <td className="px-4 py-3 text-zinc-300">{lead.enrolled ? 'Sim' : 'Nao'}</td>
-              <td className="px-4 py-3 text-zinc-300">{lead.not_enrolled_reason_text || lead.not_enrolled_reason || '-'}</td>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.trial_date || '-'}</td>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.enrolled ? 'Sim' : 'Nao'}</td>
+              <td className="px-2 py-2 text-zinc-300 whitespace-nowrap max-w-xs truncate">{lead.not_enrolled_reason_text || lead.not_enrolled_reason || '-'}</td>
             </tr>
           ))}
         </tbody>
