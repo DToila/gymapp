@@ -361,7 +361,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
 
         <header className="mb-6">
           <h1 className="text-4xl font-bold text-white">Dashboard</h1>
-          <p className="mt-1 text-lg text-zinc-400">Welcome back, {currentName}</p>
+          <p className="mt-1 text-sm text-zinc-500">Welcome back, {currentName}</p>
         </header>
 
         {!isCoach ? (

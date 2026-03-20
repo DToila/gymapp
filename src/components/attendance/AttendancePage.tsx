@@ -552,7 +552,7 @@ export default function AttendancePage() {
 
           <header className="mb-5">
             <h1 className="text-4xl font-bold text-white">Attendance</h1>
-            <p className="mt-1 text-lg text-zinc-400">Manage daily check-ins</p>
+            <p className="mt-1 text-sm text-zinc-500">Manage daily check-ins</p>
           </header>
 
           <section className="rounded-2xl border border-[#222] bg-[#111] p-4 shadow-[0_14px_38px_rgba(0,0,0,0.32)]">

@@ -278,7 +278,7 @@ export default function LeadsPage() {
         <div className="border-b border-[#222] bg-[#0d0d0d] px-5 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white">Leads</h1>
+              <h1 className="text-4xl font-bold text-white">Leads</h1>
               <p className="mt-1 text-sm text-zinc-500">Gestao de contactos, follow-up, aula experimental e inscricao.</p>
             </div>
             <div className="relative">
@@ -346,7 +346,7 @@ export default function LeadsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">{isCreatingLead ? 'Novo Lead' : selectedLead.name}</h2>
+              <h2 className="text-lg font-semibold text-white">{isCreatingLead ? 'Novo Lead' : selectedLead.name}</h2>
               <button onClick={closeLeadDrawer} className="text-zinc-400 transition hover:text-white">
                 X
               </button>
@@ -361,10 +361,10 @@ export default function LeadsPage() {
               ) : null}
 
               <div className="rounded-2xl border border-[#222] bg-[#0f0f0f] p-4">
-                <p className="mb-3 text-xs uppercase tracking-wide text-zinc-500">Contacto</p>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">Contacto</p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="sm:col-span-2">
-                    <label className="mb-1 block text-xs text-zinc-400">Nome *</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Nome *</label>
                     <input
                       value={selectedLead.name}
                       onChange={(e) => updateLeadField('name', e.target.value)}
@@ -372,7 +372,7 @@ export default function LeadsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Via de Contacto</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Via de Contacto</label>
                     <select
                       value={selectedLead.contact_source}
                       onChange={(e) => updateLeadField('contact_source', e.target.value as Lead['contact_source'])}
@@ -384,7 +384,7 @@ export default function LeadsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Data de Contacto</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Data de Contacto</label>
                     <input
                       type="date"
                       value={selectedLead.contact_date}
@@ -393,7 +393,7 @@ export default function LeadsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Numero de Telefone</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Numero de Telefone</label>
                     <input
                       value={selectedLead.phone || ''}
                       onChange={(e) => updateLeadField('phone', e.target.value)}
@@ -401,7 +401,7 @@ export default function LeadsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">E-mail</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">E-mail</label>
                     <input
                       type="email"
                       value={selectedLead.email || ''}
@@ -413,10 +413,10 @@ export default function LeadsPage() {
               </div>
 
               <div className="rounded-2xl border border-[#222] bg-[#0f0f0f] p-4">
-                <p className="mb-3 text-xs uppercase tracking-wide text-zinc-500">Acompanhamento</p>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">Acompanhamento</p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Data Proximo Contacto</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Data Proximo Contacto</label>
                     <input
                       type="date"
                       value={selectedLead.next_contact_date || ''}
@@ -425,7 +425,7 @@ export default function LeadsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Estado</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Estado</label>
                     <select
                       value={selectedLead.status}
                       onChange={(e) => updateLeadField('status', e.target.value as Lead['status'])}
@@ -438,7 +438,7 @@ export default function LeadsPage() {
                     </select>
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="mb-1 block text-xs text-zinc-400">Followup</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Followup</label>
                     <textarea
                       rows={3}
                       value={selectedLead.followup_note || ''}
@@ -450,10 +450,10 @@ export default function LeadsPage() {
               </div>
 
               <div className="rounded-2xl border border-[#222] bg-[#0f0f0f] p-4">
-                <p className="mb-3 text-xs uppercase tracking-wide text-zinc-500">Aula Experimental</p>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">Aula Experimental</p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Aula (idade)</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Aula (idade)</label>
                     <select
                       value={selectedLead.class_type}
                       onChange={(e) => updateLeadField('class_type', e.target.value as Lead['class_type'])}
@@ -465,7 +465,7 @@ export default function LeadsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Data Aula Experimental</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Data Aula Experimental</label>
                     <input
                       type="date"
                       value={selectedLead.trial_date || ''}
@@ -474,7 +474,7 @@ export default function LeadsPage() {
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="mb-1 block text-xs text-zinc-400">Observacoes</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Observacoes</label>
                     <textarea
                       rows={3}
                       value={selectedLead.notes || ''}
@@ -486,10 +486,10 @@ export default function LeadsPage() {
               </div>
 
               <div className="rounded-2xl border border-[#222] bg-[#0f0f0f] p-4">
-                <p className="mb-3 text-xs uppercase tracking-wide text-zinc-500">Resultado</p>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">Resultado</p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="sm:col-span-2 flex items-center gap-3">
-                    <label className="text-xs text-zinc-400">Inscrito (S/N)</label>
+                    <label className="text-xs font-medium text-zinc-400">Inscrito (S/N)</label>
                     <button
                       type="button"
                       onClick={() => updateLeadField('enrolled', true)}
@@ -507,7 +507,7 @@ export default function LeadsPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Motivo Nao Inscricao</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Motivo Nao Inscricao</label>
                     <select
                       value={selectedLead.not_enrolled_reason || ''}
                       onChange={(e) => updateLeadField('not_enrolled_reason', (e.target.value || undefined) as Lead['not_enrolled_reason'])}
@@ -522,7 +522,7 @@ export default function LeadsPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-400">Detalhes do motivo</label>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Detalhes do motivo</label>
                     <input
                       value={selectedLead.not_enrolled_reason_text || ''}
                       onChange={(e) => updateLeadField('not_enrolled_reason_text', e.target.value)}
@@ -553,8 +553,8 @@ export default function LeadsPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4">
-              <h2 className="text-xl font-bold text-white">Scan da folha de boas-vindas</h2>
-              <p className="mt-1 text-sm text-zinc-400">Carregue uma imagem da folha de boas-vindas para extrair dados automaticamente</p>
+              <h2 className="text-lg font-semibold text-white">Scan da folha de boas-vindas</h2>
+              <p className="mt-1 text-xs text-zinc-400">Carregue uma imagem da folha de boas-vindas para extrair dados automaticamente</p>
             </div>
 
             {scanError && (

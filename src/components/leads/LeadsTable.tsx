@@ -37,19 +37,19 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#222]">
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Nome</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Via</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Data Contacto</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Telefone</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">E-mail</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Aula</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Obs.</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Prox. Contacto</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Follow-up</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Estado</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Aula Exp.</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Inscrito</th>
-            <th className="px-2 py-2 text-left font-semibold text-zinc-300 whitespace-nowrap">Motivo</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Nome</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Via</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Data Contacto</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Telefone</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">E-mail</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Aula</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Obs.</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Prox. Contacto</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Follow-up</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Estado</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Aula Exp.</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Inscrito</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Motivo</th>
           </tr>
         </thead>
         <tbody>
@@ -59,7 +59,7 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
               className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition cursor-pointer"
               onClick={() => onRowClick(lead)}
             >
-              <td className="px-2 py-2 font-medium text-white whitespace-nowrap">{lead.name}</td>
+              <td className="px-2 py-2 text-sm font-medium text-white whitespace-nowrap">{lead.name}</td>
               <td className="px-2 py-2">
                 <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${sourceChipColor(lead.contact_source)}`}>
                   {lead.contact_source}

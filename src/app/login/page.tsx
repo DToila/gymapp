@@ -143,7 +143,7 @@ function LoginForm() {
           {mode === null ? (
             <>
               <h1 className="mb-2 text-4xl font-bold text-white">Acesso</h1>
-              <p className="mb-8 text-lg text-zinc-400">Escolhe o tipo de conta para entrar.</p>
+              <p className="mb-8 text-sm text-zinc-500">Escolhe o tipo de conta para entrar.</p>
 
               <div className="space-y-4">
                 <button
@@ -166,7 +166,7 @@ function LoginForm() {
 
           {mode === 'teacher' ? (
             <>
-              <h1 className="mb-1 text-2xl font-bold text-white">Teacher Sign in</h1>
+              <h1 className="mb-1 text-lg font-semibold text-white">Teacher Sign in</h1>
               <p className="mb-5 text-sm text-zinc-400">Use your staff account credentials.</p>
 
               <form className="space-y-3" onSubmit={handleTeacherLogin}>
@@ -219,7 +219,7 @@ function LoginForm() {
 
           {mode === 'student' ? (
             <>
-              <h1 className="mb-1 text-2xl font-bold text-white">Student Sign in</h1>
+              <h1 className="mb-1 text-lg font-semibold text-white">Student Sign in</h1>
               <p className="mb-5 text-sm text-zinc-400">Use your student email.</p>
 
               <form className="space-y-3" onSubmit={handleStudentLogin}>
