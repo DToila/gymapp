@@ -162,7 +162,7 @@ export default function LeadsPage() {
     <div className="flex h-screen bg-[#0b0b0b]">
       <TeacherSidebar active="leads" />
 
-      <main className="ml-[240px] flex-1 flex flex-col overflow-hidden">
+      <main className="ml-[280px] flex-1 flex flex-col overflow-hidden">
         <div className="border-b border-[#222] bg-[#0d0d0d] px-5 py-4">
           <div className="flex items-center justify-between">
             <div>
