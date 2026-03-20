@@ -201,9 +201,15 @@ export default function StaffSettingsPage() {
             </form>
           </section>
 
-          <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
+          <section className="relative rounded-2xl border border-[#222] bg-[#121212] p-6">
+            <div className="absolute -top-12 right-0">
+              <button className="rounded-lg border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-xs font-semibold text-white shadow-lg hover:bg-[#b01720] transition">
+                + Invite Staff
+              </button>
+            </div>
+
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Current Staff</h2>
+              <h2 className="text-xl font-semibold text-white">Staff & Roles</h2>
               <button
                 onClick={loadProfiles}
                 className="rounded-lg border border-[#222] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-300 hover:bg-[#111]"
