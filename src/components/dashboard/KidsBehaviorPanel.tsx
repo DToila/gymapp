@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { KidBehaviorItem } from './types';
 
 type BehaviorMode = 'now' | 'month';
@@ -32,6 +33,7 @@ export default function KidsBehaviorPanel({
   mode: BehaviorMode;
   onModeChange: (mode: BehaviorMode) => void;
 }) {
+  const router = useRouter();
   const allKids = useMemo(() => {
     const map = new Map<string, KidBehaviorItem>();
     [...needsAttention, ...greatBehavior].forEach((kid) => map.set(kid.id, kid));
@@ -96,7 +98,7 @@ export default function KidsBehaviorPanel({
             <option value="now">Now (7 days)</option>
             <option value="month">This month</option>
           </select>
-          <button onClick={() => console.log('view all kids behavior')} className="text-sm font-medium text-[#c81d25] hover:text-[#ef3a43]">
+          <button onClick={() => router.push('/members')} className="text-sm font-medium text-[#c81d25] hover:text-[#ef3a43]">
             View all
           </button>
         </div>

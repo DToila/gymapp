@@ -1,9 +1,19 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import { UnpaidPayment } from './types';
 
 export default function UnpaidPaymentsTable({ rows }: { rows: UnpaidPayment[] }) {
+  const router = useRouter();
+
+  const handleSendReminder = (_memberId: string, name: string) => {
+    alert(`Reminder sent to ${name}`);
+    // TODO: Implement actual reminder logic when backend is ready
+  };
+
   return (
-    <Panel title="Unpaid Payments" icon={<span className="text-[#f59e0b]">▤</span>} actionText="View all" onAction={() => console.log('view all unpaid')}>
+    <Panel title="Unpaid Payments" icon={<span className="text-[#f59e0b]">▤</span>} actionText="View all" onAction={() => router.push('/payments')}>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="text-xs uppercase tracking-wide text-zinc-500">
@@ -22,7 +32,7 @@ export default function UnpaidPaymentsTable({ rows }: { rows: UnpaidPayment[] })
                 <td className="py-2.5">{row.due}</td>
                 <td className="py-2.5 text-right">
                   <button
-                    onClick={() => console.log('send reminder', row.id)}
+                    onClick={() => handleSendReminder(row.id, row.name)}
                     className="rounded-md border border-[#c81d25] bg-[#251113] px-2.5 py-1 text-xs text-[#fda4af] hover:bg-[#3a1418]"
                   >
                     Send reminder
@@ -33,7 +43,7 @@ export default function UnpaidPaymentsTable({ rows }: { rows: UnpaidPayment[] })
           </tbody>
         </table>
       </div>
-      <button className="mt-3 text-sm text-[#c81d25] hover:text-[#ef3a43]" onClick={() => console.log('more unpaid')}>
+      <button className="mt-3 text-sm text-[#c81d25] hover:text-[#ef3a43]" onClick={() => router.push('/payments')}>
         + 8 more unpaid
       </button>
     </Panel>

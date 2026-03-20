@@ -1,3 +1,6 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import { NoteItem } from './types';
 
@@ -7,8 +10,10 @@ const audienceClass: Record<NoteItem['audience'], string> = {
 };
 
 export default function RecentNotesList({ notes, loading = false }: { notes: NoteItem[]; loading?: boolean }) {
+  const router = useRouter();
+
   return (
-    <Panel title="Recent Notes" icon={<span className="text-[#c81d25]">✎</span>} actionText="View all" onAction={() => console.log('view all notes')}>
+    <Panel title="Recent Notes" icon={<span className="text-[#c81d25]">✎</span>} actionText="View all" onAction={() => router.push('/members')}>
       {loading ? (
         <p className="py-4 text-sm text-zinc-500">Loading recent notes...</p>
       ) : notes.length === 0 ? (

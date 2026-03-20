@@ -1,9 +1,14 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import { BirthdayItem } from './types';
 
 export default function UpcomingBirthdays({ items }: { items: BirthdayItem[] }) {
+  const router = useRouter();
+
   return (
-    <Panel title="Upcoming Birthdays" icon={<span className="text-[#f59e0b]">◌</span>} actionText="View all" onAction={() => console.log('view all birthdays')}>
+    <Panel title="Upcoming Birthdays" icon={<span className="text-[#f59e0b]">◌</span>} actionText="View all" onAction={() => router.push('/members')}>
       <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.id} className="flex items-center gap-3 border-b border-[#1f1f1f] pb-2 last:border-b-0">
