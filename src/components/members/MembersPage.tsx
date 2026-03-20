@@ -420,11 +420,11 @@ export default function MembersPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: '42px', lineHeight: 1, fontFamily: '"Barlow Condensed", sans-serif', fontWeight: 700 }}>Members</h1>
-            <div style={{ color: '#8a8a8a', fontSize: '22px', marginTop: '6px' }}>Student Management | BJJ/Gym</div>
+            <h1 className="text-4xl font-bold text-white">Members</h1>
+            <p className="mt-1 text-sm text-zinc-500">Student Management | BJJ/Gym</p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => setShowAddModal(true)} style={{ padding: '10px 16px', borderRadius: '10px', border: '1px solid #CC0000', background: '#CC0000', color: '#fff', cursor: 'pointer', fontSize: '12px', letterSpacing: '1px', boxShadow: '0 8px 16px rgba(204,0,0,0.25)' }}>
+            <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-[#c81d25] px-4 py-2 text-xs font-semibold text-white shadow-lg hover:bg-[#b01720] transition">
               + Add member
             </button>
             <RowActionsMenu
