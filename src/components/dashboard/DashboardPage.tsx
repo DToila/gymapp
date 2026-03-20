@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { announcements, kpis, unpaidPayments, birthdays } from './mockData';
+import { announcements, kpis, unpaidPayments } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -11,7 +11,6 @@ import UnpaidPaymentsTable from './UnpaidPaymentsTable';
 import KidsBehaviorPanel from './KidsBehaviorPanel';
 import AttendancePanel from './AttendancePanel';
 import PendingRequestsList from './PendingRequestsList';
-import UpcomingBirthdays from './UpcomingBirthdays';
 import AnnouncementsPanel from './AnnouncementsPanel';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { AppRole, AttendanceRecentItem, KidBehaviorItem, NoteItem, RequestItem } from './types';
@@ -390,7 +389,6 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
             />
             <AttendancePanel checkedIn={todayCheckedIn} total={todayTotalMembers} recent={todayRecentAttendance} />
             {!isCoach ? <PendingRequestsList requests={pendingRequests} /> : null}
-            {!isCoach ? <UpcomingBirthdays items={birthdays} /> : null}
           </div>
         </section>
       </main>
