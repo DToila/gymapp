@@ -40,7 +40,7 @@ export default function SettingsPage() {
     <div className="flex h-screen bg-[#0b0b0b]">
       <TeacherSidebar active="settings" />
 
-      <main className="ml-[260px] flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="border-b border-[#222] bg-[#0d0d0d] px-8 py-6">
           <div className="flex items-center justify-between">

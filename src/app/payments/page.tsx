@@ -508,7 +508,7 @@ export default function PaymentsPage() {
     <div className="flex h-screen bg-[#0b0b0b]">
       <TeacherSidebar active="payments" />
 
-      <main className="ml-[260px] flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden">
         <div className="border-b border-[#222] bg-[#0d0d0d] px-8 py-6">
           <h1 className="text-4xl font-bold text-white">Payments</h1>
           <p className="mt-1 text-sm text-zinc-500">Unpaid(Non-DD) and Direct Debit follow-up flow</p>
