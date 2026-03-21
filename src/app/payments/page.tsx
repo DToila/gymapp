@@ -455,6 +455,71 @@ export default function PaymentsPage() {
     }
   }
 
+  const scanDdPdf = async (file: File): Promise<Record<string, unknown>[]> => {
+    try {
+      const base64Data = await fileToBase64(file)
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4096,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'document',
+                  source: {
+                    type: 'base64',
+                    media_type: 'application/pdf',
+                    data: base64Data,
+                  },
+                },
+                {
+                  type: 'text',
+                  text: 'This is a Portuguese Direct Debit file formatted as a table with these exact columns in order: IBAN, SWIFT, VALOR, TIPO, REF, DATA INICIO, NOME, NIF, NOTAS. Extract all data rows and return ONLY a valid JSON array with no markdown. Each object must have these keys: iban, swift, valor, tipo, ref, data, nome, nif, notas. NOTAS is just internal notes, ignore it for processing. Skip header rows and empty rows.',
+                },
+              ],
+            },
+          ],
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error?.message || 'Failed to process PDF')
+      }
+
+      const data = await response.json()
+      const content = data.content[0]?.text
+
+      if (!content) {
+        throw new Error('No response from API')
+      }
+
+      const jsonMatch = content.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) {
+        throw new Error('Could not extract data from PDF')
+      }
+
+      const extractedData = JSON.parse(jsonMatch[0])
+      if (!Array.isArray(extractedData)) {
+        throw new Error('Expected JSON array')
+      }
+
+      return extractedData
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error processing PDF'
+      throw new Error(errorMessage)
+    }
+  }
+
   const processDdRows = async (rawRows: Record<string, unknown>[]): Promise<ParsedDdRow[]> => {
     return rawRows.map((rawRow) => {
       const amount = parseAmount(extractRowValue(rawRow, ['amount', 'valor', 'montante']))
@@ -487,10 +552,13 @@ export default function PaymentsPage() {
 
       let rawRows: Record<string, unknown>[] = []
 
-      // Check if file is an image or Excel
+      // Check if file is an image, PDF, or Excel
       if (file.type.startsWith('image/')) {
         // Process image with Anthropic API
         rawRows = await scanDdImage(file)
+      } else if (file.type === 'application/pdf') {
+        // Process PDF with Anthropic API
+        rawRows = await scanDdPdf(file)
       } else {
         // Process Excel file
         const buffer = await file.arrayBuffer()
@@ -795,11 +863,11 @@ export default function PaymentsPage() {
           {!loading && activeTab === 'dd' ? (
             <div className="space-y-6">
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
-                <h2 className="mb-2 text-xl font-semibold text-white">Upload DD Result (.xlsx, .xls, or Image)</h2>
-                <p className="mb-4 text-xs text-zinc-500">Upload imported direct debit result file (Excel or image) to create DD batch items. Images are processed with AI.</p>
+                <h2 className="mb-2 text-xl font-semibold text-white">Upload DD Result (.xlsx, .xls, .pdf, or Image)</h2>
+                <p className="mb-4 text-xs text-zinc-500">Upload imported direct debit result file (Excel, PDF, or image) to create DD batch items. Files are processed with AI.</p>
                 <input
                   type="file"
-                  accept=".xlsx,.xls,image/"
+                  accept=".xlsx,.xls,.pdf,image/"
                   onChange={handleDdUpload}
                   disabled={uploading}
                   className="w-full rounded-lg border border-[#222] bg-[#0f0f0f] px-3 py-2 text-sm text-zinc-200 file:mr-3 file:rounded-md file:border-0 file:bg-[#c81d25] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
