@@ -519,29 +519,54 @@ export default function PaymentsPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error?.message || 'Failed to process PDF')
+        const errorMsg = errorData.error?.message || 'Failed to process PDF'
+        console.error('Anthropic API error:', errorMsg, errorData)
+        throw new Error(errorMsg)
       }
 
       const data = await response.json()
       const content = data.content[0]?.text
 
       if (!content) {
+        console.error('No text content in API response, data:', data)
         throw new Error('No response from API')
       }
 
-      const jsonMatch = content.match(/\[[\s\S]*\]/)
-      if (!jsonMatch) {
-        throw new Error('Could not extract data from PDF')
+      console.log('API response length:', content.length)
+      console.log('API response preview:', content.substring(0, 500))
+
+      let extractedData
+      try {
+        // First try to find JSON array
+        const jsonMatch = content.match(/\[[\s\S]*\]/)
+        if (jsonMatch) {
+          console.log('Found JSON array in response')
+          extractedData = JSON.parse(jsonMatch[0])
+        } else {
+          // If no array found, try parsing entire content as JSON
+          console.log('No JSON array found, trying to parse entire content')
+          extractedData = JSON.parse(content)
+        }
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError)
+        console.error('Content that failed to parse:', content)
+        throw new Error(`Could not parse PDF data: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
       }
 
-      const extractedData = JSON.parse(jsonMatch[0])
       if (!Array.isArray(extractedData)) {
-        throw new Error('Expected JSON array')
+        console.error('Extracted data is not array:', typeof extractedData, extractedData)
+        throw new Error('PDF data is not a valid array')
+      }
+
+      if (extractedData.length === 0) {
+        console.warn('PDF extracted empty array')
+        throw new Error('No data rows found in PDF')
       }
 
       // Debug logging
-      console.log('PDF extracted data sample:', extractedData.slice(0, 2))
+      console.log(`PDF extracted ${extractedData.length} rows successfully`)
       console.log('First row keys:', Object.keys(extractedData[0] || {}))
+      console.log('First row sample:', extractedData[0])
 
       return extractedData
     } catch (error) {
@@ -599,6 +624,9 @@ export default function PaymentsPage() {
 
       const parsedRows = await processDdRows(rawRows)
 
+      console.log(`Parsed ${parsedRows.length} rows from file`)
+      console.log('First parsed row:', parsedRows[0])
+
       const batch = await getOrCreateDdBatch({ month: currentMonth, fileName: file.name, uploadedBy })
       
       // Debug: Log members and their IBAN/NIF
@@ -632,8 +660,9 @@ export default function PaymentsPage() {
       setMessage(`DD file processed: ${inserted.length} rows imported.`)
       await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (uploadError) {
-      console.error('PAYMENTS_FETCH_ERROR', uploadError)
-      setError("Couldn't load payments. Retry")
+      const errorMsg = uploadError instanceof Error ? uploadError.message : 'Unknown error processing file'
+      console.error('File processing error:', errorMsg, uploadError)
+      setError(`Error: ${errorMsg}. Please try again or use a different file.`)
       setErrorDismissed(false)
     } finally {
       setUploading(false)
