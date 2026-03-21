@@ -603,6 +603,14 @@ export default function PaymentsPage() {
     }
   }
 
+  const handleClearDdData = () => {
+    setLatestBatchId(null)
+    setDdItems([])
+    setMappingByItemId({})
+    setError(null)
+    setMessage(null)
+  }
+
   const handleIgnoreItem = async (item: DdBatchItemRow) => {
     setError(null)
 
@@ -863,16 +871,30 @@ export default function PaymentsPage() {
           {!loading && activeTab === 'dd' ? (
             <div className="space-y-6">
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
-                <h2 className="mb-2 text-xl font-semibold text-white">Upload DD Result (.xlsx, .xls, .pdf, or Image)</h2>
-                <p className="mb-4 text-xs text-zinc-500">Upload imported direct debit result file (Excel, PDF, or image) to create DD batch items. Files are processed with AI.</p>
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.pdf,image/"
-                  onChange={handleDdUpload}
-                  disabled={uploading}
-                  className="w-full rounded-lg border border-[#222] bg-[#0f0f0f] px-3 py-2 text-sm text-zinc-200 file:mr-3 file:rounded-md file:border-0 file:bg-[#c81d25] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
-                />
-                {latestBatchId ? <p className="mt-2 text-xs text-zinc-500">Latest batch ID: {latestBatchId}</p> : null}
+                <div className="mb-4 flex items-end justify-between gap-4">
+                  <div className="flex-1">
+                    <h2 className="mb-2 text-xl font-semibold text-white">Upload DD Result (.xlsx, .xls, .pdf, or Image)</h2>
+                    <p className="mb-4 text-xs text-zinc-500">Upload imported direct debit result file (Excel, PDF, or image) to create DD batch items. Files are processed with AI.</p>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.pdf,image/"
+                      onChange={handleDdUpload}
+                      disabled={uploading}
+                      className="w-full rounded-lg border border-[#222] bg-[#0f0f0f] px-3 py-2 text-sm text-zinc-200 file:mr-3 file:rounded-md file:border-0 file:bg-[#c81d25] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+                    />
+                    {latestBatchId ? <p className="mt-2 text-xs text-zinc-500">Latest batch ID: {latestBatchId}</p> : null}
+                  </div>
+                  {ddItems.length > 0 ? (
+                    <button
+                      onClick={handleClearDdData}
+                      disabled={uploading}
+                      className="rounded-lg border border-[#ef4444]/50 px-3 py-2 text-xs font-semibold text-[#fecaca] hover:bg-[#7f1d1d]/30 transition disabled:opacity-60 whitespace-nowrap"
+                      title="Clear all uploaded data"
+                    >
+                      Limpar ficheiro ✕
+                    </button>
+                  ) : null}
+                </div>
               </section>
 
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
