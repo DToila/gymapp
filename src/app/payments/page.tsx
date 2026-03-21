@@ -7,6 +7,7 @@ import { supabase } from '../../../lib/supabase'
 import {
   applyDdSuccessPayment,
   createManualPayment,
+  deleteDdBatch,
   DdBatchItemRow,
   getCurrentMonthKey,
   getMembersForPayments,
@@ -649,12 +650,24 @@ export default function PaymentsPage() {
     }
   }
 
-  const handleClearDdData = () => {
-    setLatestBatchId(null)
-    setDdItems([])
-    setMappingByItemId({})
-    setError(null)
-    setMessage(null)
+  const handleClearDdData = async () => {
+    if (!latestBatchId) return
+    
+    try {
+      setError(null)
+      console.log(`🗑️ Deleting DD batch: ${latestBatchId}`)
+      await deleteDdBatch(latestBatchId)
+      
+      setLatestBatchId(null)
+      setDdItems([])
+      setMappingByItemId({})
+      setMessage('DD batch deleted successfully.')
+      console.log('✅ Batch deleted and cleared')
+    } catch (deleteError) {
+      const errorMsg = deleteError instanceof Error ? deleteError.message : 'Unknown error deleting batch'
+      console.error('❌ Error deleting batch:', errorMsg)
+      setError(`Error deleting batch: ${errorMsg}`)
+    }
   }
 
   const handleIgnoreItem = async (item: DdBatchItemRow) => {

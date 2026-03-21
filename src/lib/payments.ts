@@ -420,6 +420,36 @@ export const listDdBatchesForMonth = async (month: string): Promise<DdBatchRow[]
   return (data || []) as DdBatchRow[]
 }
 
+export const deleteDdBatch = async (batchId: string): Promise<void> => {
+  // First delete all batch items
+  const { error: itemsError } = await supabase
+    .from('dd_batch_items')
+    .delete()
+    .eq('batch_id', batchId)
+
+  if (itemsError && !isPaymentsTableMissingError(itemsError)) {
+    throw itemsError
+  }
+
+  // Then delete the batch
+  const { error: batchError } = await supabase
+    .from('dd_batches')
+    .delete()
+    .eq('id', batchId)
+
+  if (batchError && !isPaymentsTableMissingError(batchError)) {
+    throw batchError
+  }
+
+  // Also update local state if using it
+  if (itemsError || batchError) {
+    const local = readLocalState()
+    local.batches = local.batches.filter((batch) => batch.id !== batchId)
+    local.batchItems = local.batchItems.filter((item) => item.batch_id !== batchId)
+    writeLocalState(local)
+  }
+}
+
 export const mapDdBatchItemToMember = async (params: {
   id: string
   memberId: string
