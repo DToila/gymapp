@@ -114,6 +114,9 @@ const extractRowValue = (row: Record<string, unknown>, candidates: string[]): un
   return undefined
 }
 
+const normalizeIban = (value: unknown): string => normalizeText(value).replace(/\s+/g, '').toUpperCase()
+const normalizeNif = (value: unknown): string => normalizeText(value).replace(/\s+/g, '').toUpperCase()
+
 const resolveMemberMatch = (
   row: Record<string, unknown>,
   members: MemberPaymentView[]
@@ -122,6 +125,20 @@ const resolveMemberMatch = (
   if (memberIdRaw) {
     const direct = members.find((member) => member.id === memberIdRaw)
     if (direct) return { memberId: direct.id, matchKey: 'member_id', reason: null }
+  }
+
+  // Try IBAN matching
+  const iban = normalizeIban(extractRowValue(row, ['iban']))
+  if (iban) {
+    const ibanMatch = members.find((member) => normalizeIban(member.iban) === iban)
+    if (ibanMatch) return { memberId: ibanMatch.id, matchKey: 'iban', reason: null }
+  }
+
+  // Try NIF matching
+  const nif = normalizeNif(extractRowValue(row, ['nif', 'contribuinte']))
+  if (nif) {
+    const nifMatch = members.find((member) => normalizeNif(member.nif) === nif)
+    if (nifMatch) return { memberId: nifMatch.id, matchKey: 'nif', reason: null }
   }
 
   const phone = normalizePhone(extractRowValue(row, ['phone', 'telefone', 'mobile', 'telemovel']))
@@ -144,7 +161,7 @@ const resolveMemberMatch = (
     return { memberId: null, matchKey: null, reason: 'Multiple member matches found (phone/email).' }
   }
 
-  return { memberId: null, matchKey: null, reason: 'Unmatched member (missing member_id/phone/email match).' }
+  return { memberId: null, matchKey: null, reason: 'Unmatched member (missing member_id/iban/nif/phone/email match).' }
 }
 
 const sumAmount = (rows: Array<{ amount: number }>): number => rows.reduce((total, row) => total + Number(row.amount || 0), 0)

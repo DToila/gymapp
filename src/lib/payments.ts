@@ -47,6 +47,8 @@ export interface MemberPaymentView {
   name: string
   phone?: string
   email?: string
+  iban?: string
+  nif?: string
   type: 'Adult' | 'Kids'
   status?: 'Active' | 'Paused' | 'Unpaid' | 'Pending' | null
   request_status?: string | null
@@ -157,7 +159,7 @@ const getMemberType = (member: Pick<Member, 'date_of_birth'>): 'Adult' | 'Kids' 
 export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
   let { data, error } = await supabase
     .from('members')
-    .select('id, name, phone, email, status, request_status, payment_type, fee, date_of_birth, paid_through, dd_failed_this_month, dd_failed_month')
+    .select('id, name, phone, email, iban, nif, status, request_status, payment_type, fee, date_of_birth, paid_through, dd_failed_this_month, dd_failed_month')
     .order('name', { ascending: true })
 
   if (error) {
@@ -174,7 +176,7 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
 
     const retry = await supabase
       .from('members')
-      .select('id, name, phone, email, status, payment_type, fee, date_of_birth')
+      .select('id, name, phone, email, iban, nif, status, payment_type, fee, date_of_birth')
       .order('name', { ascending: true })
 
     if (retry.error) throw retry.error
@@ -183,7 +185,7 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
 
   const local = readLocalState()
 
-  type MemberPaymentsRow = Pick<Member, 'id' | 'name' | 'phone' | 'email' | 'status' | 'payment_type' | 'fee' | 'date_of_birth'> & {
+  type MemberPaymentsRow = Pick<Member, 'id' | 'name' | 'phone' | 'email' | 'iban' | 'nif' | 'status' | 'payment_type' | 'fee' | 'date_of_birth'> & {
     request_status?: string | null
     paid_through?: string | null
     dd_failed_this_month?: boolean
@@ -201,6 +203,8 @@ export const getMembersForPayments = async (): Promise<MemberPaymentView[]> => {
         name: member.name,
         phone: member.phone,
         email: member.email,
+        iban: member.iban,
+        nif: member.nif,
         status: member.status,
         request_status: member.request_status || null,
         type: getMemberType(member),
