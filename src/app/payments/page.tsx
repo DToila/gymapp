@@ -438,176 +438,84 @@ export default function PaymentsPage() {
 
   const scanDdImage = async (file: File): Promise<Record<string, unknown>[]> => {
     try {
+      console.log(`🖼️ Processing image via API: ${file.name}`)
       const base64Data = await fileToBase64(file)
+      console.log(`✓ Image converted to base64 (${base64Data.length} chars)`)
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/scan-file', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
-          'anthropic-version': '2023-06-01',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 2048,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: file.type,
-                    data: base64Data,
-                  },
-                },
-                {
-                  type: 'text',
-                  text: 'This is a Portuguese Direct Debit file. Extract all rows and return ONLY valid JSON array with no markdown, each row having: iban, swift, valor, tipo, ref, data, nome, nif',
-                },
-              ],
-            },
-          ],
+          fileBase64: base64Data,
+          fileType: 'image',
+          mimeType: file.type,
         }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error?.message || 'Failed to process image')
+        const errorData = await response.json().catch(() => ({}))
+        const errorMsg = errorData.error || `HTTP ${response.status}`
+        console.error('❌ Image API error:', errorMsg)
+        throw new Error(errorMsg)
       }
 
-      const data = await response.json()
-      const content = data.content[0]?.text
+      const { data: extractedData } = await response.json()
 
-      if (!content) {
-        throw new Error('No response from API')
+      if (!Array.isArray(extractedData) || extractedData.length === 0) {
+        console.error('❌ Image API returned invalid array')
+        throw new Error('No data rows found in image')
       }
 
-      const jsonMatch = content.match(/\[[\s\S]*\]/)
-      if (!jsonMatch) {
-        throw new Error('Could not extract data from image')
-      }
-
-      const extractedData = JSON.parse(jsonMatch[0])
-      if (!Array.isArray(extractedData)) {
-        throw new Error('Expected JSON array')
-      }
+      console.log(`✅ Image extracted ${extractedData.length} rows successfully`)
+      console.log('   First row keys:', Object.keys(extractedData[0] || {}))
+      console.log('   First row sample:', extractedData[0])
 
       return extractedData
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error processing image'
+      console.error(`❌ Image processing failed: ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }
 
   const scanDdPdf = async (file: File): Promise<Record<string, unknown>[]> => {
     try {
-      console.log(`📄 Starting PDF extraction for: ${file.name}`)
+      console.log(`📄 Processing PDF via API: ${file.name}`)
       const base64Data = await fileToBase64(file)
       console.log(`✓ PDF converted to base64 (${base64Data.length} chars)`)
 
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60s timeout
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/scan-file', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
-          'anthropic-version': '2023-06-01',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4096,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'document',
-                  source: {
-                    type: 'base64',
-                    media_type: 'application/pdf',
-                    data: base64Data,
-                  },
-                },
-                {
-                  type: 'text',
-                  text: 'This is a Portuguese Direct Debit file. Extract ALL data rows from the table. Return ONLY a valid JSON array with no markdown or extra text. Each object MUST have these keys: iban, swift, valor, tipo, ref, data, nome, nif. Omit status/notas fields. If a field is not in the PDF, use empty string "". Do NOT include headers. Do NOT filter rows.',
-                },
-              ],
-            },
-          ],
+          fileBase64: base64Data,
+          fileType: 'pdf',
+          mimeType: 'application/pdf',
         }),
-        signal: controller.signal,
       })
-
-      clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        const errorMsg = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`
-        console.error('❌ Anthropic API error:', errorMsg)
+        const errorMsg = errorData.error || `HTTP ${response.status}`
+        console.error('❌ PDF API error:', errorMsg)
         throw new Error(errorMsg)
       }
 
-      const data = await response.json()
-      const content = data.content[0]?.text
+      const { data: extractedData } = await response.json()
 
-      if (!content) {
-        console.error('❌ No text content in API response')
-        throw new Error('No response from API')
-      }
-
-      console.log(`✓ API response received (${content.length} chars)`)
-      console.log(`   Preview: ${content.substring(0, 200)}...`)
-
-      let extractedData
-      try {
-        // First try to find JSON array
-        const jsonMatch = content.match(/\[[\s\S]*\]/)
-        if (jsonMatch) {
-          console.log('✓ Found JSON array in response')
-          extractedData = JSON.parse(jsonMatch[0])
-        } else {
-          // If no array found, try parsing entire content as JSON
-          console.log('ℹ️ No JSON array found, trying to parse entire content')
-          extractedData = JSON.parse(content)
-        }
-      } catch (parseError) {
-        console.error('❌ JSON parse error:', parseError instanceof Error ? parseError.message : String(parseError))
-        console.error('Content attempted to parse:', content.substring(0, 500))
-        throw new Error(`Could not parse PDF data: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
-      }
-
-      if (!Array.isArray(extractedData)) {
-        console.error('❌ Extracted data is not an array:', typeof extractedData)
-        throw new Error('PDF data is not a valid array')
-      }
-
-      if (extractedData.length === 0) {
-        console.warn('⚠️ PDF extracted empty array')
+      if (!Array.isArray(extractedData) || extractedData.length === 0) {
+        console.error('❌ PDF API returned invalid array')
         throw new Error('No data rows found in PDF')
       }
 
-      // Debug logging
       console.log(`✅ PDF extracted ${extractedData.length} rows successfully`)
       console.log('   First row keys:', Object.keys(extractedData[0] || {}))
       console.log('   First row sample:', extractedData[0])
-      
+
       return extractedData
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          console.error('❌ PDF extraction timeout (60s)')
-          throw new Error('PDF extraction timed out. File may be too large or API is slow.')
-        }
-        console.error(`❌ PDF extraction failed: ${error.message}`)
-        throw error
-      }
-      const errorMessage = 'Unknown error processing PDF'
-      console.error(`❌ ${errorMessage}`)
+      const errorMessage = error instanceof Error ? error.message : 'Error processing PDF'
+      console.error(`❌ PDF processing failed: ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }
