@@ -61,7 +61,8 @@ const isRequestMember = (member: MemberPaymentView): boolean => {
 
 const normalizeStatus = (value: unknown): ParsedStatus => {
   const text = normalizeText(value).toLowerCase()
-  if (!text) return 'failed'
+  // If no status field exists (common in DD files), default to 'success' for processing
+  if (!text) return 'success'
   if (['success', 'successful', 'ok', 'paid', 'completed', 'approved'].some((token) => text.includes(token))) {
     return 'success'
   }
@@ -121,6 +122,13 @@ const resolveMemberMatch = (
   row: Record<string, unknown>,
   members: MemberPaymentView[]
 ): { memberId: string | null; matchKey: string | null; reason: string | null } => {
+  // Log member inventory once (only on first row where we try IBAN/NIF)
+  const memberIbansWithValues = members.filter(m => m.iban).map(m => `${m.name}:${normalizeIban(m.iban)}`)
+  const memberNifsWithValues = members.filter(m => m.nif).map(m => `${m.name}:${normalizeNif(m.nif)}`)
+  if (memberIbansWithValues.length === 0 && memberNifsWithValues.length === 0) {
+    console.warn('⚠️ WARNING: No members have IBAN or NIF values in database!')
+  }
+  
   const memberIdRaw = normalizeText(extractRowValue(row, ['member_id', 'memberid', 'id', 'student_id']))
   if (memberIdRaw) {
     const direct = members.find((member) => member.id === memberIdRaw)
@@ -135,7 +143,13 @@ const resolveMemberMatch = (
       console.log(`✓ IBAN match found: ${iban} -> ${ibanMatch.name}`)
       return { memberId: ibanMatch.id, matchKey: 'iban', reason: null }
     }
-    console.log(`✗ IBAN not found: ${iban} (available: ${members.map(m => normalizeIban(m.iban)).filter(Boolean).join(', ')})`)
+    const availableIbans = members.filter(m => m.iban).map(m => normalizeIban(m.iban)).filter(Boolean)
+    console.log(`✗ IBAN "${iban}" not in database (${availableIbans.length} members have IBAN values)`)
+    if (availableIbans.length > 0 && availableIbans.length <= 5) {
+      console.log(`   Available IBANs: ${availableIbans.join(', ')}`)
+    }
+  } else {
+    console.log(`ℹ️ Row has no IBAN field`)
   }
 
   // Try NIF matching
@@ -146,7 +160,13 @@ const resolveMemberMatch = (
       console.log(`✓ NIF match found: ${nif} -> ${nifMatch.name}`)
       return { memberId: nifMatch.id, matchKey: 'nif', reason: null }
     }
-    console.log(`✗ NIF not found: ${nif} (available: ${members.map(m => normalizeNif(m.nif)).filter(Boolean).join(', ')})`)
+    const availableNifs = members.filter(m => m.nif).map(m => normalizeNif(m.nif)).filter(Boolean)
+    console.log(`✗ NIF "${nif}" not in database (${availableNifs.length} members have NIF values)`)
+    if (availableNifs.length > 0 && availableNifs.length <= 5) {
+      console.log(`   Available NIFs: ${availableNifs.join(', ')}`)
+    }
+  } else {
+    console.log(`ℹ️ Row has no NIF field`)
   }
 
   const phone = normalizePhone(extractRowValue(row, ['phone', 'telefone', 'mobile', 'telemovel']))
@@ -483,7 +503,12 @@ export default function PaymentsPage() {
 
   const scanDdPdf = async (file: File): Promise<Record<string, unknown>[]> => {
     try {
+      console.log(`📄 Starting PDF extraction for: ${file.name}`)
       const base64Data = await fileToBase64(file)
+      console.log(`✓ PDF converted to base64 (${base64Data.length} chars)`)
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60s timeout
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -509,18 +534,21 @@ export default function PaymentsPage() {
                 },
                 {
                   type: 'text',
-                  text: 'This is a Portuguese Direct Debit file formatted as a table with these exact columns in order: IBAN, SWIFT, VALOR, TIPO, REF, DATA INICIO, NOME, NIF, NOTAS. Extract all data rows and return ONLY a valid JSON array with no markdown. Each object must have these keys: iban, swift, valor, tipo, ref, data, nome, nif, notas. NOTAS is just internal notes, ignore it for processing. Skip header rows and empty rows.',
+                  text: 'This is a Portuguese Direct Debit file. Extract ALL data rows from the table. Return ONLY a valid JSON array with no markdown or extra text. Each object MUST have these keys: iban, swift, valor, tipo, ref, data, nome, nif. Omit status/notas fields. If a field is not in the PDF, use empty string "". Do NOT include headers. Do NOT filter rows.',
                 },
               ],
             },
           ],
         }),
+        signal: controller.signal,
       })
 
+      clearTimeout(timeoutId)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        const errorMsg = errorData.error?.message || 'Failed to process PDF'
-        console.error('Anthropic API error:', errorMsg, errorData)
+        const errorData = await response.json().catch(() => ({}))
+        const errorMsg = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`
+        console.error('❌ Anthropic API error:', errorMsg)
         throw new Error(errorMsg)
       }
 
@@ -528,55 +556,79 @@ export default function PaymentsPage() {
       const content = data.content[0]?.text
 
       if (!content) {
-        console.error('No text content in API response, data:', data)
+        console.error('❌ No text content in API response')
         throw new Error('No response from API')
       }
 
-      console.log('API response length:', content.length)
-      console.log('API response preview:', content.substring(0, 500))
+      console.log(`✓ API response received (${content.length} chars)`)
+      console.log(`   Preview: ${content.substring(0, 200)}...`)
 
       let extractedData
       try {
         // First try to find JSON array
         const jsonMatch = content.match(/\[[\s\S]*\]/)
         if (jsonMatch) {
-          console.log('Found JSON array in response')
+          console.log('✓ Found JSON array in response')
           extractedData = JSON.parse(jsonMatch[0])
         } else {
           // If no array found, try parsing entire content as JSON
-          console.log('No JSON array found, trying to parse entire content')
+          console.log('ℹ️ No JSON array found, trying to parse entire content')
           extractedData = JSON.parse(content)
         }
       } catch (parseError) {
-        console.error('JSON parse error:', parseError)
-        console.error('Content that failed to parse:', content)
+        console.error('❌ JSON parse error:', parseError instanceof Error ? parseError.message : String(parseError))
+        console.error('Content attempted to parse:', content.substring(0, 500))
         throw new Error(`Could not parse PDF data: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`)
       }
 
       if (!Array.isArray(extractedData)) {
-        console.error('Extracted data is not array:', typeof extractedData, extractedData)
+        console.error('❌ Extracted data is not an array:', typeof extractedData)
         throw new Error('PDF data is not a valid array')
       }
 
       if (extractedData.length === 0) {
-        console.warn('PDF extracted empty array')
+        console.warn('⚠️ PDF extracted empty array')
         throw new Error('No data rows found in PDF')
       }
 
       // Debug logging
-      console.log(`PDF extracted ${extractedData.length} rows successfully`)
-      console.log('First row keys:', Object.keys(extractedData[0] || {}))
-      console.log('First row sample:', extractedData[0])
-
+      console.log(`✅ PDF extracted ${extractedData.length} rows successfully`)
+      console.log('   First row keys:', Object.keys(extractedData[0] || {}))
+      console.log('   First row sample:', extractedData[0])
+      
       return extractedData
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error processing PDF'
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          console.error('❌ PDF extraction timeout (60s)')
+          throw new Error('PDF extraction timed out. File may be too large or API is slow.')
+        }
+        console.error(`❌ PDF extraction failed: ${error.message}`)
+        throw error
+      }
+      const errorMessage = 'Unknown error processing PDF'
+      console.error(`❌ ${errorMessage}`)
       throw new Error(errorMessage)
     }
   }
 
   const processDdRows = async (rawRows: Record<string, unknown>[]): Promise<ParsedDdRow[]> => {
-    return rawRows.map((rawRow) => {
+    const loggedFirst = new WeakSet<Record<string, unknown>>()
+    
+    return rawRows.map((rawRow, idx) => {
+      // Log first row details to diagnose extraction issues
+      if (!loggedFirst.has(rawRow)) {
+        loggedFirst.add(rawRow)
+        if (idx === 0) {
+          console.log(`📊 First extracted row (${rawRows.length} total):`)
+          console.log('   Fields present:', Object.keys(rawRow))
+          console.log('   Sample data:', rawRow)
+          console.log('   IBAN value:', rawRow.iban, `(type: ${typeof rawRow.iban})`)
+          console.log('   NIF value:', rawRow.nif, `(type: ${typeof rawRow.nif})`)
+          console.log('   Status value:', rawRow.status, `(type: ${typeof rawRow.status})`)
+        }
+      }
+      
       const amount = parseAmount(extractRowValue(rawRow, ['amount', 'valor', 'montante']))
       const status = normalizeStatus(extractRowValue(rawRow, ['status', 'result', 'outcome']))
       const reasonRaw = normalizeText(extractRowValue(rawRow, ['reason', 'note', 'motivo', 'error']))
@@ -602,6 +654,7 @@ export default function PaymentsPage() {
     setMessage(null)
 
     try {
+      console.log(`\n📤 Starting file upload: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`)
       const authResult = await supabase.auth.getUser()
       const uploadedBy = authResult.data.user?.id || null
 
@@ -610,31 +663,46 @@ export default function PaymentsPage() {
       // Check if file is an image, PDF, or Excel
       if (file.type.startsWith('image/')) {
         // Process image with Anthropic API
+        console.log('🖼️ Processing as image...')
         rawRows = await scanDdImage(file)
       } else if (file.type === 'application/pdf') {
         // Process PDF with Anthropic API
+        console.log('📄 Processing as PDF...')
         rawRows = await scanDdPdf(file)
       } else {
         // Process Excel file
+        console.log('📊 Processing as Excel...')
         const buffer = await file.arrayBuffer()
         const workbook = XLSX.read(buffer, { type: 'array' })
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
         rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: '' })
+        console.log(`✓ Excel extracted ${rawRows.length} rows`)
       }
 
       const parsedRows = await processDdRows(rawRows)
-
-      console.log(`Parsed ${parsedRows.length} rows from file`)
-      console.log('First parsed row:', parsedRows[0])
-
-      const batch = await getOrCreateDdBatch({ month: currentMonth, fileName: file.name, uploadedBy })
+      const matched = parsedRows.filter(r => r.memberId)
+      const unmatched = parsedRows.filter(r => !r.memberId)
       
+      console.log(`\n✅ Upload Processing Summary:`)
+      console.log(`   Total rows extracted: ${parsedRows.length}`)
+      console.log(`   Matched to members: ${matched.length} (${((matched.length / parsedRows.length) * 100).toFixed(1)}%)`)
+      console.log(`   Unmatched rows: ${unmatched.length}`)
+      console.log(`   Success status: ${parsedRows.filter(r => r.status === 'success').length}`)
+      console.log(`   Failed status: ${parsedRows.filter(r => r.status === 'failed').length}`)
+
       // Debug: Log members and their IBAN/NIF
       const membersWithIbanNif = members.filter(m => m.iban || m.nif)
-      console.log(`Members with IBAN/NIF: ${membersWithIbanNif.length}/${members.length}`)
+      console.log(`\n👥 Database Members:`)
+      console.log(`   Total members: ${members.length}`)
+      console.log(`   With IBAN/NIF: ${membersWithIbanNif.length}`)
+      if (membersWithIbanNif.length === 0) {
+        console.warn(`   ⚠️ WARNING: No members have IBAN or NIF populated!`)
+      }
       membersWithIbanNif.slice(0, 5).forEach(m => {
-        console.log(`  - ${m.name}: IBAN=${m.iban}, NIF=${m.nif}`)
+        console.log(`   - ${m.name}: IBAN=${m.iban || '(empty)'}, NIF=${m.nif || '(empty)'}`)
       })
+
+      const batch = await getOrCreateDdBatch({ month: currentMonth, fileName: file.name, uploadedBy })
 
       const inserted = await insertDdBatchItems(
         parsedRows.map((row) => ({
@@ -657,7 +725,10 @@ export default function PaymentsPage() {
       }
 
       setLatestBatchId(batch.id)
-      setMessage(`DD file processed: ${inserted.length} rows imported.`)
+      const successMsg = matched.length > 0 
+        ? `DD file processed: ${inserted.length} rows imported, ${matched.length} matched to members.` 
+        : `DD file processed: ${inserted.length} rows imported, but ${unmatched.length} could not be matched. Check member IBAN/NIF data.`
+      setMessage(successMsg)
       await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (uploadError) {
       const errorMsg = uploadError instanceof Error ? uploadError.message : 'Unknown error processing file'
