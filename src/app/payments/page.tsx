@@ -131,14 +131,22 @@ const resolveMemberMatch = (
   const iban = normalizeIban(extractRowValue(row, ['iban']))
   if (iban) {
     const ibanMatch = members.find((member) => normalizeIban(member.iban) === iban)
-    if (ibanMatch) return { memberId: ibanMatch.id, matchKey: 'iban', reason: null }
+    if (ibanMatch) {
+      console.log(`✓ IBAN match found: ${iban} -> ${ibanMatch.name}`)
+      return { memberId: ibanMatch.id, matchKey: 'iban', reason: null }
+    }
+    console.log(`✗ IBAN not found: ${iban} (available: ${members.map(m => normalizeIban(m.iban)).filter(Boolean).join(', ')})`)
   }
 
   // Try NIF matching
   const nif = normalizeNif(extractRowValue(row, ['nif', 'contribuinte']))
   if (nif) {
     const nifMatch = members.find((member) => normalizeNif(member.nif) === nif)
-    if (nifMatch) return { memberId: nifMatch.id, matchKey: 'nif', reason: null }
+    if (nifMatch) {
+      console.log(`✓ NIF match found: ${nif} -> ${nifMatch.name}`)
+      return { memberId: nifMatch.id, matchKey: 'nif', reason: null }
+    }
+    console.log(`✗ NIF not found: ${nif} (available: ${members.map(m => normalizeNif(m.nif)).filter(Boolean).join(', ')})`)
   }
 
   const phone = normalizePhone(extractRowValue(row, ['phone', 'telefone', 'mobile', 'telemovel']))
@@ -161,6 +169,7 @@ const resolveMemberMatch = (
     return { memberId: null, matchKey: null, reason: 'Multiple member matches found (phone/email).' }
   }
 
+  console.log(`✗ No match found for row:`, row)
   return { memberId: null, matchKey: null, reason: 'Unmatched member (missing member_id/iban/nif/phone/email match).' }
 }
 
@@ -530,6 +539,10 @@ export default function PaymentsPage() {
         throw new Error('Expected JSON array')
       }
 
+      // Debug logging
+      console.log('PDF extracted data sample:', extractedData.slice(0, 2))
+      console.log('First row keys:', Object.keys(extractedData[0] || {}))
+
       return extractedData
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error processing PDF'
@@ -587,6 +600,14 @@ export default function PaymentsPage() {
       const parsedRows = await processDdRows(rawRows)
 
       const batch = await getOrCreateDdBatch({ month: currentMonth, fileName: file.name, uploadedBy })
+      
+      // Debug: Log members and their IBAN/NIF
+      const membersWithIbanNif = members.filter(m => m.iban || m.nif)
+      console.log(`Members with IBAN/NIF: ${membersWithIbanNif.length}/${members.length}`)
+      membersWithIbanNif.slice(0, 5).forEach(m => {
+        console.log(`  - ${m.name}: IBAN=${m.iban}, NIF=${m.nif}`)
+      })
+
       const inserted = await insertDdBatchItems(
         parsedRows.map((row) => ({
           batch_id: batch.id,
