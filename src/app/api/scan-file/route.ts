@@ -6,12 +6,13 @@ interface ScanRequest {
   fileBase64: string
   fileType: 'image' | 'pdf'
   mimeType: string
+  prompt?: string
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: ScanRequest = await request.json()
-    const { fileBase64, fileType, mimeType } = body
+    const { fileBase64, fileType, mimeType, prompt: customPrompt } = body
 
     if (!fileBase64 || !fileType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -21,8 +22,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
     }
 
-    const systemPrompt =
-      fileType === 'pdf'
+    // Use custom prompt if provided, otherwise default to DD file format
+    const systemPrompt = customPrompt
+      ? customPrompt
+      : fileType === 'pdf'
         ? 'This is a Portuguese Direct Debit file. Extract ALL data rows from the table. Return ONLY a valid JSON array with no markdown or extra text. Each object MUST have these keys: iban, swift, valor, tipo, ref, data, nome, nif. Omit status/notas fields. If a field is not in the PDF, use empty string "". Do NOT include headers. Do NOT filter rows.'
         : 'This is a Portuguese Direct Debit file. Extract all rows and return ONLY valid JSON array with no markdown, each row having: iban, swift, valor, tipo, ref, data, nome, nif'
 
@@ -79,14 +82,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No response content from API' }, { status: 500 })
     }
 
-    // Parse JSON from response
+    // Parse JSON from response (can be array or object)
     let extractedData
     try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/)
-      if (jsonMatch) {
-        extractedData = JSON.parse(jsonMatch[0])
+      // Try to find JSON array first
+      const arrayMatch = content.match(/\[[\s\S]*\]/)
+      if (arrayMatch) {
+        extractedData = JSON.parse(arrayMatch[0])
       } else {
-        extractedData = JSON.parse(content)
+        // Try to find JSON object
+        const objectMatch = content.match(/\{[\s\S]*\}/)
+        if (objectMatch) {
+          extractedData = JSON.parse(objectMatch[0])
+        } else {
+          extractedData = JSON.parse(content)
+        }
       }
     } catch (parseError) {
       console.error('[API] JSON parse error:', parseError)
@@ -96,13 +106,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!Array.isArray(extractedData)) {
-      console.error('[API] Response is not array:', typeof extractedData)
-      return NextResponse.json({ error: 'API response is not a valid array' }, { status: 500 })
+    console.log(`[API] Successfully extracted data (${fileType})`)
+    
+    // Return based on whether response is array or object
+    if (Array.isArray(extractedData)) {
+      return NextResponse.json({ data: extractedData })
+    } else {
+      // For object responses (like lead forms), return the object directly
+      return NextResponse.json(extractedData)
     }
-
-    console.log(`[API] Successfully extracted ${extractedData.length} rows (${fileType})`)
-    return NextResponse.json({ data: extractedData })
   } catch (error) {
     console.error('[API] Unhandled error:', error)
     const errorMsg = error instanceof Error ? error.message : 'Unknown error'

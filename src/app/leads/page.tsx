@@ -120,56 +120,33 @@ export default function LeadsPage() {
 
       const base64Data = await fileToBase64(file);
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      // Use server-side proxy to avoid CORS and keep API key secure
+      const response = await fetch('/api/scan-file', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
-          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1024,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: file.type,
-                    data: base64Data,
-                  },
-                },
-                {
-                  type: 'text',
-                  text: 'This is a Gracie Barra welcome form. Extract these fields and return ONLY valid JSON with no markdown: name, date_of_birth (YYYY-MM-DD), nif, phone, email, address, emergency_contact, how_they_found_us, parent_name (if minor). If a field is not visible or legible return null.',
-                },
-              ],
-            },
-          ],
+          fileBase64: base64Data,
+          fileType: file.type.startsWith('image/') ? 'image' : 'pdf',
+          mimeType: file.type,
+          prompt: 'This is a Gracie Barra welcome form. Extract these fields and return ONLY valid JSON with no markdown: name, date_of_birth (YYYY-MM-DD), nif, phone, email, address, emergency_contact, how_they_found_us, parent_name (if minor). If a field is not visible or legible return null.',
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to process image');
+        throw new Error(errorData.error || 'Failed to process image');
       }
 
       const data = await response.json();
-      const content = data.content[0]?.text;
 
-      if (!content) {
-        throw new Error('No response from API');
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from server');
       }
 
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Could not extract data from form');
-      }
-
-      const extractedData = JSON.parse(jsonMatch[0]);
+      // data is already parsed from the proxy
+      const extractedData = data;
 
       const newLead = emptyLead();
       if (extractedData.name) newLead.name = extractedData.name;
