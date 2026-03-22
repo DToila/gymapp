@@ -191,6 +191,7 @@ export default function LeadsPage() {
       setIsCreatingLead(true);
       setIsLeadDrawerOpen(true);
       closeScanModal();
+      setIsScanning(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error processing image. Please try again.';
       setScanError(errorMessage);
