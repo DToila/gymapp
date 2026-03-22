@@ -473,8 +473,12 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     const toDate = reportToDate ? new Date(reportToDate) : today;
 
     const isDateInRange = (dateKey: string, start: Date, end: Date): boolean => {
-      const date = new Date(dateKey);
-      return date >= start && date <= end;
+      const [year, month, day] = dateKey.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      // Set both to start of day for comparison
+      const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      return date >= startDay && date <= endDay;
     };
 
     let totalAttendance = 0;
@@ -486,7 +490,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     let customRangeDays = 0;
 
     Object.entries(attendanceMap).forEach(([dateKey, attended]) => {
-      if (!attended) return;
+      if (attended !== true) return;
 
       totalAttendance++;
 
