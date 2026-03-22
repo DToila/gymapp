@@ -106,6 +106,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [emojiPickerDate, setEmojiPickerDate] = useState<string | null>(null);
+  const [reportFromDate, setReportFromDate] = useState<string>('');
+  const [reportToDate, setReportToDate] = useState<string>('');
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const isPendingMember = (data.status as unknown as string) === 'pending';
@@ -454,6 +456,73 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
   const getFirstDay = (year: number, month: number) => {
     return new Date(year, month, 1).getDay();
+  };
+
+  const calculateGraduationStats = () => {
+    const createdDate = data.created_at ? new Date(data.created_at) : new Date();
+    const today = new Date();
+    
+    // Define date ranges
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    const ninetyDaysAgo = new Date(today);
+    ninetyDaysAgo.setDate(today.getDate() - 90);
+
+    const fromDate = reportFromDate ? new Date(reportFromDate) : createdDate;
+    const toDate = reportToDate ? new Date(reportToDate) : today;
+
+    const isDateInRange = (dateKey: string, start: Date, end: Date): boolean => {
+      const date = new Date(dateKey);
+      return date >= start && date <= end;
+    };
+
+    let totalAttendance = 0;
+    let last30DaysAttendance = 0;
+    let last90DaysAttendance = 0;
+    let customRangeAttendance = 0;
+
+    let totalDaysSinceJoining = 0;
+    let customRangeDays = 0;
+
+    Object.entries(attendanceMap).forEach(([dateKey, attended]) => {
+      if (!attended) return;
+
+      totalAttendance++;
+
+      if (isDateInRange(dateKey, thirtyDaysAgo, today)) {
+        last30DaysAttendance++;
+      }
+
+      if (isDateInRange(dateKey, ninetyDaysAgo, today)) {
+        last90DaysAttendance++;
+      }
+
+      if (isDateInRange(dateKey, fromDate, toDate)) {
+        customRangeAttendance++;
+      }
+    });
+
+    // Calculate total days since joining
+    totalDaysSinceJoining = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    // Calculate custom range days
+    customRangeDays = Math.floor((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    const totalPercentage = totalDaysSinceJoining > 0 ? Math.round((totalAttendance / totalDaysSinceJoining) * 100) : 0;
+    const customRangePercentage = customRangeDays > 0 ? Math.round((customRangeAttendance / customRangeDays) * 100) : 0;
+
+    return {
+      totalAttendance,
+      last30DaysAttendance,
+      last90DaysAttendance,
+      totalDaysSinceJoining,
+      totalPercentage,
+      customRangeAttendance,
+      customRangePercentage,
+      customRangeDays,
+      createdDate,
+    };
   };
 
   const profileName = isEditing ? editForm.name : data.name;
@@ -832,8 +901,130 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
             </div>
           </div>
 
+          {/* Graduation Report Section */}
+          <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 mt-6">
+            <h3 className="text-sm font-black uppercase tracking-widest text-[#f0f0f0] mb-5" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
+              Graduation Report
+            </h3>
+
+            {/* Date Range Filter */}
+            <div className="mb-6 p-4 rounded-xl border border-[#252525] bg-[#141414]">
+              <div className="mb-3">
+                <label className="text-[9px] font-bold uppercase tracking-widest text-[#555] block mb-2">Custom Date Range (Optional)</label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1">
+                    <input
+                      type="date"
+                      value={reportFromDate}
+                      onChange={(e) => setReportFromDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-[#2a2a2a] bg-[#0a0a0a] text-sm text-[#f0f0f0] focus:outline-none focus:border-[#c81d25]/50 transition-colors"
+                      placeholder="From date"
+                    />
+                    <div className="text-[9px] text-[#555] mt-1">From</div>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="date"
+                      value={reportToDate}
+                      onChange={(e) => setReportToDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-[#2a2a2a] bg-[#0a0a0a] text-sm text-[#f0f0f0] focus:outline-none focus:border-[#c81d25]/50 transition-colors"
+                      placeholder="To date"
+                    />
+                    <div className="text-[9px] text-[#555] mt-1">To</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setReportFromDate('');
+                      setReportToDate('');
+                    }}
+                    className="px-4 py-2 rounded-lg border border-[#2a2a2a] bg-transparent text-xs font-bold uppercase tracking-widest text-[#666] hover:text-[#999] hover:border-[#3a3a3a] transition-colors cursor-pointer h-10 self-center sm:self-end"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Statistics Grid */}
+            {(() => {
+              const stats = calculateGraduationStats();
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Total attendance */}
+                  <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Total Attendance</div>
+                    <div className="text-3xl font-black text-[#f0f0f0] mb-1">
+                      {stats.totalAttendance}
+                    </div>
+                    <div className="text-[11px] text-[#888]">
+                      since {stats.createdDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
+                    </div>
+                  </div>
+
+                  {/* 30 days attendance */}
+                  <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Last 30 Days</div>
+                    <div className="text-3xl font-black text-[#f0f0f0] mb-1">
+                      {stats.last30DaysAttendance}
+                    </div>
+                    <div className="text-[11px] text-[#888]">days attended</div>
+                  </div>
+
+                  {/* 90 days attendance */}
+                  <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Last 90 Days</div>
+                    <div className="text-3xl font-black text-[#f0f0f0] mb-1">
+                      {stats.last90DaysAttendance}
+                    </div>
+                    <div className="text-[11px] text-[#888]">days attended</div>
+                  </div>
+
+                  {/* Attendance percentage */}
+                  <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Total Percentage</div>
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-3xl font-black text-[#c81d25]">
+                        {stats.totalPercentage}%
+                      </div>
+                    </div>
+                    <div className="text-[11px] text-[#888]">
+                      {stats.totalAttendance} of {stats.totalDaysSinceJoining} days
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Custom Range Stats */}
+            {(reportFromDate || reportToDate) && (() => {
+              const stats = calculateGraduationStats();
+              const fromDisplay = reportFromDate ? new Date(reportFromDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
+              const toDisplay = reportToDate ? new Date(reportToDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
+              return (
+                <div className="mt-6 p-4 rounded-xl border border-[#c81d25]/20 bg-[#c81d25]/5">
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-[#c81d25] mb-3">Custom Range Results ({fromDisplay} to {toDisplay})</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div>
+                      <div className="text-2xl font-black text-[#f0f0f0]">{stats.customRangeAttendance}</div>
+                      <div className="text-[10px] text-[#888]">days attended</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-[#f0f0f0]">{stats.customRangeDays}</div>
+                      <div className="text-[10px] text-[#888]">total days</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-[#c81d25]">{stats.customRangePercentage}%</div>
+                      <div className="text-[10px] text-[#888]">percentage</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
         </div>
       )}
     </div>
   );
 }
+
