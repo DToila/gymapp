@@ -249,15 +249,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     const currentAttended = attendanceMap[date] || false;
     const newAttended = !currentAttended;
 
+    // Update UI immediately (optimistic update)
+    setAttendanceMap(prev => ({
+      ...prev,
+      [date]: newAttended
+    }));
+
     try {
+      // Save to database
       await setAttendance(member.id, date, newAttended);
       const nextAttendanceByDate = setMemberAttendanceForDate(readAttendanceByDate(), date, member.id, newAttended);
       writeAttendanceByDate(nextAttendanceByDate);
-
-      setAttendanceMap(prev => ({
-        ...prev,
-        [date]: newAttended
-      }));
 
       const updated = { ...data, attendance: { ...attendanceMap, [date]: newAttended } };
       setData(updated);
@@ -284,12 +286,19 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         setEmojiPickerDate(date);
       }
 
-      // Reload attendance from database to ensure sync
+      // Reload data in background without loading state
       setTimeout(() => {
-        loadMemberData();
-      }, 100);
+        loadMemberData().catch(() => {
+          // Silently fail, keep the optimistic update
+        });
+      }, 200);
     } catch (error) {
       console.error('Error updating attendance:', error);
+      // Revert the optimistic update on error
+      setAttendanceMap(prev => ({
+        ...prev,
+        [date]: currentAttended
+      }));
     }
   };
 
