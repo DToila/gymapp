@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { mockLeads } from '@/components/leads/mockData';
+import { supabase } from '../../../lib/supabase';
 import LeadsTable from '@/components/leads/LeadsTable';
 import {
   Lead,
@@ -50,7 +50,9 @@ const applyLeadStatusRules = (lead: Lead): Lead => {
 };
 
 export default function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [followupFilter, setFollowupFilter] = useState<'all' | 'overdue'>('all');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -62,7 +64,35 @@ export default function LeadsPage() {
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch leads on component mount
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const { data, error: fetchError } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        setLeads(data || []);
+      } catch (err) {
+        console.error('Error fetching leads:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load leads');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeads();
+  }, []);
 
   const isOverdueFollowup = (lead: Lead) =>
     Boolean(lead.next_contact_date && lead.next_contact_date < todayKey());
@@ -216,7 +246,7 @@ export default function LeadsPage() {
     setDedupeWarning(null);
   };
 
-  const saveLead = () => {
+  const saveLead = async () => {
     if (!selectedLead) return;
 
     if (!selectedLead.name.trim()) {
@@ -238,13 +268,40 @@ export default function LeadsPage() {
 
     checkDedupeWarning(normalized);
 
-    if (isCreatingLead) {
-      setLeads((prev) => [normalized, ...prev]);
-    } else {
-      setLeads((prev) => prev.map((item) => (item.id === normalized.id ? normalized : item)));
-    }
+    try {
+      setSaving(true);
+      setFormError(null);
 
-    closeLeadDrawer();
+      if (isCreatingLead) {
+        // Insert new lead
+        const { data, error: insertError } = await supabase
+          .from('leads')
+          .insert([normalized])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        setLeads((prev) => [data, ...prev]);
+      } else {
+        // Update existing lead
+        const { error: updateError } = await supabase
+          .from('leads')
+          .update(normalized)
+          .eq('id', normalized.id);
+
+        if (updateError) throw updateError;
+
+        setLeads((prev) => prev.map((item) => (item.id === normalized.id ? normalized : item)));
+      }
+
+      closeLeadDrawer();
+    } catch (err) {
+      console.error('Error saving lead:', err);
+      setFormError(err instanceof Error ? err.message : 'Failed to save lead');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -310,7 +367,21 @@ export default function LeadsPage() {
             </div>
 
             <div className="rounded-2xl border border-[#222] bg-[#121212] overflow-hidden">
-              <LeadsTable leads={filteredLeads} onRowClick={openEditLead} />
+              {loading ? (
+                <div className="flex items-center justify-center p-12">
+                  <div className="text-center">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#333] border-t-[#c81d25]"></div>
+                    <p className="mt-4 text-zinc-400">Carregando leads...</p>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="rounded-lg border border-[#7f1d1d] bg-[#1a0202] p-6">
+                  <p className="text-[#fecaca] font-medium">Error ao carregar leads:</p>
+                  <p className="text-[#fca5a5] text-sm mt-1">{error}</p>
+                </div>
+              ) : (
+                <LeadsTable leads={filteredLeads} onRowClick={openEditLead} />
+              )}
             </div>
           </div>
         </div>
@@ -511,8 +582,12 @@ export default function LeadsPage() {
               </div>
 
               <div className="mt-6 flex gap-3 border-t border-[#222] pt-6">
-                <button onClick={saveLead} className="flex-1 rounded-xl bg-[#c81d25] px-4 py-2 font-semibold text-white hover:bg-[#b01720] transition">
-                  Guardar Lead
+                <button 
+                  onClick={saveLead} 
+                  disabled={saving}
+                  className="flex-1 rounded-xl bg-[#c81d25] px-4 py-2 font-semibold text-white hover:bg-[#b01720] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? 'Guardando...' : 'Guardar Lead'}
                 </button>
                 <button onClick={closeLeadDrawer} className="flex-1 rounded-xl border border-[#222] px-4 py-2 font-semibold text-white hover:bg-[#161616] transition">
                   Fechar
