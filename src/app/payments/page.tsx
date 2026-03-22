@@ -74,7 +74,37 @@ const normalizeStatus = (value: unknown): ParsedStatus => {
 const parseAmount = (value: unknown): number => {
   const raw = normalizeText(value)
   if (!raw) return 0
-  const normalized = raw.replace(/\./g, '').replace(',', '.')
+  
+  let normalized = raw
+  const hasComma = normalized.includes(',')
+  const hasDot = normalized.includes('.')
+  
+  // Handle both European (65,5) and US (65.5) formats intelligently
+  if (hasComma && hasDot) {
+    // Both present: last separator is the decimal separator
+    const lastCommaIndex = normalized.lastIndexOf(',')
+    const lastDotIndex = normalized.lastIndexOf('.')
+    
+    if (lastCommaIndex > lastDotIndex) {
+      // European format (1.234,56): comma is decimal, dots are thousands
+      normalized = normalized.replace(/\./g, '').replace(',', '.')
+    } else {
+      // US format (1,234.56): dot is decimal, commas are thousands
+      normalized = normalized.replace(/,/g, '')
+    }
+  } else if (hasComma) {
+    // Only comma: European decimal separator (65,5)
+    normalized = normalized.replace(',', '.')
+  } else if (hasDot) {
+    // Only dot: check if it's thousands separator or decimal
+    const dotCount = (normalized.match(/\./g) || []).length
+    if (dotCount > 1) {
+      // Multiple dots = thousands separators, remove them
+      normalized = normalized.replace(/\./g, '')
+    }
+    // Single dot stays as decimal separator
+  }
+  
   const amount = Number(normalized)
   return Number.isFinite(amount) ? amount : 0
 }
