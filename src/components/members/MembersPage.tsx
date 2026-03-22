@@ -34,10 +34,11 @@ type MembersAddForm = AddMemberFormData;
 
 function normalizeStatus(rawStatus: string | undefined): any {
   const value = String(rawStatus || '').trim().toLowerCase();
-  if (value === 'pendente') return 'Unpaid';
+  if (value === 'pendente') return 'Pending';
   if (value === 'ativo') return 'Active';
   if (value === 'pausado') return 'Paused';
   if (value === 'unpaid') return 'Unpaid';
+  if (value === 'pending') return 'Pending';
   return 'Active';
 }
 
@@ -63,7 +64,7 @@ function mapDbMember(member: any): any {
     enrolledAt: (member.created_at || '').split('T')[0] || '',
     dateOfBirth: member.date_of_birth,
     lastAttendanceAt: undefined,
-    requestStatus: status === 'Unpaid' ? 'Unpaid' : undefined,
+    requestStatus: status === 'Pending' ? 'Pending' : undefined,
     group: undefined
   };
 }
@@ -210,8 +211,8 @@ export default function MembersPage() {
         };
       });
 
-      const pendente = withBehavior.filter((m) => m.status === 'Pendente');
-      const nonPending = withBehavior.filter((m) => m.status !== 'Pendente');
+      const pendente = withBehavior.filter((m) => m.status === 'Pending');
+      const nonPending = withBehavior.filter((m) => m.status !== 'Pending');
 
       setAllMembers(nonPending.length > 0 ? nonPending : mockMembers);
       setRequests(pendente);
