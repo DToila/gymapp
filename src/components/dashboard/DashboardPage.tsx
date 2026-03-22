@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
-import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes, getUnpaidPayments } from '../../../lib/database';
+import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
+import { getMembersForPayments, getPaymentsForMonth, getCurrentMonthKey } from '@/lib/payments';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
@@ -39,6 +40,15 @@ const getRelativeTime = (isoDate: string): string => {
   if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)} min ago`;
   if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)}h ago`;
   return 'Yesterday';
+};
+
+const normalizeText = (value: unknown): string => String(value || '').trim();
+const normalizeMemberStatus = (value: unknown): string => normalizeText(value).toLowerCase();
+
+const isRequestMember = (member: { status?: string | null; request_status?: string | null }): boolean => {
+  const status = normalizeMemberStatus(member.status);
+  const requestStatus = normalizeMemberStatus(member.request_status);
+  return status === 'pending' || status === 'request' || requestStatus === 'pending' || requestStatus === 'request';
 };
 
 export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
@@ -87,13 +97,15 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const loadDashboardData = useCallback(async () => {
     setRecentNotesLoading(true);
     try {
-      const [recent, members, unpaid] = await Promise.all([
+      const [recent, allMembers, paymentMembers, monthlyPayments] = await Promise.all([
         getRecentTeacherNotes(5),
         getMembers(),
-        getUnpaidPayments(5),
+        getMembersForPayments(),
+        getPaymentsForMonth(getCurrentMonthKey()),
       ]);
 
-      const memberById = new Map(members.map((member) => [member.id, member]));
+      // Build note mapping
+      const memberById = new Map(allMembers.map((member) => [member.id, member]));
       const mapped: NoteItem[] = recent.map((note) => {
         const member = memberById.get(note.member_id);
         const age = member?.date_of_birth ? getAgeFromDateOfBirth(member.date_of_birth) : null;
@@ -108,7 +120,8 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         };
       });
 
-      const mappedPendingRequests: RequestItem[] = members
+      // Build pending requests
+      const mappedPendingRequests: RequestItem[] = allMembers
         .filter((member) => String((member.status || '')).trim().toLowerCase() === 'pending')
         .map((member) => {
           const createdAt = new Date(member.created_at || '');
@@ -127,14 +140,28 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         .sort((a, b) => b.createdAtMs - a.createdAtMs)
         .map(({ id, name, requestedAt }) => ({ id, name, requestedAt }));
 
+      // Calculate unpaid payments using the same logic as payments page
+      const paidMonthMemberMap: Record<string, boolean> = {};
+      monthlyPayments.forEach((payment) => {
+        if (payment.member_id && !payment.voided) {
+          paidMonthMemberMap[payment.member_id] = true;
+        }
+      });
+
+      const unpaidMembers = paymentMembers
+        .filter((member) => !isRequestMember(member))
+        .filter((member) => !member.dd)
+        .filter((member) => !paidMonthMemberMap[member.id])
+        .slice(0, 5);
+
       setRecentNotes(mapped);
       setPendingRequests(mappedPendingRequests);
       setUnpaidPayments(
-        unpaid.map((payment) => ({
-          id: payment.id,
-          name: payment.name,
-          amount: '€' + payment.amount.toFixed(2),
-          due: payment.dueDate,
+        unpaidMembers.map((member) => ({
+          id: member.id,
+          name: member.name,
+          amount: '€' + (Number(member.amount_due) || 0).toFixed(2),
+          due: member.paid_through ? new Date(member.paid_through).toLocaleDateString('en-GB') : 'Ongoing',
         }))
       );
     } catch (error) {
@@ -343,6 +370,13 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'members' },
+        () => {
+          loadDashboardData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments' },
         () => {
           loadDashboardData();
         }
