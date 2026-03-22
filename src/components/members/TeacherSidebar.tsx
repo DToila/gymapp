@@ -171,13 +171,13 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
   };
 
   const navItems = [
-    { key: 'dashboard', label: 'Dashboard', icon: '◔', onClick: () => router.push('/dashboard') },
+    { key: 'dashboard', label: 'Dashboard', icon: '📊', onClick: () => router.push('/dashboard') },
     { key: 'schedule', label: 'Horário', icon: '📅', onClick: () => router.push('/schedule') },
-    { key: 'members', label: 'Membros', icon: '◌', onClick: () => router.push('/members') },
-    { key: 'attendance', label: 'Presenças', icon: '◍', onClick: () => router.push('/attendance') },
-    { key: 'leads', label: 'Leads', icon: '◎', onClick: () => router.push('/leads') },
-    { key: 'payments', label: 'Pagamentos', icon: '▣', onClick: () => router.push('/payments') },
-    { key: 'settings', label: 'Definições', icon: '☰', onClick: () => router.push('/settings') }
+    { key: 'members', label: 'Membros', icon: '👥', onClick: () => router.push('/members') },
+    { key: 'attendance', label: 'Presenças', icon: '✅', onClick: () => router.push('/attendance') },
+    { key: 'leads', label: 'Leads', icon: '📢', onClick: () => router.push('/leads') },
+    { key: 'payments', label: 'Pagamentos', icon: '💰', onClick: () => router.push('/payments') },
+    { key: 'settings', label: 'Definições', icon: '⚙️', onClick: () => router.push('/settings') }
   ];
 
   const visibleNavItems = navItems.filter((item) => {
