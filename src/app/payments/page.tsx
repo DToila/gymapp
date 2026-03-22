@@ -170,21 +170,24 @@ const resolveMemberMatch = (
 
   // Try IBAN matching (with smart fallback to NIF if member already has a payment)
   const iban = normalizeIban(extractRowValue(row, ['iban']))
-  let ibanMatch: MemberPaymentView | undefined
+  let potentialIbanMatch: MemberPaymentView | undefined
+  let ibanIsAlreadyMatched = false
   
   if (iban) {
-    ibanMatch = members.find((member) => normalizeIban(member.iban) === iban)
-    if (ibanMatch) {
-      // Check if this member already has a payment in the current batch
-      if (alreadyMatchedInBatch?.has(ibanMatch.id)) {
-        console.log(`⚠️ IBAN match found (${iban} -> ${ibanMatch.name}) but member already matched in batch, trying NIF instead...`)
-        ibanMatch = undefined // Don't use this match, try NIF
+    potentialIbanMatch = members.find((member) => normalizeIban(member.iban) === iban)
+    if (potentialIbanMatch) {
+      // Check if this member already has a match in the current batch
+      if (alreadyMatchedInBatch?.has(potentialIbanMatch.id)) {
+        console.log(`⚠️ IBAN match found (${iban} -> ${potentialIbanMatch.name}) but member already matched in batch, trying NIF instead...`)
+        ibanIsAlreadyMatched = true
+        potentialIbanMatch = undefined // Don't use this match, try NIF first
       } else {
-        console.log(`✓ IBAN match found: ${iban} -> ${ibanMatch.name}`)
-        return { memberId: ibanMatch.id, matchKey: 'iban', reason: null }
+        // IBAN match is good and member not yet matched in batch
+        console.log(`✓ IBAN match found: ${iban} -> ${potentialIbanMatch.name}`)
+        return { memberId: potentialIbanMatch.id, matchKey: 'iban', reason: null }
       }
     }
-    if (!ibanMatch) {
+    if (!potentialIbanMatch && !ibanIsAlreadyMatched) {
       const availableIbans = members.filter(m => m.iban).map(m => normalizeIban(m.iban)).filter(Boolean)
       console.log(`✗ IBAN "${iban}" not in database (${availableIbans.length} members have IBAN values)`)
       if (availableIbans.length > 0 && availableIbans.length <= 5) {
@@ -212,10 +215,11 @@ const resolveMemberMatch = (
     console.log(`ℹ️ Row has no NIF field`)
   }
 
-  // Fallback: if IBAN was found but member was already matched in this batch, use IBAN match as fallback
-  if (ibanMatch && alreadyMatchedInBatch?.has(ibanMatch.id)) {
-    console.log(`⚠️ No NIF match found, falling back to IBAN match: ${ibanMatch.name} (duplicate in batch)`)
-    return { memberId: ibanMatch.id, matchKey: 'iban', reason: 'IBAN matched (member has multiple payments)' }
+  // If IBAN was found but member was already matched in this batch, and NIF didn't match either,
+  // this row cannot be matched to prevent duplicate payments to the same person
+  if (ibanIsAlreadyMatched && potentialIbanMatch === undefined) {
+    console.log(`⚠️ Cannot match row: IBAN member already matched in batch and NIF didn't find alternative member`)
+    return { memberId: null, matchKey: null, reason: 'Member already matched with same IBAN in this batch' }
   }
 
   const phone = normalizePhone(extractRowValue(row, ['phone', 'telefone', 'mobile', 'telemovel']))
@@ -373,7 +377,10 @@ export default function PaymentsPage() {
   }, [members])
 
   const filteredPaidMonthPayments = useMemo(() => {
-    return paidMonthPayments.filter((payment) => payment.member_id && activeMemberIds.has(payment.member_id))
+    // Only show non-DD payments in 'Paid' tab (DD payments show separately in 'DD Success')
+    return paidMonthPayments.filter(
+      (payment) => payment.member_id && activeMemberIds.has(payment.member_id) && payment.method !== 'DD'
+    )
   }, [paidMonthPayments, activeMemberIds])
 
   const unmatchedRows = useMemo(() => ddItems.filter((item) => !item.member_id && !item.ignored), [ddItems])
