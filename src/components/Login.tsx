@@ -403,7 +403,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column' }}>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', maxWidth: '420px' }}>
           {/* Error Message */}
           {error && (
             <div style={{
