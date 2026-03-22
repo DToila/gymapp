@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
-import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
+import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes, getUnpaidPayments } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { unpaidPayments } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -13,7 +12,7 @@ import AttendancePanel from './AttendancePanel';
 import PendingRequestsList from './PendingRequestsList';
 import AnnouncementsPanel from './AnnouncementsPanel';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { AppRole, AttendanceRecentItem, KidBehaviorItem, KpiItem, NoteItem, RequestItem } from './types';
+import { AppRole, AttendanceRecentItem, KidBehaviorItem, KpiItem, NoteItem, RequestItem, UnpaidPayment } from './types';
 import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
 
@@ -55,6 +54,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const [currentRole, setCurrentRole] = useState<AppRole>('coach');
   const [currentName, setCurrentName] = useState('Professor');
   const [kpis, setKpis] = useState<KpiItem[]>([]);
+  const [unpaidPayments, setUnpaidPayments] = useState<UnpaidPayment[]>([]);
 
   const isCoach = currentRole === 'coach';
 
@@ -87,9 +87,10 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const loadDashboardData = useCallback(async () => {
     setRecentNotesLoading(true);
     try {
-      const [recent, members] = await Promise.all([
+      const [recent, members, unpaid] = await Promise.all([
         getRecentTeacherNotes(5),
         getMembers(),
+        getUnpaidPayments(5),
       ]);
 
       const memberById = new Map(members.map((member) => [member.id, member]));
@@ -128,10 +129,19 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
 
       setRecentNotes(mapped);
       setPendingRequests(mappedPendingRequests);
+      setUnpaidPayments(
+        unpaid.map((payment) => ({
+          id: payment.id,
+          name: payment.name,
+          amount: '€' + payment.amount.toFixed(2),
+          due: payment.dueDate,
+        }))
+      );
     } catch (error) {
       console.error('Error loading recent notes:', error);
       setRecentNotes([]);
       setPendingRequests([]);
+      setUnpaidPayments([]);
     } finally {
       setRecentNotesLoading(false);
     }
@@ -392,7 +402,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
     ];
 
     setKpis(computedKpis);
-  }, [todayTotalMembers, kidsBehaviorEvents, pendingRequests]);
+  }, [todayTotalMembers, kidsBehaviorEvents, unpaidPayments, pendingRequests]);
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">

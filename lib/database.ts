@@ -386,3 +386,54 @@ export const upsertClassPlan = async (
   if (error) throw error
   return data as ClassPlanRow
 }
+
+export interface UnpaidPaymentRecord {
+  id: string
+  name: string
+  amount: number
+  dueDate: string
+  overdueDays?: number
+}
+
+export const getUnpaidPayments = async (limit?: number): Promise<UnpaidPaymentRecord[]> => {
+  const { data: members, error } = await supabase
+    .from('members')
+    .select('id, name, paid_through')
+    .order('paid_through', { ascending: true })
+
+  if (error) {
+    console.error('Supabase getUnpaidPayments failed', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    })
+    return []
+  }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const unpaid = (members || [])
+    .filter((member) => {
+      if (!member.paid_through) return true
+      const paidThrough = new Date(member.paid_through)
+      paidThrough.setHours(23, 59, 59, 999)
+      return paidThrough < today
+    })
+    .map((member) => {
+      const paidThrough = member.paid_through ? new Date(member.paid_through) : new Date(2000, 0, 1)
+      paidThrough.setHours(0, 0, 0, 0)
+      const daysOverdue = Math.floor((today.getTime() - paidThrough.getTime()) / (1000 * 60 * 60 * 24))
+      
+      return {
+        id: member.id,
+        name: member.name,
+        amount: 0,
+        dueDate: paidThrough.toISOString().split('T')[0],
+        overdueDays: Math.max(0, daysOverdue),
+      }
+    })
+
+  return limit ? unpaid.slice(0, limit) : unpaid
+}
