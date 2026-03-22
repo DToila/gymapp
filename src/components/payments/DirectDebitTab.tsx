@@ -8,8 +8,8 @@ interface DirectDebitTabProps {
 }
 
 export default function DirectDebitTab({ records, onMarkResolved }: DirectDebitTabProps) {
-  const pendingRecords = records.filter((r) => r.status === 'Pendente');
-  const failedRecords = records.filter((r) => r.status === 'Falhado' || r.status === 'Returned');
+  const pendingRecords = records.filter((r) => r.status === 'Pending');
+  const failedRecords = records.filter((r) => r.status === 'Failed' || r.status === 'Returned');
 
   return (
     <div className="space-y-6">

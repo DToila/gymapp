@@ -63,7 +63,7 @@ export default function StudentDashboardPage() {
   }, [announcements, isKid]);
 
   const todayClasses = getTodayClasses();
-  const isPaid = member?.status !== 'Por Pagar';
+  const isPaid = member?.status !== 'Unpaid';
 
   const listRows = useMemo(() => {
     return Object.keys(attendanceMap)

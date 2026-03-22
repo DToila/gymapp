@@ -1,7 +1,7 @@
 "use client";
 
+import { Member } from './types';
 import RowActionsMenu from './RowActionsMenu';
-import { Membro } from './types';
 
 interface MembersTableProps {
   mode: 'adults' | 'kids';
@@ -152,10 +152,10 @@ export default function MembersTable({
                       </td>
                       <td style={{ padding: '11px 12px' }}>
                         <span style={statusStyle(member.status)}>
-                          {member.status === 'Ativo'
+                          {member.status === 'Active'
                             ? '● Ativo'
                             : member.status === 'Paused'
-                              ? '● Paused'
+                              ? '● Pausado'
                               : `● Por Pagar €${(member.amountDue || 0).toFixed(0)}`}
                         </span>
                       </td>

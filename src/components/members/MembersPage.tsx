@@ -131,10 +131,10 @@ export default function MembersPage() {
   const [newMember, setNewMember] = useState<MembersAddForm>({
     name: '',
     belt_level: 'White Cinto',
-    status: 'Ativo',
+    status: 'Active',
     phone: '',
     email: '',
-    payment_type: 'Débito Direto',
+    payment_type: 'Direct Debit',
     fee: 0,
     family_discount: false,
     date_of_birth: '',
@@ -264,7 +264,7 @@ export default function MembersPage() {
       if (quickView === 'recent') {
         setKidsFilters((prev) => ({ ...prev, sort: 'recent' }));
       }
-      if (quickView === 'inativo') {
+      if (quickView === 'inactive') {
         setKidsFilters((prev) => ({ ...prev, sort: 'attentionFirst' }));
       }
     }
@@ -282,17 +282,17 @@ export default function MembersPage() {
       })
       .filter((member) => {
         if (adultsFilters.status === 'all') return true;
-        if (adultsFilters.status === 'ativo') return member.status === 'Ativo';
-        if (adultsFilters.status === 'pausado') return member.status === 'Paused';
-        return member.status === 'Por Pagar' || (member.amountDue || 0) > 0;
+        if (adultsFilters.status === 'active') return member.status === 'Active';
+        if (adultsFilters.status === 'paused') return member.status === 'Paused';
+        return member.status === 'Unpaid' || (member.amountDue || 0) > 0;
       })
       .filter((member) => adultsFilters.belt === 'all' || String(member.belt || '').toLowerCase() === adultsFilters.belt.toLowerCase())
       .filter((member) => adultsFilters.payment === 'all' || member.paymentMethod === adultsFilters.payment)
       .filter((member) => {
-        if (quickView === 'unpaid') return (member.amountDue || 0) > 0 || member.status === 'Por Pagar';
+        if (quickView === 'unpaid') return (member.amountDue || 0) > 0 || member.status === 'Unpaid';
         if (quickView === 'birthdays') return isWithinNext7DaysBirthday(member.dateOfBirth);
         if (quickView === 'newThisMonth') return isNewThisMonth(member.enrolledAt);
-        if (quickView === 'inativo') return isInactive(member.lastAttendanceAt);
+        if (quickView === 'inactive') return isInactive(member.lastAttendanceAt);
         return true;
       });
 
@@ -319,7 +319,7 @@ export default function MembersPage() {
       .filter((member) => {
         if (quickView === 'birthdays') return isWithinNext7DaysBirthday(member.dateOfBirth);
         if (quickView === 'newThisMonth') return isNewThisMonth(member.enrolledAt);
-        if (quickView === 'inativo') return isInactive(member.lastAttendanceAt);
+        if (quickView === 'inactive') return isInactive(member.lastAttendanceAt);
         return true;
       });
 
@@ -380,10 +380,10 @@ export default function MembersPage() {
       setNewMember({
         name: '',
         belt_level: 'White Cinto',
-        status: 'Ativo',
+        status: 'Active',
         phone: '',
         email: '',
-        payment_type: 'Débito Direto',
+        payment_type: 'Direct Debit',
         fee: 0,
         family_discount: false,
         date_of_birth: '',

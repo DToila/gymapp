@@ -21,12 +21,12 @@ export default function StudentPaymentsPage() {
         id: `${rowDate.getFullYear()}-${rowDate.getMonth()}`,
         month: rowDate.toLocaleString('default', { month: 'long', year: 'numeric' }),
         amount: `€${(member?.fee || 0).toFixed(2)}`,
-        status: index === 0 && member?.status === 'Por Pagar' ? 'Por Pagar' : 'Pago',
+        status: index === 0 && member?.status === 'Unpaid' ? 'Por Pagar' : 'Pago',
       };
     });
   }, [member?.fee, member?.status]);
 
-  const isPaid = member?.status !== 'Por Pagar';
+  const isPaid = member?.status !== 'Unpaid';
 
   return (
     <StudentShell ativo="payments" title="Pagamentos" subtitle="Payment status and history">

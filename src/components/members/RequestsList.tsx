@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import { Membro } from './types';
+import { Member } from './types';
 
 interface RequestsListProps {
   items: Member[];

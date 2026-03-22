@@ -33,10 +33,10 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [newMember, setNewMember] = useState<NewMemberForm>({
     name: "",
     belt_level: "White Cinto",
-    status: "Ativo",
+    status: "Active",
     phone: "",
     email: "",
-    payment_type: "Débito Direto",
+    payment_type: "Direct Debit",
     fee: 0,
     family_discount: false,
     date_of_birth: "",
@@ -51,9 +51,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [quickSelection, setQuickSelection] = useState<{ [id: string]: boolean }>({});
   const [under16MoodByMemberId, setUnder16MoodByMemberId] = useState<{ [id: string]: MoodOption }>({});
   const [acceptingPendingMemberId, setAcceptingPendingMemberId] = useState<string | null>(null);
-  const [acceptForm, setAcceptForm] = useState<{ belt_level: string; payment_type: "Débito Direto" | "Dinheiro"; fee: string }>({
+  const [acceptForm, setAcceptForm] = useState<{ belt_level: string; payment_type: "Direct Debit" | "Cash"; fee: string }>({
     belt_level: "White Cinto",
-    payment_type: "Débito Direto",
+    payment_type: "Direct Debit",
     fee: "0",
   });
 
@@ -105,7 +105,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
       if (error) throw error;
 
-      const pendingFormatted: any[] = (data || []).map((member) => mapMemberForDashboard(member as Membro));
+      const pendingFormatted: any[] = (data || []).map((member) => mapMemberForDashboard(member as Member));
       setPendingMembers(pendingFormatted);
     } catch (error) {
       console.error('Erro loading pendente members:', error);
@@ -433,10 +433,10 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       setNewMember({
         name: "",
         belt_level: "White Cinto",
-        status: "Ativo",
+        status: "Active",
         phone: "",
         email: "",
-        payment_type: "Débito Direto",
+        payment_type: "Direct Debit",
         fee: 0,
         family_discount: false,
         date_of_birth: "",
@@ -496,7 +496,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   };
 
   const openAcceptPendingForm = (member: any) => {
-    const nextPaymentType = member.payment_type === 'Dinheiro' ? 'Dinheiro' : 'Débito Direto';
+    const nextPaymentType = member.payment_type === 'Cash' ? 'Cash' : 'Direct Debit';
     setAcceptingPendingMemberId(member.id);
     setAcceptForm({
       belt_level: member.belt_level || 'White Cinto',
@@ -583,7 +583,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         if (chosen || selectedMood) m.attendance[today] = true;
         else delete m.attendance[today];
 
-        if (isUnder16Member(m as Membro)) {
+        if (isUnder16Member(m as Member)) {
           if (!m.attendance_mood) m.attendance_mood = {};
           if (selectedMood) m.attendance_mood[today] = selectedMood;
           else delete m.attendance_mood[today];
@@ -771,9 +771,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           }}>
             {[
               { label: 'Total Membros', value: members.length, color: '#f0f0f0' },
-              { label: 'Ativo', value: members.filter((m) => m.status === "Ativo").length, color: '#f0f0f0' },
-              { label: 'Paused', value: members.filter((m) => m.status === "Paused").length, color: '#f0f0f0' },
-              { label: 'Por Pagar', value: members.filter((m) => m.status === "Por Pagar").length, color: '#f0f0f0' }
+              { label: 'Ativo', value: members.filter((m) => m.status === "Active").length, color: '#f0f0f0' },
+              { label: 'Pausado', value: members.filter((m) => m.status === "Paused").length, color: '#f0f0f0' },
+              { label: 'Por Pagar', value: members.filter((m) => m.status === "Unpaid").length, color: '#f0f0f0' }
             ].map((stat, idx) => (
               <div
                 key={idx}
@@ -914,7 +914,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                             <div style={{ fontSize: '10px', color: '#777', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Payment</div>
                             <select
                               value={acceptForm.payment_type}
-                              onChange={(e) => setAcceptForm((prev) => ({ ...prev, payment_type: e.target.value as "Débito Direto" | "Dinheiro" }))}
+                              onChange={(e) => setAcceptForm((prev) => ({ ...prev, payment_type: e.target.value as "Direct Debit" | "Cash" }))}
                               style={{
                                 width: '100%',
                                 padding: '8px 10px',
@@ -924,8 +924,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                                 fontSize: '12px'
                               }}
                             >
-                              <option value="Débito Direto">Débito Direto</option>
-                              <option value="Dinheiro">Dinheiro</option>
+                              <option value="Direct Debit">Débito Direto</option>
+                              <option value="Cash">Dinheiro</option>
                             </select>
                           </div>
 
@@ -1100,9 +1100,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         borderRadius: '3px',
                         textTransform: 'uppercase',
                         letterSpacing: '1px',
-                        color: member.status === 'Ativo' ? '#CC0000' : member.status === 'Paused' ? '#888888' : '#ff4444',
-                        background: member.status === 'Ativo' ? 'rgba(204,0,0,0.15)' : member.status === 'Paused' ? 'rgba(255,255,255,0.05)' : 'rgba(255,50,50,0.1)',
-                        border: member.status === 'Ativo' ? '1px solid #CC0000' : member.status === 'Paused' ? '1px solid #444444' : '1px solid #ff4444'
+                        color: member.status === 'Active' ? '#CC0000' : member.status === 'Paused' ? '#888888' : '#ff4444',
+                        background: member.status === 'Active' ? 'rgba(204,0,0,0.15)' : member.status === 'Paused' ? 'rgba(255,255,255,0.05)' : 'rgba(255,50,50,0.1)',
+                        border: member.status === 'Active' ? '1px solid #CC0000' : member.status === 'Paused' ? '1px solid #444444' : '1px solid #ff4444'
                       }}>
                         {member.status}
                       </div>

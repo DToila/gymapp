@@ -3,10 +3,10 @@ import React from 'react';
 export interface AddMemberFormData {
   name: string;
   belt_level: string;
-  status: 'Ativo' | 'Paused' | 'Por Pagar';
+  status: 'Active' | 'Paused' | 'Unpaid';
   phone: string;
   email: string;
-  payment_type: 'Débito Direto' | 'Dinheiro';
+  payment_type: 'Direct Debit' | 'Cash';
   fee: number;
   family_discount: boolean;
   date_of_birth: string;
@@ -28,7 +28,7 @@ interface AddMemberModalProps {
   submitLabel: string;
   onNameChange?: (name: string) => void;
   onDateOfBirthChange?: (dateOfBirth: string) => void;
-  onPaymentTypeChange?: (paymentType: 'Débito Direto' | 'Dinheiro') => void;
+  onPaymentTypeChange?: (paymentType: 'Direct Debit' | 'Cash') => void;
   onSubmitButtonClick?: () => void;
   studentNumberReadOnly?: boolean;
   studentNumberPlaceholder?: string;
@@ -303,7 +303,7 @@ export default function AddMemberModal({
             <select
               value={newMember.payment_type}
               onChange={(e) => {
-                const value = e.target.value as 'Débito Direto' | 'Dinheiro';
+                const value = e.target.value as 'Direct Debit' | 'Cash';
                 if (onPaymentTypeChange) {
                   onPaymentTypeChange(value);
                   return;
@@ -320,8 +320,8 @@ export default function AddMemberModal({
                 fontFamily: '"Barlow", sans-serif'
               }}
             >
-              <option value="Débito Direto">Débito Direto</option>
-              <option value="Dinheiro">Dinheiro</option>
+              <option value="Direct Debit">Débito Direto</option>
+              <option value="Cash">Dinheiro</option>
             </select>
           </div>
 
@@ -427,7 +427,7 @@ export default function AddMemberModal({
             </label>
             <select
               value={newMember.status}
-              onChange={(e) => setNewMember((prev) => ({ ...prev, status: e.target.value as 'Ativo' | 'Paused' | 'Por Pagar' }))}
+              onChange={(e) => setNewMember((prev) => ({ ...prev, status: e.target.value as 'Active' | 'Paused' | 'Unpaid' }))}
               style={{
                 width: '100%',
                 padding: '8px 12px',
@@ -438,9 +438,9 @@ export default function AddMemberModal({
                 fontFamily: '"Barlow", sans-serif'
               }}
             >
-              <option value="Ativo">Ativo</option>
-              <option value="Paused">Paused</option>
-              <option value="Por Pagar">Por Pagar</option>
+              <option value="Active">Ativo</option>
+              <option value="Paused">Pausado</option>
+              <option value="Unpaid">Por Pagar</option>
             </select>
           </div>
 
