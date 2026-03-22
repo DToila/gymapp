@@ -664,3 +664,45 @@ export const recomputeMemberPaidThrough = async (memberId: string): Promise<void
 export const getCurrentMonthKey = (): string => toMonthKey(new Date())
 
 export const getTodayDateKey = (): string => todayIsoDate()
+
+export const resetPaidCounterForMonth = async (month: string): Promise<void> => {
+  // Delete all payments for the specified month and reset paid_through dates
+  const { data: payments, error: fetchError } = await supabase
+    .from('payments')
+    .select('member_id, id')
+    .eq('payment_month', month)
+    .eq('voided', false)
+
+  if (fetchError && !isPaymentsTableMissingError(fetchError)) {
+    throw fetchError
+  }
+
+  // Delete the payments
+  const { error: deleteError } = await supabase
+    .from('payments')
+    .delete()
+    .eq('payment_month', month)
+
+  if (deleteError && !isPaymentsTableMissingError(deleteError)) {
+    throw deleteError
+  }
+
+  // Recompute paid_through for all affected members
+  if (payments && payments.length > 0) {
+    const memberIds = Array.from(new Set((payments as Array<{ member_id: string }>).map((p) => p.member_id)))
+    for (const memberId of memberIds) {
+      try {
+        await recomputeMemberPaidThrough(memberId)
+      } catch (error) {
+        console.warn(`Failed to recompute paid_through for member ${memberId}:`, error)
+      }
+    }
+  }
+
+  // Also update local state if using it
+  if (deleteError) {
+    const local = readLocalState()
+    local.payments = local.payments.filter((p) => p.payment_month !== month)
+    writeLocalState(local)
+  }
+}

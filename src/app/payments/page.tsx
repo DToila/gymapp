@@ -23,6 +23,7 @@ import {
   PaymentMethod,
   PaymentRow,
   recomputeMemberPaidThrough,
+  resetPaidCounterForMonth,
   setDdFailedFlag,
   updateDdBatchItemPaymentLink,
   voidPayment,
@@ -673,6 +674,28 @@ export default function PaymentsPage() {
     }
   }
 
+  const handleResetPaidCounter = async () => {
+    // Confirm before resetting
+    const confirmed = window.confirm('Are you sure you want to reset the paid counter to 0 for this month? This will delete all payments.')
+    if (!confirmed) return
+
+    try {
+      setError(null)
+      console.log(`🔄 Resetting paid counter for month: ${paidMonth}`)
+      await resetPaidCounterForMonth(paidMonth)
+      
+      setMessage('Paid counter reset to 0. All payments for this month have been deleted.')
+      console.log('✅ Paid counter reset successfully')
+      
+      // Refresh data
+      await Promise.all([refreshCore(), refreshPaidMonth()])
+    } catch (resetError) {
+      const errorMsg = resetError instanceof Error ? resetError.message : 'Unknown error resetting counter'
+      console.error('❌ Error resetting counter:', errorMsg)
+      setError(`Error resetting counter: ${errorMsg}`)
+    }
+  }
+
   const handleIgnoreItem = async (item: DdBatchItemRow) => {
     setError(null)
 
@@ -884,14 +907,23 @@ export default function PaymentsPage() {
                   <h2 className="text-xl font-semibold text-white">Paid</h2>
                   <p className="mt-1 text-xs text-zinc-500">Payments recorded for selected month.</p>
                 </div>
-                <div>
-                  <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Month</label>
-                  <input
-                    type="month"
-                    value={paidMonth}
-                    onChange={(event) => setPaidMonth(event.target.value)}
-                    className="rounded-lg border border-[#222] bg-[#121212] px-3 py-2 text-sm text-white"
-                  />
+                <div className="flex flex-wrap items-end gap-4">
+                  <div>
+                    <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Month</label>
+                    <input
+                      type="month"
+                      value={paidMonth}
+                      onChange={(event) => setPaidMonth(event.target.value)}
+                      className="rounded-lg border border-[#222] bg-[#121212] px-3 py-2 text-sm text-white"
+                    />
+                  </div>
+                  <button
+                    onClick={handleResetPaidCounter}
+                    disabled={uploading}
+                    className="rounded-lg border border-[#7f1d1d] bg-[#1a0202] px-4 py-2 text-sm font-medium text-[#fecaca] hover:bg-[#7f1d1d]/30 disabled:opacity-50"
+                  >
+                    🔄 Reset to 0
+                  </button>
                 </div>
               </div>
 
