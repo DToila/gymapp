@@ -152,10 +152,9 @@ const normalizeNif = (value: unknown): string => normalizeText(value).replace(/\
 
 const resolveMemberMatch = (
   row: Record<string, unknown>,
-  members: MemberPaymentView[],
-  alreadyMatchedInBatch?: Set<string>
+  members: MemberPaymentView[]
 ): { memberId: string | null; matchKey: string | null; reason: string | null } => {
-  // Log member inventory once (only on first row where we try IBAN/NIF)
+  // Log member inventory once (only on first row where we try NIF/IBAN)
   const memberIbansWithValues = members.filter(m => m.iban).map(m => `${m.name}:${normalizeIban(m.iban)}`)
   const memberNifsWithValues = members.filter(m => m.nif).map(m => `${m.name}:${normalizeNif(m.nif)}`)
   if (memberIbansWithValues.length === 0 && memberNifsWithValues.length === 0) {
@@ -168,37 +167,7 @@ const resolveMemberMatch = (
     if (direct) return { memberId: direct.id, matchKey: 'member_id', reason: null }
   }
 
-  // Try IBAN matching (with smart fallback to NIF if member already has a payment)
-  const iban = normalizeIban(extractRowValue(row, ['iban']))
-  let potentialIbanMatch: MemberPaymentView | undefined
-  let ibanIsAlreadyMatched = false
-  
-  if (iban) {
-    potentialIbanMatch = members.find((member) => normalizeIban(member.iban) === iban)
-    if (potentialIbanMatch) {
-      // Check if this member already has a match in the current batch
-      if (alreadyMatchedInBatch?.has(potentialIbanMatch.id)) {
-        console.log(`⚠️ IBAN match found (${iban} -> ${potentialIbanMatch.name}) but member already matched in batch, trying NIF instead...`)
-        ibanIsAlreadyMatched = true
-        potentialIbanMatch = undefined // Don't use this match, try NIF first
-      } else {
-        // IBAN match is good and member not yet matched in batch
-        console.log(`✓ IBAN match found: ${iban} -> ${potentialIbanMatch.name}`)
-        return { memberId: potentialIbanMatch.id, matchKey: 'iban', reason: null }
-      }
-    }
-    if (!potentialIbanMatch && !ibanIsAlreadyMatched) {
-      const availableIbans = members.filter(m => m.iban).map(m => normalizeIban(m.iban)).filter(Boolean)
-      console.log(`✗ IBAN "${iban}" not in database (${availableIbans.length} members have IBAN values)`)
-      if (availableIbans.length > 0 && availableIbans.length <= 5) {
-        console.log(`   Available IBANs: ${availableIbans.join(', ')}`)
-      }
-    }
-  } else {
-    console.log(`ℹ️ Row has no IBAN field`)
-  }
-
-  // Try NIF matching (with fallback to IBAN if it was found but already matched)
+  // Try NIF matching FIRST (most specific to individual, not shared like IBAN)
   const nif = normalizeNif(extractRowValue(row, ['nif', 'contribuinte']))
   if (nif) {
     const nifMatch = members.find((member) => normalizeNif(member.nif) === nif)
@@ -215,11 +184,21 @@ const resolveMemberMatch = (
     console.log(`ℹ️ Row has no NIF field`)
   }
 
-  // If IBAN was found but member was already matched in this batch, and NIF didn't match either,
-  // this row cannot be matched to prevent duplicate payments to the same person
-  if (ibanIsAlreadyMatched && potentialIbanMatch === undefined) {
-    console.log(`⚠️ Cannot match row: IBAN member already matched in batch and NIF didn't find alternative member`)
-    return { memberId: null, matchKey: null, reason: 'Member already matched with same IBAN in this batch' }
+  // Try IBAN matching SECOND (can be shared by family members, so less specific than NIF)
+  const iban = normalizeIban(extractRowValue(row, ['iban']))
+  if (iban) {
+    const ibanMatch = members.find((member) => normalizeIban(member.iban) === iban)
+    if (ibanMatch) {
+      console.log(`✓ IBAN match found: ${iban} -> ${ibanMatch.name}`)
+      return { memberId: ibanMatch.id, matchKey: 'iban', reason: null }
+    }
+    const availableIbans = members.filter(m => m.iban).map(m => normalizeIban(m.iban)).filter(Boolean)
+    console.log(`✗ IBAN "${iban}" not in database (${availableIbans.length} members have IBAN values)`)
+    if (availableIbans.length > 0 && availableIbans.length <= 5) {
+      console.log(`   Available IBANs: ${availableIbans.join(', ')}`)
+    }
+  } else {
+    console.log(`ℹ️ Row has no IBAN field`)
   }
 
   const phone = normalizePhone(extractRowValue(row, ['phone', 'telefone', 'mobile', 'telemovel']))
@@ -578,7 +557,6 @@ export default function PaymentsPage() {
 
   const processDdRows = async (rawRows: Record<string, unknown>[]): Promise<ParsedDdRow[]> => {
     const loggedFirst = new WeakSet<Record<string, unknown>>()
-    const alreadyMatchedInBatch = new Set<string>() // Track members matched so far in this batch
     
     return rawRows.map((rawRow, idx) => {
       // Log first row details to diagnose extraction issues
@@ -588,8 +566,8 @@ export default function PaymentsPage() {
           console.log(`📊 First extracted row (${rawRows.length} total):`)
           console.log('   Fields present:', Object.keys(rawRow))
           console.log('   Sample data:', rawRow)
-          console.log('   IBAN value:', rawRow.iban, `(type: ${typeof rawRow.iban})`)
           console.log('   NIF value:', rawRow.nif, `(type: ${typeof rawRow.nif})`)
+          console.log('   IBAN value:', rawRow.iban, `(type: ${typeof rawRow.iban})`)
           console.log('   Status value:', rawRow.status, `(type: ${typeof rawRow.status})`)
         }
       }
@@ -597,12 +575,7 @@ export default function PaymentsPage() {
       const amount = parseAmount(extractRowValue(rawRow, ['amount', 'valor', 'montante']))
       const status = normalizeStatus(extractRowValue(rawRow, ['status', 'result', 'outcome']))
       const reasonRaw = normalizeText(extractRowValue(rawRow, ['reason', 'note', 'motivo', 'error']))
-      const match = resolveMemberMatch(rawRow, members, alreadyMatchedInBatch)
-
-      // Track this member as matched in the batch for next iterations
-      if (match.memberId && !alreadyMatchedInBatch.has(match.memberId)) {
-        alreadyMatchedInBatch.add(match.memberId)
-      }
+      const match = resolveMemberMatch(rawRow, members)
 
       return {
         rawRow,
