@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as Tesseract from 'tesseract.js'
+import { ImageAnnotatorClient } from '@google-cloud/vision'
 
 export const runtime = 'nodejs'
 
@@ -8,6 +8,21 @@ interface ScanRequest {
   fileType: 'image' | 'pdf'
   mimeType: string
   prompt?: string
+}
+
+// Initialize Google Cloud Vision client
+const getVisionClient = () => {
+  const credentials = process.env.GOOGLE_CLOUD_VISION_CREDENTIALS
+  if (!credentials) {
+    throw new Error('Google Cloud Vision credentials not configured')
+  }
+
+  const parsed = JSON.parse(credentials)
+  const client = new ImageAnnotatorClient({
+    credentials: parsed,
+  })
+
+  return client
 }
 
 // Parse DD file text to extract structured data
@@ -137,30 +152,46 @@ export async function POST(request: NextRequest) {
     // Convert base64 to Buffer
     const buffer = Buffer.from(fileBase64, 'base64')
 
-    console.log(`[API] Starting OCR for ${fileType}, size: ${buffer.length} bytes`)
+    console.log(`[API] Starting Google Cloud Vision OCR for ${fileType}, size: ${buffer.length} bytes`)
 
-    // Run Tesseract OCR with timeout
-    const ocrPromise = Tesseract.recognize(buffer, 'por', {
-      logger: (m) => {
-        if (m.status === 'recognizing') {
-          console.log(`[OCR] Progress: ${Math.round(m.progress * 100)}%`)
-        }
+    const client = getVisionClient()
+
+    // Create request for Vision API
+    const visionRequest = {
+      image: {
+        content: fileBase64,
       },
-    })
+      features: [
+        {
+          type: 'TEXT_DETECTION' as const,
+        },
+      ],
+      imageContext: {
+        languageHints: ['pt'],
+      },
+    }
 
-    // Race against 110 second timeout
+    // Call Vision API with 30 second timeout (API is fast)
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('OCR processing timeout - image too complex or server overloaded')), 110000)
+      setTimeout(() => reject(new Error('Vision API timeout')), 30000)
     )
 
-    const result = await Promise.race([ocrPromise, timeoutPromise]) as Awaited<typeof ocrPromise>
+    const visionPromise = client.annotateImage(visionRequest)
+    const [apiResponse] = (await Promise.race([visionPromise, timeoutPromise])) as any
 
-    const ocrText = result.data.text
+    const annotations = apiResponse.textAnnotations || []
 
-    console.log(`[API] OCR extracted ${ocrText.length} characters`)
+    if (!annotations || annotations.length === 0) {
+      return NextResponse.json({ error: 'No text found in image' }, { status: 400 })
+    }
 
-    if (!ocrText || ocrText.trim().length === 0) {
-      return NextResponse.json({ error: 'No text found in image/PDF' }, { status: 400 })
+    // First annotation contains all text
+    const fullText = annotations[0].description || ''
+
+    console.log(`[API] Vision API extracted ${fullText.length} characters`)
+
+    if (!fullText || fullText.trim().length === 0) {
+      return NextResponse.json({ error: 'No text found in image' }, { status: 400 })
     }
 
     let extractedData: Record<string, unknown> | Record<string, unknown>[]
@@ -168,10 +199,10 @@ export async function POST(request: NextRequest) {
     // Determine what we're parsing based on context
     if (customPrompt && customPrompt.includes('welcome form')) {
       // Parse as lead form
-      extractedData = parseLeadFormText(ocrText)
+      extractedData = parseLeadFormText(fullText)
     } else {
       // Parse as DD file (returns array)
-      extractedData = parseDdText(ocrText)
+      extractedData = parseDdText(fullText)
       if (extractedData.length === 0) {
         return NextResponse.json(
           { error: 'Could not extract structured data from document. No valid IBAN entries found.' },
