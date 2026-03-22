@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Tesseract from 'tesseract.js'
 
 export const runtime = 'nodejs'
 
@@ -9,110 +10,175 @@ interface ScanRequest {
   prompt?: string
 }
 
+// Parse DD file text to extract structured data
+const parseDdText = (text: string): Record<string, unknown>[] => {
+  const rows: Record<string, unknown>[] = []
+  const lines = text.split('\n').filter(line => line.trim())
+
+  for (const line of lines) {
+    // Skip headers and irrelevant lines
+    if (line.match(/^(IBAN|Swift|Valor|Tipo|Ref|Data|Nome|NIF|iban|swift|valor|tipo|ref|data|nome|nif)/i)) {
+      continue
+    }
+
+    // Match IBAN pattern (PT + 24 digits)
+    const ibanMatch = line.match(/PT\d{24}\b/)
+    if (!ibanMatch) continue
+
+    const iban = ibanMatch[0]
+
+    // Extract other fields from the same line
+    const nifMatch = line.match(/\b\d{9}\b/)
+    const nif = nifMatch ? nifMatch[0] : ''
+
+    // Look for amount (number with optional decimal)
+    const amountMatch = line.match(/\d+[.,]\d{2}\b/)
+    const valor = amountMatch ? amountMatch[0] : ''
+
+    // Extract name (text between non-digits, usually after IBAN)
+    const afterIban = line.substring(line.indexOf(iban) + iban.length)
+    const nameMatch = afterIban.match(/[A-Za-z\s]+/)
+    const nome = nameMatch ? nameMatch[0].trim() : ''
+
+    rows.push({
+      iban,
+      nome,
+      nif,
+      valor,
+      swift: '',
+      tipo: 'DD',
+      ref: '',
+      data: new Date().toISOString().split('T')[0],
+    })
+  }
+
+  return rows
+}
+
+// Parse lead form text to extract form fields
+const parseLeadFormText = (text: string): Record<string, unknown> => {
+  const result: Record<string, unknown> = {
+    name: null,
+    date_of_birth: null,
+    nif: null,
+    phone: null,
+    email: null,
+    address: null,
+    emergency_contact: null,
+    how_they_found_us: null,
+    parent_name: null,
+  }
+
+  const lines = text.split('\n')
+
+  for (const line of lines) {
+    // Email
+    if (!result.email) {
+      const emailMatch = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+      if (emailMatch) result.email = emailMatch[0]
+    }
+
+    // Phone (Portuguese format)
+    if (!result.phone) {
+      const phoneMatch = line.match(/\b\d{3}\s?\d{3}\s?\d{3}\b|\+351\s?\d{9}\b|\(\d{2}\)\s?\d{4,5}-?\d{4}/)
+      if (phoneMatch) result.phone = phoneMatch[0]
+    }
+
+    // NIF (9 digits)
+    if (!result.nif) {
+      const nifMatch = line.match(/\b\d{9}\b/)
+      if (nifMatch) result.nif = nifMatch[0]
+    }
+
+    // Date (DD/MM/YYYY or YYYY-MM-DD)
+    if (!result.date_of_birth) {
+      const dateMatch = line.match(/\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2}/)
+      if (dateMatch) {
+        const date = dateMatch[0]
+        // Convert DD/MM/YYYY to YYYY-MM-DD
+        if (date.includes('/')) {
+          const [d, m, y] = date.split('/')
+          result.date_of_birth = `${y}-${m}-${d}`
+        } else {
+          result.date_of_birth = date
+        }
+      }
+    }
+
+    // Name (extract after "Nome:" or at beginning of lines with capital letters)
+    if (!result.name) {
+      const nomeMatch = line.match(/Nome:\s*([A-Za-z\s]+)/i)
+      if (nomeMatch) {
+        result.name = nomeMatch[1].trim()
+      }
+    }
+
+    // Address
+    if (!result.address) {
+      const addrMatch = line.match(/Rua|Avenida|Travessa|Morada:\s*(.+)/i)
+      if (addrMatch) {
+        result.address = addrMatch[1].trim()
+      }
+    }
+  }
+
+  return result
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: ScanRequest = await request.json()
-    const { fileBase64, fileType, mimeType, prompt: customPrompt } = body
+    const { fileBase64, fileType, prompt: customPrompt } = body
 
     if (!fileBase64 || !fileType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
-    }
+    // Convert base64 to Buffer
+    const buffer = Buffer.from(fileBase64, 'base64')
 
-    // Use custom prompt if provided, otherwise default to DD file format
-    const systemPrompt = customPrompt
-      ? customPrompt
-      : fileType === 'pdf'
-        ? 'This is a Portuguese Direct Debit file. Extract ALL data rows from the table. Return ONLY a valid JSON array with no markdown or extra text. Each object MUST have these keys: iban, swift, valor, tipo, ref, data, nome, nif. Omit status/notas fields. If a field is not in the PDF, use empty string "". Do NOT include headers. Do NOT filter rows.'
-        : 'This is a Portuguese Direct Debit file. Extract all rows and return ONLY valid JSON array with no markdown, each row having: iban, swift, valor, tipo, ref, data, nome, nif'
+    console.log(`[API] Starting OCR for ${fileType}, size: ${buffer.length} bytes`)
 
-    const contentBlock =
-      fileType === 'pdf'
-        ? {
-            type: 'document' as const,
-            source: {
-              type: 'base64' as const,
-              media_type: 'application/pdf' as const,
-              data: fileBase64,
-            },
-          }
-        : {
-            type: 'image' as const,
-            source: {
-              type: 'base64' as const,
-              media_type: mimeType,
-              data: fileBase64,
-            },
-          }
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+    // Run Tesseract OCR
+    const result = await Tesseract.recognize(buffer, 'por', {
+      logger: (m) => {
+        if (m.status === 'recognizing') {
+          console.log(`[OCR] Progress: ${Math.round(m.progress * 100)}%`)
+        }
       },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: fileType === 'pdf' ? 4096 : 2048,
-        messages: [
-          {
-            role: 'user',
-            content: [contentBlock, { type: 'text', text: systemPrompt }],
-          },
-        ],
-      }),
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      const errorMsg = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`
-      console.error('[API] Anthropic error:', errorMsg)
-      return NextResponse.json({ error: errorMsg }, { status: response.status })
+    const ocrText = result.data.text
+
+    console.log(`[API] OCR extracted ${ocrText.length} characters`)
+
+    if (!ocrText || ocrText.trim().length === 0) {
+      return NextResponse.json({ error: 'No text found in image/PDF' }, { status: 400 })
     }
 
-    const data = await response.json()
-    const content = data.content[0]?.text
+    let extractedData: Record<string, unknown> | Record<string, unknown>[]
 
-    if (!content) {
-      console.error('[API] No text content in response')
-      return NextResponse.json({ error: 'No response content from API' }, { status: 500 })
-    }
-
-    // Parse JSON from response (can be array or object)
-    let extractedData
-    try {
-      // Try to find JSON array first
-      const arrayMatch = content.match(/\[[\s\S]*\]/)
-      if (arrayMatch) {
-        extractedData = JSON.parse(arrayMatch[0])
-      } else {
-        // Try to find JSON object
-        const objectMatch = content.match(/\{[\s\S]*\}/)
-        if (objectMatch) {
-          extractedData = JSON.parse(objectMatch[0])
-        } else {
-          extractedData = JSON.parse(content)
-        }
+    // Determine what we're parsing based on context
+    if (customPrompt && customPrompt.includes('welcome form')) {
+      // Parse as lead form
+      extractedData = parseLeadFormText(ocrText)
+    } else {
+      // Parse as DD file (returns array)
+      extractedData = parseDdText(ocrText)
+      if (extractedData.length === 0) {
+        return NextResponse.json(
+          { error: 'Could not extract structured data from document. No valid IBAN entries found.' },
+          { status: 400 }
+        )
       }
-    } catch (parseError) {
-      console.error('[API] JSON parse error:', parseError)
-      return NextResponse.json(
-        { error: `Could not parse API response: ${parseError instanceof Error ? parseError.message : 'Unknown error'}` },
-        { status: 500 }
-      )
     }
 
-    console.log(`[API] Successfully extracted data (${fileType})`)
-    
+    console.log(`[API] Successfully extracted data`)
+
     // Return based on whether response is array or object
     if (Array.isArray(extractedData)) {
       return NextResponse.json({ data: extractedData })
     } else {
-      // For object responses (like lead forms), return the object directly
       return NextResponse.json(extractedData)
     }
   } catch (error) {
