@@ -137,17 +137,6 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    const handleAttendanceUpdated = () => {
-      setAttendanceByDate(readAttendanceByDate());
-    };
-
-    window.addEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
-    return () => window.removeEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
     writeAttendanceByDate(attendanceByDate);
   }, [attendanceByDate]);
 
@@ -288,12 +277,26 @@ export default function AttendancePage() {
     loadBehaviorForDate(selectedDate);
   }, [selectedDate, loadBehaviorForDate]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleAttendanceUpdated = () => {
+      setAttendanceByDate(readAttendanceByDate());
+      // Also reload from database for this date to ensure sync
+      loadAttendanceForDate(selectedDate);
+    };
+
+    window.addEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
+    return () => window.removeEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
+  }, [selectedDate, loadAttendanceForDate]);
+
   const checkIn = (id: string) => {
-    setAttendanceByDate((prev) => setMemberAttendanceForDate(prev, selectedDate, id, true));
     setAttendance(id, selectedDate, true)
       .then(() => {
         const nextAttendanceByDate = setMemberAttendanceForDate(readAttendanceByDate(), selectedDate, id, true);
         writeAttendanceByDate(nextAttendanceByDate);
+        // Reload from database to ensure sync
+        loadAttendanceForDate(selectedDate);
       })
       .catch((error) => {
         console.error('Error checking in member:', error);
@@ -301,8 +304,6 @@ export default function AttendancePage() {
   };
 
   const uncheckIn = (id: string) => {
-    setAttendanceByDate((prev) => setMemberAttendanceForDate(prev, selectedDate, id, false));
-
     if (activeTab === 'kids') {
       setKidBehaviorByDate((prev) => {
         const dateMap = prev[selectedDate];
@@ -333,6 +334,8 @@ export default function AttendancePage() {
       .then(() => {
         const nextAttendanceByDate = setMemberAttendanceForDate(readAttendanceByDate(), selectedDate, id, false);
         writeAttendanceByDate(nextAttendanceByDate);
+        // Reload from database to ensure sync
+        loadAttendanceForDate(selectedDate);
       })
       .catch((error) => {
         console.error('Error unchecking member:', error);

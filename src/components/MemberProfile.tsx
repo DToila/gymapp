@@ -82,10 +82,16 @@ function statusBadgeClass(status: string): string {
 }
 
 function mergeAttendanceMapForMember(memberId: string, baseMap: { [date: string]: boolean }, attendanceByDate: Record<string, string[]>): { [date: string]: boolean } {
+  // Start with Supabase data (baseMap is the source of truth)
   const nextMap = { ...baseMap };
 
+  // Layer localStorage data on top, but only for dates that have entries
   Object.entries(attendanceByDate).forEach(([dateKey, memberIds]) => {
-    nextMap[dateKey] = memberIds.includes(memberId);
+    const isAttended = memberIds.includes(memberId);
+    // If database says attended, trust it. Only use localStorage if database is empty
+    if (!nextMap.hasOwnProperty(dateKey)) {
+      nextMap[dateKey] = isAttended;
+    }
   });
 
   return nextMap;
@@ -206,12 +212,13 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     if (typeof window === 'undefined') return;
 
     const handleAttendanceUpdated = () => {
-      setAttendanceMap((prev) => mergeAttendanceMapForMember(member.id, prev, readAttendanceByDate()));
+      // Reload from database to ensure sync with attendance page
+      loadMemberData();
     };
 
     window.addEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
     return () => window.removeEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
-  }, [member.id]);
+  }, [loadMemberData]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !isKid) return;
@@ -276,6 +283,11 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       if (isKid && newAttended && !behaviorMap[date]) {
         setEmojiPickerDate(date);
       }
+
+      // Reload attendance from database to ensure sync
+      setTimeout(() => {
+        loadMemberData();
+      }, 100);
     } catch (error) {
       console.error('Error updating attendance:', error);
     }
