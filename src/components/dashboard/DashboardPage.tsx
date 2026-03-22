@@ -65,6 +65,8 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const [currentName, setCurrentName] = useState('Professor');
   const [kpis, setKpis] = useState<KpiItem[]>([]);
   const [unpaidPayments, setUnpaidPayments] = useState<UnpaidPayment[]>([]);
+  const [totalUnpaidCount, setTotalUnpaidCount] = useState(0);
+  const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0);
 
   const isCoach = currentRole === 'coach';
 
@@ -148,27 +150,38 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         }
       });
 
-      const unpaidMembers = paymentMembers
+      // Get ALL unpaid members (not sliced) to calculate totals
+      const allUnpaidMembers = paymentMembers
         .filter((member) => !isRequestMember(member))
         .filter((member) => !member.dd)
-        .filter((member) => !paidMonthMemberMap[member.id])
-        .slice(0, 5);
+        .filter((member) => !paidMonthMemberMap[member.id]);
+
+      // Calculate total unpaid count and amount
+      const totalCount = allUnpaidMembers.length;
+      const totalAmount = allUnpaidMembers.reduce((sum, member) => sum + (Number(member.amount_due) || 0), 0);
+
+      // Slice to 5 for table display
+      const displayUnpaidMembers = allUnpaidMembers.slice(0, 5);
 
       setRecentNotes(mapped);
       setPendingRequests(mappedPendingRequests);
       setUnpaidPayments(
-        unpaidMembers.map((member) => ({
+        displayUnpaidMembers.map((member) => ({
           id: member.id,
           name: member.name,
           amount: '€' + (Number(member.amount_due) || 0).toFixed(2),
           due: member.paid_through ? new Date(member.paid_through).toLocaleDateString('en-GB') : 'Ongoing',
         }))
       );
+      setTotalUnpaidCount(totalCount);
+      setTotalUnpaidAmount(totalAmount);
     } catch (error) {
       console.error('Error loading recent notes:', error);
       setRecentNotes([]);
       setPendingRequests([]);
       setUnpaidPayments([]);
+      setTotalUnpaidCount(0);
+      setTotalUnpaidAmount(0);
     } finally {
       setRecentNotesLoading(false);
     }
@@ -402,12 +415,6 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       }
     });
 
-    // Calculate total unpaid amount
-    const totalUnpaid = unpaidPayments.reduce((sum, payment) => {
-      const amount = parseFloat(payment.amount.replace('€', '').replace(',', ''));
-      return sum + (isNaN(amount) ? 0 : amount);
-    }, 0);
-
     const computedKpis: KpiItem[] = [
       {
         id: 'active',
@@ -417,8 +424,8 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       },
       {
         id: 'unpaid',
-        value: `€${totalUnpaid.toFixed(2)}`,
-        label: `Unpaid (${unpaidPayments.length} people)`,
+        value: `€${totalUnpaidAmount.toFixed(2)}`,
+        label: `Unpaid (${totalUnpaidCount} people)`,
         accent: 'warning',
       },
       {
@@ -436,7 +443,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
     ];
 
     setKpis(computedKpis);
-  }, [todayTotalMembers, kidsBehaviorEvents, unpaidPayments, pendingRequests]);
+  }, [todayTotalMembers, kidsBehaviorEvents, totalUnpaidCount, totalUnpaidAmount, pendingRequests]);
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
