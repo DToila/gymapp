@@ -1,7 +1,7 @@
 "use client";
 
 import RowActionsMenu from './RowActionsMenu';
-import { Member } from './types';
+import { Membro } from './types';
 
 interface MembersTableProps {
   mode: 'adults' | 'kids';
@@ -23,9 +23,9 @@ const statusStyle = (status?: string): React.CSSProperties => ({
   borderRadius: '999px',
   letterSpacing: '0.2px',
   fontWeight: 600,
-  border: status === 'Active' ? '1px solid #1f4d33' : status === 'Paused' ? '1px solid #4a4a4a' : '1px solid #5b1f24',
-  color: status === 'Active' ? '#86efac' : status === 'Paused' ? '#d4d4d4' : '#fda4af',
-  background: status === 'Active' ? 'rgba(22,163,74,0.12)' : status === 'Paused' ? 'rgba(255,255,255,0.06)' : 'rgba(239,68,68,0.14)'
+  border: status === 'Ativo' ? '1px solid #1f4d33' : status === 'Paused' ? '1px solid #4a4a4a' : '1px solid #5b1f24',
+  color: status === 'Ativo' ? '#86efac' : status === 'Paused' ? '#d4d4d4' : '#fda4af',
+  background: status === 'Ativo' ? 'rgba(22,163,74,0.12)' : status === 'Paused' ? 'rgba(255,255,255,0.06)' : 'rgba(239,68,68,0.14)'
 });
 
 const behaviorStyle = (): React.CSSProperties => ({
@@ -93,18 +93,18 @@ export default function MembersTable({
           <thead>
             {mode === 'adults' ? (
               <tr>
-                <th style={tableHeaderCell}>Member</th>
-                <th style={tableHeaderCell}>Belt</th>
-                <th style={tableHeaderCell}>Status</th>
-                <th style={{ ...tableHeaderCell, textAlign: 'right' }}>Next payment / Amount due</th>
-                <th style={{ ...tableHeaderCell, width: '70px' }}>Actions</th>
+                <th style={tableHeaderCell}>Membro</th>
+                <th style={tableHeaderCell}>Cinto</th>
+                <th style={tableHeaderCell}>Estado</th>
+                <th style={{ ...tableHeaderCell, textAlign: 'right' }}>Next payment / Valor due</th>
+                <th style={{ ...tableHeaderCell, width: '70px' }}>Ações</th>
               </tr>
             ) : (
               <tr>
-                <th style={tableHeaderCell}>Member</th>
+                <th style={tableHeaderCell}>Membro</th>
                 <th style={tableHeaderCell}>Group</th>
-                <th style={tableHeaderCell}>Behavior</th>
-                <th style={{ ...tableHeaderCell, width: '70px' }}>Actions</th>
+                <th style={tableHeaderCell}>Comportamento</th>
+                <th style={{ ...tableHeaderCell, width: '70px' }}>Ações</th>
               </tr>
             )}
           </thead>
@@ -115,7 +115,7 @@ export default function MembersTable({
             <tbody>
               <tr>
                 <td colSpan={mode === 'adults' ? 5 : 4} style={{ padding: '30px 16px', textAlign: 'center' }}>
-                  <div style={{ color: '#888', marginBottom: '12px' }}>No members found</div>
+                  <div style={{ color: '#888', marginBottom: '12px' }}>Não members found</div>
                   <button onClick={onClearFilters} style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#f0f0f0', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer' }}>
                     Clear filters
                   </button>
@@ -152,11 +152,11 @@ export default function MembersTable({
                       </td>
                       <td style={{ padding: '11px 12px' }}>
                         <span style={statusStyle(member.status)}>
-                          {member.status === 'Active'
-                            ? '● Active'
+                          {member.status === 'Ativo'
+                            ? '● Ativo'
                             : member.status === 'Paused'
                               ? '● Paused'
-                              : `● Unpaid €${(member.amountDue || 0).toFixed(0)}`}
+                              : `● Por Pagar €${(member.amountDue || 0).toFixed(0)}`}
                         </span>
                       </td>
                       <td style={{ padding: '11px 12px', textAlign: 'right', fontSize: '12px' }}>
@@ -171,7 +171,7 @@ export default function MembersTable({
                           options={[
                             { key: 'view', label: 'View profile', onClick: () => onRowClick(member) },
                             { key: 'attendance', label: 'Mark attendance', onClick: () => {} },
-                            { key: 'edit', label: 'Edit', onClick: () => {} },
+                            { key: 'edit', label: 'Editar', onClick: () => {} },
                             { key: 'pause', label: member.status === 'Paused' ? 'Reactivate' : 'Pause', onClick: () => {} },
                             { key: 'remove', label: 'Remove', danger: true, onClick: () => {} }
                           ]}
@@ -181,7 +181,7 @@ export default function MembersTable({
                   ) : (
                     <>
                       <td style={{ padding: '11px 12px', color: '#ddd', fontSize: '12px' }}>
-                        <span style={{ border: '1px solid #2a2a2a', borderRadius: '8px', background: '#161616', padding: '4px 10px' }}>{member.group || 'Kids 1'}</span>
+                        <span style={{ border: '1px solid #2a2a2a', borderRadius: '8px', background: '#161616', padding: '4px 10px' }}>{member.group || 'Crianças 1'}</span>
                       </td>
                       <td style={{ padding: '11px 12px' }}>
                         <span style={behaviorStyle()}>
@@ -192,8 +192,8 @@ export default function MembersTable({
                         <RowActionsMenu
                           options={[
                             { key: 'view', label: 'View profile', onClick: () => onRowClick(member) },
-                            { key: 'behavior', label: 'Add behavior note / Update behavior', onClick: () => {} },
-                            { key: 'edit', label: 'Edit', onClick: () => {} },
+                            { key: 'behavior', label: 'Adicionar behavior note / Atualizar behavior', onClick: () => {} },
+                            { key: 'edit', label: 'Editar', onClick: () => {} },
                             { key: 'remove', label: 'Remove', danger: true, onClick: () => {} }
                           ]}
                         />

@@ -88,8 +88,8 @@ export default function LeadsPage() {
 
         setLeads(data || []);
       } catch (err) {
-        console.error('Error fetching leads:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load leads');
+        console.error('Erro fetching leads:', err);
+        setError(err instanceof Error ? err.message : 'Falhado to load leads');
       } finally {
         setLoading(false);
       }
@@ -154,7 +154,7 @@ export default function LeadsPage() {
 
       const base64Data = await fileToBase64(file);
 
-      // Create abort controller with 120 second timeout
+      // Criar abort controller with 120 second timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000);
 
@@ -178,7 +178,7 @@ export default function LeadsPage() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to process image');
+          throw new Error(errorData.error || 'Falhado to process image');
         }
 
         const data = await response.json();
@@ -208,7 +208,7 @@ export default function LeadsPage() {
         throw fetchError;
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error processing image. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : 'Erro processing image. Please try again.';
       setScanError(errorMessage);
       setIsScanning(false);
     }
@@ -304,7 +304,7 @@ export default function LeadsPage() {
 
         setLeads((prev) => [data, ...prev]);
       } else {
-        // Update existing lead
+        // Atualizar existing lead
         const { error: updateError } = await supabase
           .from('leads')
           .update(normalized)
@@ -317,8 +317,8 @@ export default function LeadsPage() {
 
       closeLeadDrawer();
     } catch (err) {
-      console.error('Error saving lead:', err);
-      setFormError(err instanceof Error ? err.message : 'Failed to save lead');
+      console.error('Erro saving lead:', err);
+      setFormError(err instanceof Error ? err.message : 'Falhado to save lead');
     } finally {
       setSaving(false);
     }
@@ -388,7 +388,7 @@ export default function LeadsPage() {
       setImportData('');
       setIsImportModalOpen(false);
     } catch (err) {
-      console.error('Error importing leads:', err);
+      console.error('Erro importing leads:', err);
       setImportError(err instanceof Error ? err.message : 'Erro ao importar leads');
     } finally {
       setImporting(false);
@@ -397,7 +397,7 @@ export default function LeadsPage() {
 
   return (
     <div className="flex h-screen bg-[#0b0b0b]">
-      <TeacherSidebar active="leads" />
+      <TeacherSidebar ativo="leads" />
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="border-b border-[#222] bg-[#0d0d0d] px-5 py-4">
@@ -420,7 +420,7 @@ export default function LeadsPage() {
                     className="w-full px-4 py-3 text-left text-sm text-white hover:bg-[#1a1a1a] transition border-b border-[#222] first:rounded-t-xl"
                   >
                     <p className="font-semibold">Preencher manualmente</p>
-                    <p className="text-xs text-zinc-400 mt-1">Criar novo lead preenchendo o formulario</p>
+                    <p className="text-xs text-zinc-400 mt-1">Criar new lead preenchendo o formulario</p>
                   </button>
                   <button
                     onClick={openScanModal}
@@ -477,7 +477,7 @@ export default function LeadsPage() {
                 </div>
               ) : error ? (
                 <div className="rounded-lg border border-[#7f1d1d] bg-[#1a0202] p-6">
-                  <p className="text-[#fecaca] font-medium">Error ao carregar leads:</p>
+                  <p className="text-[#fecaca] font-medium">Erro ao carregar leads:</p>
                   <p className="text-[#fca5a5] text-sm mt-1">{error}</p>
                 </div>
               ) : (

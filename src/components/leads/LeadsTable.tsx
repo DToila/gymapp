@@ -74,7 +74,7 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
                 <div className="flex items-center gap-1">
                   <span>{lead.next_contact_date || '-'}</span>
                   {isOverdue(lead.next_contact_date) ? (
-                    <span className="inline-block rounded-full border border-[#ef4444]/30 bg-[#ef4444]/20 px-2 py-0.5 text-[10px] font-semibold text-[#fca5a5]" title="Overdue">
+                    <span className="inline-block rounded-full border border-[#ef4444]/30 bg-[#ef4444]/20 px-2 py-0.5 text-[10px] font-semibold text-[#fca5a5]" title="Vencido">
                       OD
                     </span>
                   ) : null}

@@ -3,10 +3,10 @@ import React from 'react';
 export interface AddMemberFormData {
   name: string;
   belt_level: string;
-  status: 'Active' | 'Paused' | 'Unpaid';
+  status: 'Ativo' | 'Paused' | 'Por Pagar';
   phone: string;
   email: string;
-  payment_type: 'Direct Debit' | 'Cash';
+  payment_type: 'Débito Direto' | 'Dinheiro';
   fee: number;
   family_discount: boolean;
   date_of_birth: string;
@@ -28,7 +28,7 @@ interface AddMemberModalProps {
   submitLabel: string;
   onNameChange?: (name: string) => void;
   onDateOfBirthChange?: (dateOfBirth: string) => void;
-  onPaymentTypeChange?: (paymentType: 'Direct Debit' | 'Cash') => void;
+  onPaymentTypeChange?: (paymentType: 'Débito Direto' | 'Dinheiro') => void;
   onSubmitButtonClick?: () => void;
   studentNumberReadOnly?: boolean;
   studentNumberPlaceholder?: string;
@@ -50,9 +50,9 @@ export default function AddMemberModal({
   onPaymentTypeChange,
   onSubmitButtonClick,
   studentNumberReadOnly = false,
-  studentNumberPlaceholder = 'Student reference',
+  studentNumberPlaceholder = 'Aluno reference',
   feeReadOnly = false,
-  feeLabel = 'Monthly Fee (€)'
+  feeLabel = 'Taxa Mensal (€)'
 }: AddMemberModalProps) {
   if (!isOpen) return null;
 
@@ -105,7 +105,7 @@ export default function AddMemberModal({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close add member form"
+              aria-label="Fechar add member form"
               style={{
                 background: 'transparent',
                 border: '1px solid #2a2a2a',
@@ -135,7 +135,7 @@ export default function AddMemberModal({
         <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
-              Name
+              Nome
             </label>
             <input
               type="text"
@@ -147,7 +147,7 @@ export default function AddMemberModal({
                 }
                 setNewMember((prev) => ({ ...prev, name: e.target.value }));
               }}
-              placeholder="Member name"
+              placeholder="Membro name"
               style={{
                 width: '100%',
                 padding: '8px 12px',
@@ -163,7 +163,7 @@ export default function AddMemberModal({
 
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
-              Student Number
+              Aluno Number
             </label>
             <input
               type="text"
@@ -230,7 +230,7 @@ export default function AddMemberModal({
 
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
-              Phone
+              Telemóvel
             </label>
             <input
               type="tel"
@@ -251,7 +251,7 @@ export default function AddMemberModal({
 
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
-              Date of Birth
+              Data of Birth
             </label>
             <input
               type="date"
@@ -298,12 +298,12 @@ export default function AddMemberModal({
 
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
-              Payment Type
+              Tipo de Pagamento
             </label>
             <select
               value={newMember.payment_type}
               onChange={(e) => {
-                const value = e.target.value as 'Direct Debit' | 'Cash';
+                const value = e.target.value as 'Débito Direto' | 'Dinheiro';
                 if (onPaymentTypeChange) {
                   onPaymentTypeChange(value);
                   return;
@@ -320,8 +320,8 @@ export default function AddMemberModal({
                 fontFamily: '"Barlow", sans-serif'
               }}
             >
-              <option value="Direct Debit">Direct Debit</option>
-              <option value="Cash">Cash</option>
+              <option value="Débito Direto">Débito Direto</option>
+              <option value="Dinheiro">Dinheiro</option>
             </select>
           </div>
 
@@ -377,7 +377,7 @@ export default function AddMemberModal({
           {newMember.custom_fee && (
             <div>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
-                Custom Fee Amount (€)
+                Custom Fee Valor (€)
               </label>
               <input
                 type="number"
@@ -400,7 +400,7 @@ export default function AddMemberModal({
 
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
-              Belt Level
+              Cinto Level
             </label>
             <select
               value={newMember.belt_level}
@@ -423,11 +423,11 @@ export default function AddMemberModal({
 
           <div>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: '#888888', marginBottom: '6px' }}>
-              Status
+              Estado
             </label>
             <select
               value={newMember.status}
-              onChange={(e) => setNewMember((prev) => ({ ...prev, status: e.target.value as 'Active' | 'Paused' | 'Unpaid' }))}
+              onChange={(e) => setNewMember((prev) => ({ ...prev, status: e.target.value as 'Ativo' | 'Paused' | 'Por Pagar' }))}
               style={{
                 width: '100%',
                 padding: '8px 12px',
@@ -438,9 +438,9 @@ export default function AddMemberModal({
                 fontFamily: '"Barlow", sans-serif'
               }}
             >
-              <option value="Active">Active</option>
+              <option value="Ativo">Ativo</option>
               <option value="Paused">Paused</option>
-              <option value="Unpaid">Unpaid</option>
+              <option value="Por Pagar">Por Pagar</option>
             </select>
           </div>
 
@@ -468,7 +468,7 @@ export default function AddMemberModal({
                 e.currentTarget.style.color = '#888888';
               }}
             >
-              Cancel
+              Cancelar
             </button>
             <button
               type="submit"

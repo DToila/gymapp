@@ -28,9 +28,9 @@ export default function UnpaidTab({ payments, onMarkPaid, onSendReminder }: Unpa
           onChange={(e) => setFilterOverdue(e.target.value ? parseInt(e.target.value) : null)}
           className="rounded-lg border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none transition"
         >
-          <option value="">All Overdue Days</option>
-          <option value="30">Overdue 30+ days</option>
-          <option value="60">Overdue 60+ days</option>
+          <option value="">Todos Vencido Days</option>
+          <option value="30">Vencido 30+ days</option>
+          <option value="60">Vencido 60+ days</option>
         </select>
 
         <select
@@ -38,10 +38,10 @@ export default function UnpaidTab({ payments, onMarkPaid, onSendReminder }: Unpa
           onChange={(e) => setFilterMethod(e.target.value || null)}
           className="rounded-lg border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none transition"
         >
-          <option value="">All Methods</option>
-          <option value="DD">Direct Debit</option>
-          <option value="TPA">Transfer</option>
-          <option value="Cash">Cash</option>
+          <option value="">Todos Methods</option>
+          <option value="DD">Débito Direto</option>
+          <option value="TPA">Transferência</option>
+          <option value="Dinheiro">Dinheiro</option>
         </select>
       </div>
 
@@ -50,12 +50,12 @@ export default function UnpaidTab({ payments, onMarkPaid, onSendReminder }: Unpa
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#222]">
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Name</th>
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Amount</th>
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Due Date</th>
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Overdue (days)</th>
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Method</th>
-              <th className="px-4 py-3 text-right font-semibold text-zinc-300">Actions</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Nome</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Data de Vencimento</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Vencido (days)</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Método</th>
+              <th className="px-4 py-3 text-right font-semibold text-zinc-300">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -77,13 +77,13 @@ export default function UnpaidTab({ payments, onMarkPaid, onSendReminder }: Unpa
                     onClick={() => onMarkPaid(payment.id)}
                     className="text-xs px-3 py-1.5 rounded-lg bg-[#c81d25] text-white hover:bg-[#b01720] transition"
                   >
-                    Mark Paid
+                    Mark Pago
                   </button>
                   <button
                     onClick={() => onSendReminder(payment.id)}
                     className="text-xs px-3 py-1.5 rounded-lg border border-[#222] text-zinc-300 hover:bg-[#161616] transition"
                   >
-                    Remind
+                    Lembrar
                   </button>
                 </td>
               </tr>

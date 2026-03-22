@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { AnnouncementAudience, AnnouncementItem, AnnouncementTag, AppRole, KidsGroup } from './types';
 
 type ModalMode = 'create' | 'manage';
-type TabKey = 'create' | 'manage' | 'pending';
+type TabKey = 'create' | 'manage' | 'pendente';
 
 interface DraftState {
   title: string;
@@ -40,9 +40,9 @@ const tagChipClass: Record<AnnouncementTag, string> = {
 };
 
 const audienceLabel: Record<AnnouncementAudience, string> = {
-  ALL: 'All',
-  ADULTS: 'Adults',
-  KIDS: 'Kids',
+  ALL: 'Todos',
+  ADULTS: 'Adultos',
+  KIDS: 'Crianças',
   STAFF: 'Staff',
 };
 
@@ -98,7 +98,7 @@ export default function AnnouncementsModal({
   const [search, setSearch] = useState('');
   const [filterTag, setFilterTag] = useState<'all' | AnnouncementTag>('all');
   const [filterAudience, setFilterAudience] = useState<'all' | AnnouncementAudience>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expired'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'ativo' | 'expired'>('all');
   const [filterPinned, setFilterPinned] = useState<'all' | 'pinned' | 'unpinned'>('all');
   const [rejectReasonById, setRejectReasonById] = useState<Record<string, string>>({});
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -187,7 +187,7 @@ export default function AnnouncementsModal({
       expiresAt: draft.expiresAt,
       pinned: draft.pinned,
       ackRequired: draft.ackRequired,
-      createdBy: 'Admin',
+      createdBy: 'Administrador',
       approvalStatus: currentUserRole === 'coach' ? 'pending' : 'approved',
       approvedBy: currentUserRole === 'coach' ? null : 'Staff',
       approvedById: null,
@@ -205,7 +205,7 @@ export default function AnnouncementsModal({
       resetDraft();
       onClose();
     } catch (error) {
-      console.error('Failed to publish announcement:', error);
+      console.error('Falhado to publish announcement:', error);
     }
   };
 
@@ -232,7 +232,7 @@ export default function AnnouncementsModal({
       .filter((item) => {
         if (filterStatus === 'all') return true;
         const today = toDateKey(new Date());
-        return filterStatus === 'active' ? item.expiresAt >= today : item.expiresAt < today;
+        return filterStatus === 'ativo' ? item.expiresAt >= today : item.expiresAt < today;
       });
   }, [announcements, filterAudience, filterPinned, filterStatus, filterTag, search]);
 
@@ -277,13 +277,13 @@ export default function AnnouncementsModal({
       <div className="w-full max-w-2xl rounded-2xl border border-[#2a2a2a] bg-[#121212] shadow-[0_18px_50px_rgba(0,0,0,0.55)] transition-all duration-200">
         <div className="flex items-center justify-between border-b border-[#202020] px-5 py-4">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-white">{mode === 'create' ? 'Create announcement' : 'Manage announcements'}</h3>
+            <h3 className="text-lg font-semibold text-white">{mode === 'create' ? 'Criar announcement' : 'Manage announcements'}</h3>
             <div className="hidden items-center gap-2 sm:flex">
               <button
                 onClick={() => setActiveTab('create')}
                 className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${activeTab === 'create' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] text-white' : 'border-[#2a2a2a] bg-[#171717] text-zinc-400'}`}
               >
-                Create
+                Criar
               </button>
               <button
                 onClick={() => setActiveTab('manage')}
@@ -293,10 +293,10 @@ export default function AnnouncementsModal({
               </button>
               {canApprove ? (
                 <button
-                  onClick={() => setActiveTab('pending')}
-                  className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${activeTab === 'pending' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] text-white' : 'border-[#2a2a2a] bg-[#171717] text-zinc-400'}`}
+                  onClick={() => setActiveTab('pendente')}
+                  className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${activeTab === 'pendente' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] text-white' : 'border-[#2a2a2a] bg-[#171717] text-zinc-400'}`}
                 >
-                  Pending approvals
+                  Pendente approvals
                 </button>
               ) : null}
             </div>
@@ -304,14 +304,14 @@ export default function AnnouncementsModal({
 
           <div className="flex items-center gap-2">
             <button onClick={handleCancel} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-3 py-1.5 text-sm text-zinc-300 hover:border-[#3a3a3a]">
-              Cancel
+              Cancelar
             </button>
             <button
               onClick={handlePublish}
               disabled={!canPublish || activeTab !== 'create'}
               className="rounded-md border border-[#c81d25] bg-[#c81d25] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#ac1820] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {currentUserRole === 'coach' ? 'Submit for approval' : 'Publish'}
+              {currentUserRole === 'coach' ? 'Enviar for approval' : 'Publish'}
             </button>
             <button onClick={handleCancel} className="grid h-8 w-8 place-items-center rounded-md border border-[#2a2a2a] bg-[#171717] text-zinc-400 hover:text-white">
               ✕
@@ -340,7 +340,7 @@ export default function AnnouncementsModal({
                     onClick={() => setShowDetails((prev) => !prev)}
                     className="text-xs font-medium text-[#c81d25] hover:text-[#ef3a43]"
                   >
-                    {showDetails ? 'Hide details' : 'Add details (optional)'}
+                    {showDetails ? 'Hide details' : 'Adicionar details (optional)'}
                   </button>
                   {showDetails ? (
                     <div className="mt-2 rounded-xl border border-[#242424] bg-[#101010] p-3">
@@ -348,7 +348,7 @@ export default function AnnouncementsModal({
                         ref={detailsRef}
                         value={draft.details}
                         onChange={(event) => setDraft((prev) => ({ ...prev, details: event.target.value.slice(0, detailsMaxChars) }))}
-                        placeholder="Add more details (optional)..."
+                        placeholder="Adicionar more details (optional)..."
                         rows={3}
                         className="w-full resize-none bg-transparent text-sm text-zinc-200 placeholder:text-zinc-500 outline-none"
                       />
@@ -381,24 +381,24 @@ export default function AnnouncementsModal({
                         onChange={(event) => setDraft((prev) => ({ ...prev, audience: event.target.value as AnnouncementAudience, kidsGroup: event.target.value === 'KIDS' ? prev.kidsGroup : '' }))}
                         className="w-full rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none"
                       >
-                        <option value="ALL">All</option>
-                        <option value="ADULTS">Adults</option>
-                        <option value="KIDS">Kids</option>
+                        <option value="ALL">Todos</option>
+                        <option value="ADULTS">Adultos</option>
+                        <option value="KIDS">Crianças</option>
                         <option value="STAFF">Staff</option>
                       </select>
                     </div>
 
                     {draft.audience === 'KIDS' ? (
                       <div>
-                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-500">Kids group</p>
+                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-500">Crianças group</p>
                         <select
                           value={draft.kidsGroup}
                           onChange={(event) => setDraft((prev) => ({ ...prev, kidsGroup: event.target.value as KidsGroup }))}
                           className="w-full rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none"
                         >
-                          <option value="">All kids</option>
-                          <option value="Kids 1">Kids 1</option>
-                          <option value="Kids 2">Kids 2</option>
+                          <option value="">Todos kids</option>
+                          <option value="Crianças 1">Crianças 1</option>
+                          <option value="Crianças 2">Crianças 2</option>
                           <option value="Teens">Teens</option>
                         </select>
                       </div>
@@ -470,33 +470,33 @@ export default function AnnouncementsModal({
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search announcements..."
+                  placeholder="Pesquisar announcements..."
                   className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none lg:col-span-2"
                 />
                 <select value={filterTag} onChange={(event) => setFilterTag(event.target.value as 'all' | AnnouncementTag)} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
-                  <option value="all">All types</option>
+                  <option value="all">Todos types</option>
                   <option value="URGENT">Urgent</option>
                   <option value="INFO">Info</option>
                   <option value="EVENT">Event</option>
-                  <option value="PAYMENTS">Payments</option>
+                  <option value="PAYMENTS">Pagamentos</option>
                 </select>
                 <select value={filterAudience} onChange={(event) => setFilterAudience(event.target.value as 'all' | AnnouncementAudience)} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
-                  <option value="all">All audiences</option>
-                  <option value="ALL">All</option>
-                  <option value="ADULTS">Adults</option>
-                  <option value="KIDS">Kids</option>
+                  <option value="all">Todos audiences</option>
+                  <option value="ALL">Todos</option>
+                  <option value="ADULTS">Adultos</option>
+                  <option value="KIDS">Crianças</option>
                   <option value="STAFF">Staff</option>
                 </select>
-                <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value as 'all' | 'active' | 'expired')} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
-                  <option value="all">All status</option>
-                  <option value="active">Active</option>
+                <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value as 'all' | 'ativo' | 'expired')} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
+                  <option value="all">Todos status</option>
+                  <option value="ativo">Ativo</option>
                   <option value="expired">Expired</option>
                 </select>
               </div>
 
               <div className="flex items-center justify-end">
                 <select value={filterPinned} onChange={(event) => setFilterPinned(event.target.value as 'all' | 'pinned' | 'unpinned')} className="rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none">
-                  <option value="all">All pin states</option>
+                  <option value="all">Todos pin states</option>
                   <option value="pinned">Pinned</option>
                   <option value="unpinned">Unpinned</option>
                 </select>
@@ -504,7 +504,7 @@ export default function AnnouncementsModal({
 
               <div className="overflow-hidden rounded-xl border border-[#242424]">
                 {manageRows.length === 0 ? (
-                  <p className="px-3 py-6 text-center text-sm text-zinc-500">No announcements match these filters.</p>
+                  <p className="px-3 py-6 text-center text-sm text-zinc-500">Não announcements match these filters.</p>
                 ) : (
                   <ul>
                     {manageRows.map((item) => (
@@ -517,11 +517,11 @@ export default function AnnouncementsModal({
                             {item.pinned ? <span className="text-xs text-zinc-300">📌</span> : null}
                           </div>
                           <p className="truncate text-sm text-zinc-100">{item.title}</p>
-                          <p className="text-xs text-zinc-500">Audience: {audienceLabel[item.audience]} • Expires: {formatDateLabel(item.expiresAt)} • Status: {item.approvalStatus}</p>
+                          <p className="text-xs text-zinc-500">Audience: {audienceLabel[item.audience]} • Expires: {formatDateLabel(item.expiresAt)} • Estado: {item.approvalStatus}</p>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <button onClick={() => loadIntoComposer(item)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1 text-xs text-zinc-200">Edit</button>
+                          <button onClick={() => loadIntoComposer(item)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1 text-xs text-zinc-200">Editar</button>
                           <button onClick={() => { 
                             onTogglePin(item.id).catch(console.error); 
                           }} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1 text-xs text-zinc-200">
@@ -529,7 +529,7 @@ export default function AnnouncementsModal({
                           </button>
                           <button onClick={() => { 
                             onDelete(item.id).catch(console.error); 
-                          }} className="rounded-md border border-[#5b1f24] bg-[rgba(91,31,36,0.25)] px-2.5 py-1 text-xs text-rose-300">Delete</button>
+                          }} className="rounded-md border border-[#5b1f24] bg-[rgba(91,31,36,0.25)] px-2.5 py-1 text-xs text-rose-300">Eliminar</button>
                         </div>
                       </li>
                     ))}
@@ -540,12 +540,12 @@ export default function AnnouncementsModal({
           ) : (
             <div className="space-y-3">
               <div className="rounded-xl border border-[#242424] bg-[#101010] px-3 py-2 text-xs text-zinc-400">
-                Pending announcements are submitted by coaches and require staff/admin approval before publishing.
+                Pendente announcements are submitted by coaches and require staff/admin approval before publishing.
               </div>
 
               <div className="overflow-hidden rounded-xl border border-[#242424]">
                 {pendingRows.length === 0 ? (
-                  <p className="px-3 py-6 text-center text-sm text-zinc-500">No pending announcements.</p>
+                  <p className="px-3 py-6 text-center text-sm text-zinc-500">Não pendente announcements.</p>
                 ) : (
                   <ul>
                     {pendingRows.map((item) => {
@@ -557,7 +557,7 @@ export default function AnnouncementsModal({
                               {item.tag}
                             </span>
                             <span className="rounded-full border border-[#6b4f12] bg-[rgba(107,79,18,0.35)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-300">
-                              Pending
+                              Pendente
                             </span>
                           </div>
                           <p className="text-sm font-medium text-zinc-100">{item.title}</p>
@@ -582,13 +582,13 @@ export default function AnnouncementsModal({
                                 }}
                                 className="rounded-md border border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] px-3 py-2 text-xs font-semibold text-rose-300"
                               >
-                                Confirm reject
+                                Confirmar reject
                               </button>
                               <button
                                 onClick={() => setRejectingId(null)}
                                 className="rounded-md border border-[#2a2a2a] bg-[#171717] px-3 py-2 text-xs text-zinc-300"
                               >
-                                Cancel
+                                Cancelar
                               </button>
                             </div>
                           ) : null}

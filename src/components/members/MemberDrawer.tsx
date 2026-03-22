@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Member } from './types';
+import { Membro } from './types';
 
 interface MemberDrawerProps {
   member: Member | null;
@@ -37,7 +37,7 @@ export default function MemberDrawer({ member, onClose }: MemberDrawerProps) {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div>
-            <div style={{ fontSize: '10px', color: '#777', letterSpacing: '2px', textTransform: 'uppercase' }}>Member Profile</div>
+            <div style={{ fontSize: '10px', color: '#777', letterSpacing: '2px', textTransform: 'uppercase' }}>Membro Perfil</div>
             <div style={{ fontSize: '22px', color: '#f0f0f0', fontWeight: 800 }}>{member.name}</div>
             <div style={{ color: '#888', fontSize: '12px' }}>
               {member.belt || member.group || '-'} · {member.status}
@@ -47,11 +47,11 @@ export default function MemberDrawer({ member, onClose }: MemberDrawerProps) {
         </div>
 
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          {['Mark attendance', 'Edit', member.status === 'Paused' ? 'Reactivate' : 'Pause'].map((action) => (
+          {['Mark attendance', 'Editar', member.status === 'Paused' ? 'Reactivate' : 'Pause'].map((action) => (
             <button key={action} style={{
               padding: '7px 10px',
-              background: action === 'Edit' ? '#CC0000' : '#121212',
-              border: action === 'Edit' ? '1px solid #CC0000' : '1px solid #2a2a2a',
+              background: action === 'Editar' ? '#CC0000' : '#121212',
+              border: action === 'Editar' ? '1px solid #CC0000' : '1px solid #2a2a2a',
               color: '#f0f0f0',
               fontSize: '12px',
               cursor: 'pointer'
@@ -71,7 +71,7 @@ export default function MemberDrawer({ member, onClose }: MemberDrawerProps) {
         {showInfo && (
           <div style={{ border: '1px solid #2a2a2a', background: '#111111', padding: '12px', marginBottom: '12px' }}>
             <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Email: {member.email || '-'}</div>
-            <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Phone: {member.phone || '-'}</div>
+            <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Telemóvel: {member.phone || '-'}</div>
             <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Payment method: {member.paymentMethod || '-'}</div>
             <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Enrollment date: {member.enrolledAt || '-'}</div>
             <div style={{ color: '#bbb', fontSize: '12px' }}>Fee: €{(member.fee || 0).toFixed(2)}</div>
@@ -80,10 +80,10 @@ export default function MemberDrawer({ member, onClose }: MemberDrawerProps) {
 
         {!!member.behaviorState && (
           <div style={{ border: '1px solid #2a2a2a', background: '#111111', padding: '12px' }}>
-            <div style={{ color: '#f0f0f0', fontSize: '12px', marginBottom: '6px' }}>Behavior history</div>
+            <div style={{ color: '#f0f0f0', fontSize: '12px', marginBottom: '6px' }}>Comportamento history</div>
             <div style={{ color: '#888', fontSize: '12px', marginBottom: '8px' }}>{behaviorLabel[member.behaviorState]}</div>
             <button style={{ padding: '7px 10px', border: '1px solid #2a2a2a', background: '#121212', color: '#f0f0f0', fontSize: '12px', cursor: 'pointer' }}>
-              Add behavior note
+              Adicionar behavior note
             </button>
           </div>
         )}

@@ -76,7 +76,7 @@ export default function KidsBehaviorPanel({
   }, [allKids, behaviorEvents]);
 
   const needsTitle = mode === 'now' ? 'Needs Attention (Now)' : 'Needs Attention (This month)';
-  const greatTitle = mode === 'now' ? 'Great Behavior (Now)' : 'Great Behavior (This month)';
+  const greatTitle = mode === 'now' ? 'Great Comportamento (Now)' : 'Great Comportamento (This month)';
 
   const renderMetric = (kid: KidBehaviorRank, side: 'needs' | 'great') => {
     return side === 'needs' ? `😡 ${kid.badCount}` : `😀 ${kid.goodCount}`;
@@ -87,7 +87,7 @@ export default function KidsBehaviorPanel({
       <div className="flex items-center justify-between border-b border-[#202020] px-5 py-4">
         <div className="flex items-center gap-2 text-lg font-semibold text-white">
           <span className="text-[#c81d25]">⌘</span>
-          <h3>Kids Behavior</h3>
+          <h3>Crianças Comportamento</h3>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -99,7 +99,7 @@ export default function KidsBehaviorPanel({
             <option value="month">This month</option>
           </select>
           <button onClick={() => router.push('/members')} className="text-sm font-medium text-[#c81d25] hover:text-[#ef3a43]">
-            View all
+            Ver tudo
           </button>
         </div>
       </div>
@@ -108,7 +108,7 @@ export default function KidsBehaviorPanel({
         <div>
           <p className="mb-2 text-sm font-semibold text-[#ef4444]">{needsTitle}</p>
           {ranked.needsTop.length === 0 ? (
-            <p className="rounded-lg border border-[#1f2a1f] bg-[#0f1a0f] p-3 text-sm text-[#86efac]">All good ✅</p>
+            <p className="rounded-lg border border-[#1f2a1f] bg-[#0f1a0f] p-3 text-sm text-[#86efac]">Todos good ✅</p>
           ) : (
             <ul className="space-y-2">
               {ranked.needsTop.map((kid) => (
@@ -134,7 +134,7 @@ export default function KidsBehaviorPanel({
         <div>
           <p className="mb-2 text-sm font-semibold text-[#22c55e]">{greatTitle}</p>
           {ranked.greatTop.length === 0 ? (
-            <p className="rounded-lg border border-[#252525] bg-[#0f0f0f] p-3 text-sm text-zinc-500">No stars yet</p>
+            <p className="rounded-lg border border-[#252525] bg-[#0f0f0f] p-3 text-sm text-zinc-500">Não stars yet</p>
           ) : (
             <ul className="space-y-2">
               {ranked.greatTop.map((kid) => (

@@ -34,7 +34,7 @@ export default function StudentAnnouncementsPage() {
   }, [announcements, filter, isKid]);
 
   return (
-    <StudentShell active="announcements" title="Anúncios" subtitle="Latest student announcements">
+    <StudentShell ativo="announcements" title="Anúncios" subtitle="Latest student announcements">
       <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
         <div className="mb-3 flex items-center gap-2">
           {(['ALL', 'KIDS', 'ADULTS'] as Array<'ALL' | 'KIDS' | 'ADULTS'>).map((item) => (
@@ -43,14 +43,14 @@ export default function StudentAnnouncementsPage() {
               onClick={() => setFilter(item)}
               className={`rounded-xl border px-3 py-1.5 text-sm ${filter === item ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] text-white' : 'border-[#2a2a2a] bg-[#171717] text-zinc-400'}`}
             >
-              {item === 'ALL' ? 'All' : item === 'KIDS' ? 'Kids' : 'Adults'}
+              {item === 'ALL' ? 'Todos' : item === 'KIDS' ? 'Crianças' : 'Adultos'}
             </button>
           ))}
         </div>
 
         <ul className="space-y-2">
           {rows.length === 0 ? (
-            <li className="rounded-xl border border-[#202020] bg-[#111] px-3 py-3 text-sm text-zinc-500">No active announcements.</li>
+            <li className="rounded-xl border border-[#202020] bg-[#111] px-3 py-3 text-sm text-zinc-500">Não ativo announcements.</li>
           ) : (
             rows.map((item) => (
               <li key={item.id} className="rounded-xl border border-[#202020] bg-[#111] px-3 py-3">

@@ -46,10 +46,10 @@ const getInitials = (name: string): string => {
 };
 
 const getKidsGroup = (age: number | null): string => {
-  if (age === null) return 'Kids';
-  if (age <= 8) return 'Kids 1';
-  if (age <= 12) return 'Kids 2';
-  return 'Kids 3';
+  if (age === null) return 'Crianças';
+  if (age <= 8) return 'Crianças 1';
+  if (age <= 12) return 'Crianças 2';
+  return 'Crianças 3';
 };
 
 const getDateKey = (date: Date): string => {
@@ -64,7 +64,7 @@ const parseDateKey = (dateKey: string): Date => {
 const isToday = (dateKey: string): boolean => dateKey === getDateKey(new Date());
 
 const formatDateLabel = (dateKey: string): string => {
-  if (isToday(dateKey)) return 'Today';
+  if (isToday(dateKey)) return 'Hoje';
   const date = parseDateKey(dateKey);
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
@@ -131,7 +131,7 @@ export default function AttendancePage() {
     try {
       setAttendanceByDate(readAttendanceByDate());
     } catch (error) {
-      console.error('Error restoring attendance state from localStorage:', error);
+      console.error('Erro restoring attendance state from localStorage:', error);
     }
   }, []);
 
@@ -172,7 +172,7 @@ export default function AttendancePage() {
 
         setPeople(mapped);
       } catch (error) {
-        console.error('Error loading attendance people:', error);
+        console.error('Erro loading attendance people:', error);
         setPeople([]);
       } finally {
         setLoading(false);
@@ -226,7 +226,7 @@ export default function AttendancePage() {
       events.forEach((event) => {
         nextMap[event.kid_id] = event.value;
       });
-      console.log('[Attendance] behavior date load', { dateKey, eventsCount: events.length, sample: events[0] || null });
+      console.log('[Presenças] behavior date load', { dateKey, eventsCount: events.length, sample: events[0] || null });
       setKidBehaviorByDate((prev) => ({
         ...prev,
         [dateKey]: {
@@ -235,7 +235,7 @@ export default function AttendancePage() {
         },
       }));
     } catch (error) {
-      console.error('Error loading kid behavior for date:', dateKey, error);
+      console.error('Erro loading kid behavior for date:', dateKey, error);
       setKidBehaviorByDate((prev) => ({
         ...prev,
         [dateKey]: {
@@ -265,7 +265,7 @@ export default function AttendancePage() {
         [dateKey]: attendedMemberIds,
       }));
     } catch (error) {
-      console.error('Error loading attendance for date:', dateKey, error);
+      console.error('Erro loading attendance for date:', dateKey, error);
     }
   }, []);
 
@@ -299,7 +299,7 @@ export default function AttendancePage() {
         loadAttendanceForDate(selectedDate);
       })
       .catch((error) => {
-        console.error('Error checking in member:', error);
+        console.error('Erro checking in member:', error);
       });
   };
 
@@ -322,11 +322,11 @@ export default function AttendancePage() {
         const nextEvents = removeBehaviorEvent(readBehaviorEvents(), id, selectedDate);
         writeBehaviorEvents(nextEvents);
       } catch (error) {
-        console.error('Error removing local kid behavior after uncheck:', error);
+        console.error('Erro removing local kid behavior after uncheck:', error);
       }
 
       deleteKidBehaviorForDate({ kidId: id, dateKey: selectedDate }).catch((error) => {
-        console.error('Error removing DB kid behavior after uncheck:', error);
+        console.error('Erro removing DB kid behavior after uncheck:', error);
       });
     }
 
@@ -338,7 +338,7 @@ export default function AttendancePage() {
         loadAttendanceForDate(selectedDate);
       })
       .catch((error) => {
-        console.error('Error unchecking member:', error);
+        console.error('Erro unchecking member:', error);
       });
   };
 
@@ -422,7 +422,7 @@ export default function AttendancePage() {
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-zinc-100">{person.name}</div>
           <div className="truncate text-xs text-zinc-500">
-            {person.type === 'kid' ? person.group || 'Kids' : person.belt || 'Adult'}
+            {person.type === 'kid' ? person.group || 'Crianças' : person.belt || 'Adult'}
           </div>
         </div>
 
@@ -452,7 +452,7 @@ export default function AttendancePage() {
 
   return (
     <div className="flex min-h-screen bg-[linear-gradient(180deg,#0b0b0b_0%,#101010_100%)] text-zinc-100">
-      <TeacherSidebar active="attendance" />
+      <TeacherSidebar ativo="attendance" />
 
       <main className="flex-1 p-6 lg:p-8">
         <div className="mx-auto max-w-[1320px]">
@@ -462,7 +462,7 @@ export default function AttendancePage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search..."
+                placeholder="Pesquisar..."
                 className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 outline-none"
               />
             </label>
@@ -537,7 +537,7 @@ export default function AttendancePage() {
                         onClick={() => selectDate(todayKey)}
                         className="rounded-lg border border-[#252525] bg-[#161616] px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-300 transition hover:border-[rgba(200,29,37,0.45)] hover:text-white"
                       >
-                        Today
+                        Hoje
                       </button>
                     </div>
                   </div>
@@ -548,13 +548,13 @@ export default function AttendancePage() {
                 type="button"
                 className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(200,29,37,0.28)] transition hover:bg-[#ab1820]"
               >
-                Start Attendance
+                Start Presenças
               </button>
             </div>
           </div>
 
           <header className="mb-5">
-            <h1 className="text-4xl font-bold text-white">Attendance</h1>
+            <h1 className="text-4xl font-bold text-white">Presenças</h1>
             <p className="mt-1 text-sm text-zinc-500">Manage daily check-ins</p>
           </header>
 
@@ -569,7 +569,7 @@ export default function AttendancePage() {
                     : 'border border-transparent text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                Adults
+                Adultos
               </button>
               <button
                 type="button"
@@ -580,7 +580,7 @@ export default function AttendancePage() {
                     : 'border border-transparent text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                Kids
+                Crianças
               </button>
             </div>
 
@@ -591,9 +591,9 @@ export default function AttendancePage() {
                 </div>
                 <div className="overflow-hidden rounded-xl border border-[#1f1f1f] bg-[#101010]">
                   {loading ? (
-                    <div className="px-3 py-8 text-center text-sm text-zinc-500">Loading members...</div>
+                    <div className="px-3 py-8 text-center text-sm text-zinc-500">A carregar members...</div>
                   ) : leftList.length === 0 ? (
-                    <div className="px-3 py-8 text-center text-sm text-zinc-500">No members found in this list.</div>
+                    <div className="px-3 py-8 text-center text-sm text-zinc-500">Não members found in this list.</div>
                   ) : (
                     leftList.map((person) => renderRow(person, false))
                   )}
@@ -602,11 +602,11 @@ export default function AttendancePage() {
 
               <div className="rounded-2xl border border-[#222] bg-[#121212] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
                 <div className="mb-2 px-2 text-base font-semibold text-zinc-100">
-                  Checked in today <span className="text-zinc-500">({rightList.length})</span>
+                  Entrou today <span className="text-zinc-500">({rightList.length})</span>
                 </div>
                 <div className="overflow-hidden rounded-xl border border-[#1f1f1f] bg-[#101010]">
                   {loading ? (
-                    <div className="px-3 py-8 text-center text-sm text-zinc-500">Loading members...</div>
+                    <div className="px-3 py-8 text-center text-sm text-zinc-500">A carregar members...</div>
                   ) : rightList.length === 0 ? (
                     <div className="px-3 py-8 text-center text-sm text-zinc-500">Nobody checked in yet.</div>
                   ) : (

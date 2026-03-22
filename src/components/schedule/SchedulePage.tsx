@@ -252,11 +252,11 @@ export default function SchedulePage() {
         setSlotIdByCode(nextMap);
       })
       .catch((error) => {
-        console.error('Error ensuring schedule slots:', error);
+        console.error('Erro ensuring schedule slots:', error);
         const message = String(error?.message || error || '');
         if (/schema cache|schedule_slots|class_plans/i.test(message)) {
           setPlanMode('local');
-          setToast({ type: 'error', message: 'Schedule DB tables missing. Using local class-plan mode.' });
+          setToast({ type: 'error', message: 'Horário DB tables missing. Using local class-plan mode.' });
           return;
         }
         setToast({ type: 'error', message: 'Could not load schedule slots.' });
@@ -279,7 +279,7 @@ export default function SchedulePage() {
         setPlanExistsMap(next);
       })
       .catch((error) => {
-        console.error('Error loading plan indicators:', error);
+        console.error('Erro loading plan indicators:', error);
       });
   }, [planMode, slotIdByCode, weekDatesByDay]);
 
@@ -296,7 +296,7 @@ export default function SchedulePage() {
       if (event.key !== 'Escape') return;
 
       if (hasUnsavedChanges) {
-        const shouldClose = window.confirm('You have unsaved changes. Close anyway?');
+        const shouldClose = window.confirm('You have unsaved changes. Fechar anyway?');
         if (!shouldClose) return;
       }
 
@@ -357,7 +357,7 @@ export default function SchedulePage() {
 
   function attemptCloseEditor() {
     if (hasUnsavedChanges) {
-      const shouldClose = window.confirm('You have unsaved changes. Close anyway?');
+      const shouldClose = window.confirm('You have unsaved changes. Fechar anyway?');
       if (!shouldClose) return;
     }
 
@@ -501,7 +501,7 @@ export default function SchedulePage() {
           return { ...prev, slotDbId: slotCode };
         });
         setError(null);
-        setToast({ type: 'error', message: 'Schedule DB tables missing. Editing in local mode.' });
+        setToast({ type: 'error', message: 'Horário DB tables missing. Editing in local mode.' });
       } else {
         setPlan(null);
         setTopic('');
@@ -611,7 +611,7 @@ export default function SchedulePage() {
       setError(null);
       setInitialPlanSnapshot('');
     } catch (error) {
-      console.error('Error saving class plan:', error);
+      console.error('Erro saving class plan:', error);
       setToast({ type: 'error', message: 'Could not save class plan.' });
     } finally {
       setIsSavingPlan(false);
@@ -631,7 +631,7 @@ export default function SchedulePage() {
             {dateLabel} • {editingSlot.timeRange} • {editingSlot.className}
           </p>
           {planMode === 'local' ? (
-            <p className="mt-1 text-xs text-amber-300">Local mode active (database table missing).</p>
+            <p className="mt-1 text-xs text-amber-300">Local mode ativo (database table missing).</p>
           ) : null}
         </div>
 
@@ -639,7 +639,7 @@ export default function SchedulePage() {
           <div className="rounded-xl border border-[#242424] bg-[#151515] px-3 py-4 text-sm text-zinc-300">
             <div className="flex items-center gap-2">
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-transparent" />
-              <span>Loading...</span>
+              <span>A carregar...</span>
             </div>
           </div>
         ) : error ? (
@@ -653,13 +653,13 @@ export default function SchedulePage() {
               }}
               className="mt-2 rounded-lg border border-[#7a2a31] bg-[#3a1619] px-3 py-1.5 text-xs font-semibold text-rose-200"
             >
-              Retry
+              Tentar novamente
             </button>
           </div>
         ) : (
           <>
             <div className="rounded-xl border border-[#242424] bg-[#151515] px-3 py-2 text-xs text-zinc-400">
-              {plan ? 'Saved plan found for this class/date.' : 'No saved plan yet for this class/date.'}
+              {plan ? 'Saved plan found for this class/date.' : 'Não saved plan yet for this class/date.'}
             </div>
 
             <div>
@@ -685,7 +685,7 @@ export default function SchedulePage() {
 
             <div className="grid grid-cols-1 gap-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-400">Coach (Primary)</label>
+                <label className="mb-1 block text-xs font-medium text-zinc-400">Professor (Primary)</label>
                 <select
                   value={coachPrimaryId}
                   onChange={(event) => setCoachPrimaryId(event.target.value)}
@@ -694,14 +694,14 @@ export default function SchedulePage() {
                   <option value="">Select coach</option>
                   {coaches.map((coach) => (
                     <option key={coach.id} value={coach.id}>
-                      {coach.full_name || 'Unnamed Coach'}
+                      {coach.full_name || 'Unnamed Professor'}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-400">Coach (Secondary)</label>
+                <label className="mb-1 block text-xs font-medium text-zinc-400">Professor (Secondary)</label>
                 <select
                   value={coachSecondaryId}
                   onChange={(event) => setCoachSecondaryId(event.target.value)}
@@ -710,7 +710,7 @@ export default function SchedulePage() {
                   <option value="">None</option>
                   {coaches.map((coach) => (
                     <option key={coach.id} value={coach.id}>
-                      {coach.full_name || 'Unnamed Coach'}
+                      {coach.full_name || 'Unnamed Professor'}
                     </option>
                   ))}
                 </select>
@@ -723,7 +723,7 @@ export default function SchedulePage() {
                 onClick={attemptCloseEditor}
                 className="rounded-xl border border-[#2b2b2b] bg-[#151515] px-3 py-2 text-sm text-zinc-300"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -731,7 +731,7 @@ export default function SchedulePage() {
                 disabled={isSavingPlan || !coachPrimaryId || !openSlotId}
                 className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {isSavingPlan ? 'Saving...' : 'Save'}
+                {isSavingPlan ? 'Saving...' : 'Guardar'}
               </button>
             </div>
           </>
@@ -761,7 +761,7 @@ export default function SchedulePage() {
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
-      <TeacherSidebar active="schedule" onLogout={() => router.push('/')} />
+      <TeacherSidebar ativo="schedule" onLogout={() => router.push('/')} />
 
       <main className="flex-1 p-6 lg:p-8">
         <div className="mx-auto max-w-[1320px]">
@@ -769,7 +769,7 @@ export default function SchedulePage() {
             <label className="flex w-full max-w-[500px] items-center gap-2 rounded-full border border-[#222] bg-[#121212] px-4 py-2.5 shadow-[0_6px_22px_rgba(0,0,0,0.28)]">
               <span className="text-zinc-500">⌕</span>
               <input
-                placeholder="Search class..."
+                placeholder="Pesquisar class..."
                 className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 outline-none"
               />
             </label>
@@ -785,14 +785,14 @@ export default function SchedulePage() {
                 }}
                 className="rounded-xl border border-[#252525] bg-[#141414] px-4 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-[#3a3a3a] hover:text-white"
               >
-                Download
+                Descarregar
               </button>
               <button
                 type="button"
                 onClick={openModal}
                 className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(200,29,37,0.28)] transition hover:bg-[#ab1820]"
               >
-                Open full screen
+                Abrir full screen
               </button>
             </div>
           </div>
@@ -879,7 +879,7 @@ export default function SchedulePage() {
                 <div className="rounded-xl border border-[#232323] bg-[#161616] p-3 lg:p-4">
                   {imageMissing ? (
                     <div className="grid min-h-[360px] place-items-center rounded-lg border border-dashed border-[#333] text-sm text-zinc-500">
-                      Schedule image not found at /public/schedule.png
+                      Horário image not found at /public/schedule.png
                     </div>
                   ) : (
                     <button
@@ -1021,7 +1021,7 @@ export default function SchedulePage() {
                   />
                 </div>
               ) : (
-                <div className="grid h-[60vh] place-items-center text-sm text-zinc-500">Schedule image not found at /public/schedule.png</div>
+                <div className="grid h-[60vh] place-items-center text-sm text-zinc-500">Horário image not found at /public/schedule.png</div>
               )}
             </div>
           </div>

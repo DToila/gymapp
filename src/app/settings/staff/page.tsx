@@ -15,9 +15,9 @@ type StaffProfile = {
 }
 
 const roleLabel = (role: AppRole) => {
-  if (role === 'admin') return 'Admin'
+  if (role === 'admin') return 'Administrador'
   if (role === 'staff') return 'Staff'
-  return 'Coach'
+  return 'Professor'
 }
 
 export default function StaffSettingsPage() {
@@ -46,12 +46,12 @@ export default function StaffSettingsPage() {
       const json = await res.json()
 
       if (!res.ok) {
-        throw new Error(json?.error || 'Failed to load staff list.')
+        throw new Error(json?.error || 'Falhado to load staff list.')
       }
 
       setItems(Array.isArray(json?.items) ? json.items : [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load staff list.')
+      setError(err instanceof Error ? err.message : 'Falhado to load staff list.')
     } finally {
       setLoading(false)
     }
@@ -86,14 +86,14 @@ export default function StaffSettingsPage() {
       const json = await res.json()
 
       if (!res.ok) {
-        throw new Error(json?.error || 'Failed to send invitation.')
+        throw new Error(json?.error || 'Falhado to send invitation.')
       }
 
       const mode = String(json?.mode || '')
       if (mode === 'created_with_password') {
-        setSuccess(`Account created for ${inviteEmail} with temporary password.`)
+        setSuccess(`Conta created for ${inviteEmail} with temporary password.`)
       } else if (mode === 'password_updated') {
-        setSuccess(`Temporary password updated for ${inviteEmail}.`)
+        setSuccess(`Palavra-passe temporária atualizada para ${inviteEmail}.`)
       } else {
         setSuccess(`Invitation sent to ${inviteEmail}.`)
       }
@@ -103,7 +103,7 @@ export default function StaffSettingsPage() {
       setInvitePassword('')
       await loadProfiles()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send invitation.')
+      setError(err instanceof Error ? err.message : 'Falhado to send invitation.')
     } finally {
       setSubmitting(false)
     }
@@ -111,20 +111,20 @@ export default function StaffSettingsPage() {
 
   return (
     <div className="flex h-screen bg-[#0b0b0b]">
-      <TeacherSidebar active="settings" role="admin" />
+      <TeacherSidebar ativo="settings" role="admin" />
 
       <main className="ml-[260px] flex-1 overflow-auto p-8">
         <div className="mx-auto max-w-5xl space-y-6">
           <div className="flex items-center justify-between border-b border-[#222] pb-4">
             <div>
-              <h1 className="text-3xl font-bold text-white">Staff Management</h1>
-              <p className="mt-1 text-sm text-zinc-500">Invite teachers and manage admin/staff/coach roles.</p>
+              <h1 className="text-3xl font-bold text-white">Gestão de Staff</h1>
+              <p className="mt-1 text-sm text-zinc-500">Convidar teachers and manage admin/staff/coach roles.</p>
             </div>
             <Link
               href="/settings"
               className="rounded-lg border border-[#222] px-4 py-2 text-sm font-semibold text-white hover:bg-[#111]"
             >
-              Back to Settings
+              Voltar to Definições
             </Link>
           </div>
 
@@ -137,7 +137,7 @@ export default function StaffSettingsPage() {
           ) : null}
 
           <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
-            <h2 className="mb-4 text-xl font-semibold text-white">Invite Teacher</h2>
+            <h2 className="mb-4 text-xl font-semibold text-white">Convidar Professor</h2>
             <form className="grid grid-cols-1 gap-4 md:grid-cols-4" onSubmit={onSubmitInvite}>
               <div>
                 <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Email</label>
@@ -152,31 +152,31 @@ export default function StaffSettingsPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Full Name (optional)</label>
+                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Full Nome (optional)</label>
                 <input
                   type="text"
                   value={inviteFullName}
                   onChange={(e) => setInviteFullName(e.target.value)}
-                  placeholder="Teacher Name"
+                  placeholder="Professor Nome"
                   className="w-full rounded-lg border border-[#222] bg-[#0f0f0f] px-3 py-2.5 text-white focus:border-[#c81d25] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Role</label>
+                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Função</label>
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as AppRole)}
                   className="w-full rounded-lg border border-[#222] bg-[#0f0f0f] px-3 py-2.5 text-white focus:border-[#c81d25] focus:outline-none"
                 >
-                  <option value="coach">Coach</option>
+                  <option value="coach">Professor</option>
                   <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
+                  <option value="admin">Administrador</option>
                 </select>
               </div>
 
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Temporary Password (optional)</label>
+                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Temporary Palavra-passe (optional)</label>
                 <input
                   type="text"
                   value={invitePassword}
@@ -192,7 +192,7 @@ export default function StaffSettingsPage() {
                   disabled={submitting}
                   className="rounded-lg bg-[#c81d25] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#b01720] disabled:opacity-60"
                 >
-                  {submitting ? 'Submitting...' : 'Invite / Create Account'}
+                  {submitting ? 'Submitting...' : 'Convidar / Criar Conta'}
                 </button>
                 <p className="mt-2 text-xs text-zinc-500">
                   Leave password empty to send email invite. Fill password to create/update access instantly without email.
@@ -204,7 +204,7 @@ export default function StaffSettingsPage() {
           <section className="relative rounded-2xl border border-[#222] bg-[#121212] p-6">
             <div className="absolute -top-12 right-0">
               <button className="rounded-lg border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-xs font-semibold text-white shadow-lg hover:bg-[#b01720] transition">
-                + Invite Staff
+                + Convidar Staff
               </button>
             </div>
 
@@ -214,21 +214,21 @@ export default function StaffSettingsPage() {
                 onClick={loadProfiles}
                 className="rounded-lg border border-[#222] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-300 hover:bg-[#111]"
               >
-                Refresh
+                Atualizar
               </button>
             </div>
 
             {loading ? (
-              <div className="rounded-lg border border-[#1f1f1f] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">Loading staff...</div>
+              <div className="rounded-lg border border-[#1f1f1f] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">A carregar staff...</div>
             ) : sortedItems.length === 0 ? (
-              <div className="rounded-lg border border-[#1f1f1f] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">No staff profiles found.</div>
+              <div className="rounded-lg border border-[#1f1f1f] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">Não staff profiles found.</div>
             ) : (
               <div className="space-y-2">
                 {sortedItems.map((item) => (
                   <div key={item.id} className="flex items-center justify-between rounded-lg border border-[#1f1f1f] bg-[#0f0f0f] px-4 py-3">
                     <div>
-                      <p className="font-medium text-white">{item.full_name || 'No name'}</p>
-                      <p className="text-xs text-zinc-500">{item.email || 'No email'}</p>
+                      <p className="font-medium text-white">{item.full_name || 'Não name'}</p>
+                      <p className="text-xs text-zinc-500">{item.email || 'Não email'}</p>
                     </div>
                     <span className="inline-block rounded-full border border-[#c81d25]/30 bg-[#c81d25]/20 px-3 py-1 text-xs font-medium text-[#f87171]">
                       {roleLabel(item.role)}

@@ -55,13 +55,13 @@ function LoginForm() {
       });
 
       if (signInError) {
-        setError(signInError.message || 'Invalid credentials.');
+        setError(signInError.message || 'Credenciais inválidas.');
         return;
       }
 
       const user = data.user;
       if (!user) {
-        setError('No user returned by authentication.');
+        setError('Nenhum utilizador retornado pela autenticação.');
         return;
       }
 
@@ -76,7 +76,7 @@ function LoginForm() {
       const role = profileRole || metadataRole;
 
       if (!role) {
-        setError('Profile role not found. Contact admin.');
+        setError('Função de perfil não encontrada. Contacte o administrador.');
         await supabase.auth.signOut();
         return;
       }
@@ -93,8 +93,8 @@ function LoginForm() {
 
       router.replace('/dashboard');
     } catch (err) {
-      console.error('Teacher login failed:', err);
-      setError('Login failed. Please try again.');
+      console.error('Professor login failed:', err);
+      setError('Falha no login. Tenta novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -108,21 +108,21 @@ function LoginForm() {
     try {
       const student = await getMemberByEmail(email);
       if (!student) {
-        setError('Student profile not found. Please check your email.');
+        setError('Perfil de aluno não encontrado. Verifica o teu email.');
         return;
       }
 
       const status = String((student as { status?: unknown }).status || '').trim().toLowerCase();
-      if (status === 'pending' || status === 'request') {
-        setError('This student is still a request and cannot log in yet.');
+      if (status === 'pendente' || status === 'pedido') {
+        setError('Este aluno ainda está como pedido e não pode fazer login.');
         return;
       }
 
       writeStudentSessionId(student.id);
       router.replace('/student/dashboard');
     } catch (err) {
-      console.error('Student login failed:', err);
-      setError('Login failed. Please try again.');
+      console.error('Aluno login failed:', err);
+      setError('Falha no login. Tenta novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -166,8 +166,8 @@ function LoginForm() {
 
           {mode === 'teacher' ? (
             <>
-              <h1 className="mb-1 text-lg font-semibold text-white">Teacher Sign in</h1>
-              <p className="mb-5 text-sm text-zinc-400">Use your staff account credentials.</p>
+              <h1 className="mb-1 text-lg font-semibold text-white">Entrar como Professor</h1>
+              <p className="mb-5 text-sm text-zinc-400">Use as suas credenciais de staff.</p>
 
               <form className="space-y-3" onSubmit={handleTeacherLogin}>
                 <div>
@@ -183,7 +183,7 @@ function LoginForm() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs uppercase tracking-[0.12em] text-zinc-500">Password</label>
+                  <label className="mb-1 block text-xs uppercase tracking-[0.12em] text-zinc-500">Palavra-passe</label>
                   <input
                     type="password"
                     value={password}
@@ -203,7 +203,7 @@ function LoginForm() {
                   disabled={isLoading}
                   className="w-full rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a8141c] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
+                  {isLoading ? 'A entrar...' : 'Entrar'}
                 </button>
 
                 <button
@@ -211,7 +211,7 @@ function LoginForm() {
                   onClick={handleBack}
                   className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-zinc-500"
                 >
-                  Back
+                  Voltar
                 </button>
               </form>
             </>
@@ -219,8 +219,8 @@ function LoginForm() {
 
           {mode === 'student' ? (
             <>
-              <h1 className="mb-1 text-lg font-semibold text-white">Student Sign in</h1>
-              <p className="mb-5 text-sm text-zinc-400">Use your student email.</p>
+              <h1 className="mb-1 text-lg font-semibold text-white">Entrar como Aluno</h1>
+              <p className="mb-5 text-sm text-zinc-400">Use o seu email de aluno.</p>
 
               <form className="space-y-3" onSubmit={handleStudentLogin}>
                 <div>
@@ -244,7 +244,7 @@ function LoginForm() {
                   disabled={isLoading}
                   className="w-full rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#a8141c] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isLoading ? 'Signing in...' : 'Enter'}
+                  {isLoading ? 'A entrar...' : 'Entrar'}
                 </button>
 
                 <button
@@ -252,7 +252,7 @@ function LoginForm() {
                   onClick={handleBack}
                   className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-zinc-500"
                 >
-                  Back
+                  Voltar
                 </button>
               </form>
             </>
@@ -269,7 +269,7 @@ export default function LoginPage() {
       fallback={
         <div className="min-h-screen bg-[#0b0b0b] text-zinc-100">
           <div className="mx-auto flex min-h-screen w-full max-w-md items-center px-6">
-            <div className="w-full rounded-2xl border border-[#222] bg-[#121212] p-6 text-sm text-zinc-400">Loading login...</div>
+            <div className="w-full rounded-2xl border border-[#222] bg-[#121212] p-6 text-sm text-zinc-400">A carregar login...</div>
           </div>
         </div>
       }

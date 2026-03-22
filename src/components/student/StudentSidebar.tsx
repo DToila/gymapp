@@ -5,7 +5,7 @@ import GBLogo from '@/components/GBLogo';
 
 export type StudentNavKey = 'dashboard' | 'schedule' | 'attendance' | 'payments' | 'announcements' | 'profile';
 
-export default function StudentSidebar({ active }: { active: StudentNavKey }) {
+export default function StudentSidebar({ ativo }: { ativo: StudentNavKey }) {
   const router = useRouter();
 
   const navItems: Array<{ key: StudentNavKey; label: string; icon: string; path: string }> = [
@@ -24,14 +24,14 @@ export default function StudentSidebar({ active }: { active: StudentNavKey }) {
           <GBLogo size={46} />
           <div>
             <div className="text-sm font-extrabold tracking-[0.22em] text-zinc-100">GRACIE BARRA</div>
-            <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Student Area</div>
+            <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Aluno Area</div>
           </div>
         </div>
       </div>
 
       <nav className="flex-1 px-3 py-4">
         {navItems.map((item) => {
-          const isActive = active === item.key;
+          const isActive = ativo === item.key;
           return (
             <div
               key={item.key}

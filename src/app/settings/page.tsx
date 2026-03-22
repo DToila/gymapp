@@ -38,7 +38,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex h-screen bg-[#0b0b0b]">
-      <TeacherSidebar active="settings" />
+      <TeacherSidebar ativo="settings" />
 
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
@@ -52,7 +52,7 @@ export default function SettingsPage() {
               href="/settings/staff"
               className="rounded-lg border border-[#222] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#111]"
             >
-              Staff Management
+              Gestão de Staff
             </Link>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function SettingsPage() {
         {/* Content */}
         <div className="flex-1 overflow-auto">
           <div className="p-8 space-y-6 max-w-4xl">
-            {/* Save Message */}
+            {/* Guardar Message */}
             {saveMessage && (
               <div className="rounded-2xl border border-[#22c55e]/50 bg-[#22c55e]/10 px-4 py-3 text-[#22c55e]">
                 {saveMessage}
@@ -72,7 +72,7 @@ export default function SettingsPage() {
               <h2 className="mb-4 text-xl font-semibold text-white">Academy</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Academy Name</label>
+                  <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Academy Nome</label>
                   <input
                     type="text"
                     value={academySettings.name}
@@ -83,7 +83,7 @@ export default function SettingsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Address</label>
+                    <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Morada</label>
                     <input
                       type="text"
                       value={academySettings.address}
@@ -104,7 +104,7 @@ export default function SettingsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Phone</label>
+                    <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Telemóvel</label>
                     <input
                       type="tel"
                       value={academySettings.phone}
@@ -127,7 +127,7 @@ export default function SettingsPage() {
                   onClick={handleSaveAcademy}
                   className="rounded-lg bg-[#c81d25] px-6 py-2.5 font-semibold text-white hover:bg-[#b01720] transition mt-4"
                 >
-                  Save Academy Settings
+                  Guardar Academy Definições
                 </button>
               </div>
             </div>
@@ -140,7 +140,7 @@ export default function SettingsPage() {
                   onClick={() => setShowInviteStaff(!showInviteStaff)}
                   className="rounded-lg bg-[#c81d25] px-4 py-2 font-semibold text-white hover:bg-[#b01720] transition text-sm"
                 >
-                  + Invite Staff
+                  + Convidar Staff
                 </button>
               </div>
 
@@ -157,14 +157,14 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Role</label>
+                    <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Função</label>
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value as any)}
                       className="w-full rounded-lg border border-[#222] bg-[#121212] px-3 py-2.5 text-white focus:border-[#c81d25] focus:outline-none transition"
                     >
-                      <option value="coach">Coach</option>
-                      <option value="admin">Admin</option>
+                      <option value="coach">Professor</option>
+                      <option value="admin">Administrador</option>
                       <option value="staff">Staff</option>
                     </select>
                   </div>
@@ -179,7 +179,7 @@ export default function SettingsPage() {
                       onClick={() => setShowInviteStaff(false)}
                       className="flex-1 rounded-lg border border-[#222] px-4 py-2 font-semibold text-white hover:bg-[#0f0f0f] transition"
                     >
-                      Cancel
+                      Cancelar
                     </button>
                   </div>
                 </div>
@@ -194,7 +194,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#c81d25]/20 text-[#c81d25] border border-[#c81d25]/30">
-                        {member.role === 'admin' ? 'Admin' : member.role === 'coach' ? 'Coach' : 'Staff'}
+                        {member.role === 'admin' ? 'Administrador' : member.role === 'coach' ? 'Professor' : 'Staff'}
                       </span>
                       <button className="text-zinc-400 hover:text-white transition">⋯</button>
                     </div>
@@ -213,7 +213,7 @@ export default function SettingsPage() {
                   <h3 className="text-sm font-semibold text-zinc-300 mb-3 uppercase tracking-wide">Adult Prices</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Direct Debit (€)</label>
+                      <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Débito Direto (€)</label>
                       <input
                         type="number"
                         value={pricingRules.adultDd}
@@ -233,12 +233,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Kids Pricing */}
+                {/* Crianças Pricing */}
                 <div>
-                  <h3 className="text-sm font-semibold text-zinc-300 mb-3 uppercase tracking-wide">Kids Prices</h3>
+                  <h3 className="text-sm font-semibold text-zinc-300 mb-3 uppercase tracking-wide">Crianças Prices</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Direct Debit (€)</label>
+                      <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Débito Direto (€)</label>
                       <input
                         type="number"
                         value={pricingRules.kidsDd}
@@ -263,7 +263,7 @@ export default function SettingsPage() {
                   <h3 className="text-sm font-semibold text-zinc-300 mb-3 uppercase tracking-wide">Discounts</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Family Discount (€)</label>
+                      <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Desconto Familiar (€)</label>
                       <input
                         type="number"
                         value={pricingRules.familyDiscount}
@@ -301,7 +301,7 @@ export default function SettingsPage() {
                   onClick={handleSavePricing}
                   className="rounded-lg bg-[#c81d25] px-6 py-2.5 font-semibold text-white hover:bg-[#b01720] transition"
                 >
-                  Save Pricing Rules
+                  Guardar Pricing Rules
                 </button>
               </div>
             </div>

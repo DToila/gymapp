@@ -27,7 +27,7 @@ export default function StudentDashboardPage() {
         });
         setAttendanceMap(next);
       })
-      .catch((error) => console.error('Error loading student attendance:', error));
+      .catch((error) => console.error('Erro loading student attendance:', error));
   }, [member]);
 
   const year = new Date().getFullYear();
@@ -63,7 +63,7 @@ export default function StudentDashboardPage() {
   }, [announcements, isKid]);
 
   const todayClasses = getTodayClasses();
-  const isPaid = member?.status !== 'Unpaid';
+  const isPaid = member?.status !== 'Por Pagar';
 
   const listRows = useMemo(() => {
     return Object.keys(attendanceMap)
@@ -73,19 +73,19 @@ export default function StudentDashboardPage() {
   }, [attendanceMap]);
 
   return (
-    <StudentShell active="dashboard" title={member?.name || 'Aluno'} subtitle="Student area overview">
+    <StudentShell ativo="dashboard" title={member?.name || 'Aluno'} subtitle="Aluno area overview">
       <section className="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
-          <p className="mb-2 text-xl font-semibold text-zinc-100">Balance/Status</p>
+          <p className="mb-2 text-xl font-semibold text-zinc-100">Balance/Estado</p>
           {isPaid ? (
             <>
-              <div className="mb-2 inline-flex rounded-full border border-[#1f4d33] bg-[rgba(22,163,74,0.12)] px-3 py-1 text-xs font-semibold text-green-300">Paid</div>
-              <p className="text-zinc-400">Paid through: {paidThrough}</p>
+              <div className="mb-2 inline-flex rounded-full border border-[#1f4d33] bg-[rgba(22,163,74,0.12)] px-3 py-1 text-xs font-semibold text-green-300">Pago</div>
+              <p className="text-zinc-400">Pago through: {paidThrough}</p>
             </>
           ) : (
             <>
-              <div className="mb-2 inline-flex rounded-full border border-[#5b1f24] bg-[rgba(239,68,68,0.15)] px-3 py-1 text-xs font-semibold text-rose-300">Unpaid</div>
-              <p className="text-zinc-400">Amount due: €{(member?.fee || 0).toFixed(2)}</p>
+              <div className="mb-2 inline-flex rounded-full border border-[#5b1f24] bg-[rgba(239,68,68,0.15)] px-3 py-1 text-xs font-semibold text-rose-300">Por Pagar</div>
+              <p className="text-zinc-400">Valor due: €{(member?.fee || 0).toFixed(2)}</p>
               <button onClick={() => router.push('/student/payments')} className="mt-3 text-sm font-medium text-[#c81d25] hover:text-[#ef3a43]">View payments</button>
             </>
           )}
@@ -99,7 +99,7 @@ export default function StudentDashboardPage() {
               <button onClick={() => router.push('/student/schedule')} className="rounded-xl border border-[#2a2a2a] bg-[#171717] px-2 py-1 text-zinc-400 hover:text-zinc-200">Ver semana</button>
             </div>
           </div>
-          {todayClasses.length === 0 ? <p className="text-zinc-500">No classes today.</p> : (
+          {todayClasses.length === 0 ? <p className="text-zinc-500">Não classes today.</p> : (
             <ul className="space-y-2 text-sm text-zinc-300">
               {todayClasses.slice(0, 3).map((item) => (
                 <li key={item.id} className="rounded-xl border border-[#202020] bg-[#111] px-3 py-2">{item.room} {item.time} • {item.level}</li>

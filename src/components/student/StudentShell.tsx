@@ -7,13 +7,13 @@ import { clearStudentSessionId } from './studentSession';
 import { useStudentMember } from './useStudentMember';
 
 export default function StudentShell({
-  active,
+  ativo,
   title,
   subtitle,
   rightActions,
   children,
 }: {
-  active: StudentNavKey;
+  ativo: StudentNavKey;
   title: string;
   subtitle: string;
   rightActions?: ReactNode;
@@ -31,7 +31,7 @@ export default function StudentShell({
   if (loading || !member) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0b0b0b] text-zinc-300">
-        Loading student area...
+        A carregar student area...
       </div>
     );
   }
@@ -46,7 +46,7 @@ export default function StudentShell({
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
-      <StudentSidebar active={active} />
+      <StudentSidebar ativo={ativo} />
 
       <main className="flex-1 p-6 lg:p-8">
         <div className="mx-auto max-w-[1320px]">
@@ -54,7 +54,7 @@ export default function StudentShell({
             <label className="flex w-full max-w-[500px] items-center gap-2 rounded-full border border-[#222] bg-[#121212] px-4 py-2.5 shadow-[0_6px_22px_rgba(0,0,0,0.28)]">
               <span className="text-zinc-500">⌕</span>
               <input
-                placeholder="Search..."
+                placeholder="Pesquisar..."
                 className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 outline-none"
               />
             </label>
@@ -69,7 +69,7 @@ export default function StudentShell({
                   router.push('/');
                 }}
               >
-                Logout
+                Sair
               </button>
             </div>
           </div>

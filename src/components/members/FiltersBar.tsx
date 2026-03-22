@@ -12,12 +12,12 @@ interface KidsFiltersBarProps {
   onChange: (next: KidsFilters) => void;
 }
 
-const chipStyle = (active: boolean): React.CSSProperties => ({
+const chipStyle = (ativo: boolean): React.CSSProperties => ({
   padding: '8px 12px',
-  border: active ? '1px solid #CC0000' : '1px solid #2a2a2a',
+  border: ativo ? '1px solid #CC0000' : '1px solid #2a2a2a',
   borderRadius: '12px',
-  background: active ? 'rgba(204,0,0,0.18)' : '#151515',
-  color: active ? '#f0f0f0' : '#9a9a9a',
+  background: ativo ? 'rgba(204,0,0,0.18)' : '#151515',
+  color: ativo ? '#f0f0f0' : '#9a9a9a',
   fontSize: '12px',
   fontWeight: 600,
   cursor: 'pointer'
@@ -39,10 +39,10 @@ export function AdultsFiltersBar({ value, onChange }: AdultsFiltersBarProps) {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
       <div style={{ display: 'flex', gap: '6px' }}>
         {[
-          { key: 'all', label: 'All' },
-          { key: 'active', label: 'Active' },
-          { key: 'paused', label: 'Paused' },
-          { key: 'unpaid', label: 'Unpaid' }
+          { key: 'all', label: 'Todos' },
+          { key: 'ativo', label: 'Ativo' },
+          { key: 'pausado', label: 'Paused' },
+          { key: 'unpaid', label: 'Por Pagar' }
         ].map((chip) => (
           <button key={chip.key} onClick={() => set({ status: chip.key as AdultsFilters['status'] })} style={chipStyle(value.status === chip.key)}>
             {chip.label}
@@ -51,7 +51,7 @@ export function AdultsFiltersBar({ value, onChange }: AdultsFiltersBarProps) {
       </div>
 
       <select value={value.belt} onChange={(e) => set({ belt: e.target.value as AdultsFilters['belt'] })} style={selectStyle}>
-        <option value="all">All belts</option>
+        <option value="all">Todos belts</option>
         <option value="White">White</option>
         <option value="Blue">Blue</option>
         <option value="Purple">Purple</option>
@@ -60,16 +60,16 @@ export function AdultsFiltersBar({ value, onChange }: AdultsFiltersBarProps) {
       </select>
 
       <select value={value.payment} onChange={(e) => set({ payment: e.target.value as AdultsFilters['payment'] })} style={selectStyle}>
-        <option value="all">All payment methods</option>
-        <option value="Direct Debit">Direct Debit</option>
-        <option value="Cash">Cash</option>
+        <option value="all">Todos payment methods</option>
+        <option value="Débito Direto">Débito Direto</option>
+        <option value="Dinheiro">Dinheiro</option>
         <option value="MBWay">MBWay</option>
         <option value="Other">Other</option>
       </select>
 
       <select value={value.sort} onChange={(e) => set({ sort: e.target.value as AdultsFilters['sort'] })} style={selectStyle}>
-        <option value="recent">Recent</option>
-        <option value="name">Name A-Z</option>
+        <option value="recent">Recente</option>
+        <option value="name">Nome A-Z</option>
         <option value="paymentDue">Payment due first</option>
         <option value="enrollmentDesc">Enrollment date (desc)</option>
       </select>
@@ -83,15 +83,15 @@ export function KidsFiltersBar({ value, onChange }: KidsFiltersBarProps) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
       <select value={value.group} onChange={(e) => set({ group: e.target.value as KidsFilters['group'] })} style={selectStyle}>
-        <option value="all">All groups</option>
-        <option value="Kids 1">Kids 1</option>
-        <option value="Kids 2">Kids 2</option>
+        <option value="all">Todos groups</option>
+        <option value="Crianças 1">Crianças 1</option>
+        <option value="Crianças 2">Crianças 2</option>
         <option value="Teens">Teens</option>
       </select>
 
       <div style={{ display: 'flex', gap: '6px' }}>
         {[
-          { key: 'all', label: 'All' },
+          { key: 'all', label: 'Todos' },
           { key: 'good', label: '😀 Good' },
           { key: 'neutral', label: '😐 Neutral' },
           { key: 'attention', label: '😡 Needs attention' }
@@ -103,8 +103,8 @@ export function KidsFiltersBar({ value, onChange }: KidsFiltersBarProps) {
       </div>
 
       <select value={value.sort} onChange={(e) => set({ sort: e.target.value as KidsFilters['sort'] })} style={selectStyle}>
-        <option value="recent">Recent</option>
-        <option value="name">Name A-Z</option>
+        <option value="recent">Recente</option>
+        <option value="name">Nome A-Z</option>
         <option value="attentionFirst">Needs attention first</option>
       </select>
     </div>

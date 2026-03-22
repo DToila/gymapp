@@ -26,11 +26,11 @@ export default function HistoryTab({ history }: HistoryTabProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#222]">
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Name</th>
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Amount</th>
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Method</th>
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Paid Date</th>
-              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Reference</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Nome</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Método</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Pago Data</th>
+              <th className="px-4 py-3 text-left font-semibold text-zinc-300">Referência</th>
             </tr>
           </thead>
           <tbody>

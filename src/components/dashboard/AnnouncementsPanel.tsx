@@ -13,9 +13,9 @@ const tagChipClass: Record<AnnouncementItem['tag'], string> = {
 };
 
 const audienceLabel: Record<AnnouncementAudience, string> = {
-  ALL: 'All',
-  ADULTS: 'Adults',
-  KIDS: 'Kids',
+  ALL: 'Todos',
+  ADULTS: 'Adultos',
+  KIDS: 'Crianças',
   STAFF: 'Staff',
 };
 
@@ -101,7 +101,7 @@ export default function AnnouncementsPanel({
         rejectionReason: null,
       });
     } catch (error) {
-      console.error('Failed to create announcement:', error);
+      console.error('Falhado to create announcement:', error);
     }
   };
 
@@ -109,7 +109,7 @@ export default function AnnouncementsPanel({
     try {
       await updateAnnouncement(id, announcement);
     } catch (error) {
-      console.error('Failed to update announcement:', error);
+      console.error('Falhado to update announcement:', error);
     }
   };
 
@@ -117,7 +117,7 @@ export default function AnnouncementsPanel({
     try {
       await deleteAnnouncement(id);
     } catch (error) {
-      console.error('Failed to delete announcement:', error);
+      console.error('Falhado to delete announcement:', error);
     }
   };
 
@@ -125,7 +125,7 @@ export default function AnnouncementsPanel({
     try {
       await togglePin(id);
     } catch (error) {
-      console.error('Failed to toggle pin:', error);
+      console.error('Falhado to toggle pin:', error);
     }
   };
 
@@ -133,7 +133,7 @@ export default function AnnouncementsPanel({
     try {
       await approveAnnouncement(id, currentUserName);
     } catch (error) {
-      console.error('Failed to approve announcement:', error);
+      console.error('Falhado to approve announcement:', error);
     }
   };
 
@@ -141,7 +141,7 @@ export default function AnnouncementsPanel({
     try {
       await rejectAnnouncement(id, reason ?? null, currentUserName);
     } catch (error) {
-      console.error('Failed to reject announcement:', error);
+      console.error('Falhado to reject announcement:', error);
     }
   };
 
@@ -151,7 +151,7 @@ export default function AnnouncementsPanel({
         <div className="flex items-center justify-between border-b border-[#202020] px-5 py-4">
           <div className="flex items-center gap-2 text-lg font-semibold text-white">
             <span className="text-[#c81d25]">📣</span>
-            <h3>Announcements</h3>
+            <h3>Anúncios</h3>
             {canApprove && pendingApprovals.length > 0 ? (
               <span className="inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[#c81d25] px-1.5 text-[10px] font-bold text-white">
                 {pendingApprovals.length}
@@ -169,7 +169,7 @@ export default function AnnouncementsPanel({
               </button>
             ) : null}
             <button onClick={openManage} className="text-sm font-medium text-[#c81d25] hover:text-[#ef3a43]">
-              View all
+              Ver tudo
             </button>
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function AnnouncementsPanel({
         <div className="p-4">
           <div className="min-h-[220px]">
             {visible.length === 0 ? (
-              <p className="py-4 text-sm text-zinc-500">No announcements right now.</p>
+              <p className="py-4 text-sm text-zinc-500">Não announcements right now.</p>
             ) : (
               <ul className="space-y-2">
                 {visible.map((item) => (

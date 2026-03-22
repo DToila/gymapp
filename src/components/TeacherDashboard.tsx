@@ -32,11 +32,11 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [isSubmittingMember, setIsSubmittingMember] = useState(false);
   const [newMember, setNewMember] = useState<NewMemberForm>({
     name: "",
-    belt_level: "White Belt",
-    status: "Active",
+    belt_level: "White Cinto",
+    status: "Ativo",
     phone: "",
     email: "",
-    payment_type: "Direct Debit",
+    payment_type: "Débito Direto",
     fee: 0,
     family_discount: false,
     date_of_birth: "",
@@ -51,9 +51,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const [quickSelection, setQuickSelection] = useState<{ [id: string]: boolean }>({});
   const [under16MoodByMemberId, setUnder16MoodByMemberId] = useState<{ [id: string]: MoodOption }>({});
   const [acceptingPendingMemberId, setAcceptingPendingMemberId] = useState<string | null>(null);
-  const [acceptForm, setAcceptForm] = useState<{ belt_level: string; payment_type: "Direct Debit" | "Cash"; fee: string }>({
-    belt_level: "White Belt",
-    payment_type: "Direct Debit",
+  const [acceptForm, setAcceptForm] = useState<{ belt_level: string; payment_type: "Débito Direto" | "Dinheiro"; fee: string }>({
+    belt_level: "White Cinto",
+    payment_type: "Débito Direto",
     fee: "0",
   });
 
@@ -86,12 +86,12 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     try {
       const data = await getMembers();
       const nonPendingMembers = data.filter(
-        (member) => String((member as any).status || '').trim().toLowerCase() !== 'pending'
+        (member) => String((member as any).status || '').trim().toLowerCase() !== 'pendente'
       );
       const formattedMembers: any[] = nonPendingMembers.map(mapMemberForDashboard);
       setMembers(formattedMembers);
     } catch (error) {
-      console.error('Error loading members:', error);
+      console.error('Erro loading members:', error);
     }
   }, []);
 
@@ -100,15 +100,15 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       const { data, error } = await supabase
         .from('members')
         .select('*')
-        .eq('status', 'pending')
+        .eq('status', 'pendente')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const pendingFormatted: any[] = (data || []).map((member) => mapMemberForDashboard(member as Member));
+      const pendingFormatted: any[] = (data || []).map((member) => mapMemberForDashboard(member as Membro));
       setPendingMembers(pendingFormatted);
     } catch (error) {
-      console.error('Error loading pending members:', error);
+      console.error('Erro loading pendente members:', error);
     }
   }, []);
 
@@ -238,7 +238,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
   const isEligibleDirectDebitMember = (member: Member): boolean => {
     return (
       String(member.payment_type || '').trim().toLowerCase() === 'direct debit' &&
-      String(member.status || '').trim().toLowerCase() === 'active' &&
+      String(member.status || '').trim().toLowerCase() === 'ativo' &&
       Boolean(member.iban) &&
       typeof member.fee === 'number' &&
       member.fee > 0
@@ -271,7 +271,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       const members = await getMembers();
       console.log('member data:', JSON.stringify(members[0]));
 
-      // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
+      // Filter: Ativo, Débito Direto, with IBAN and NIF, and must have a fee > 0
       const ddMembers = members.filter(isEligibleDirectDebitMember);
       console.log('DD members found:', ddMembers.length);
 
@@ -287,9 +287,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           'CGDIPTL', // Fixed value as per DD standard
           formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
           'RCUR', // Fixed value as per DD standard
-          m.ref || '', // Student number
+          m.ref || '', // Aluno number
           exportDate, // DD-MM-AAAA (registration date)
-          normalizeText(m.name) // Name without accents, max 70 chars
+          normalizeText(m.name) // Nome without accents, max 70 chars
         ];
       });
 
@@ -302,7 +302,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
       const rows = rowColumns.map(columns => formatDdTxtRow(columns, ddColumnWidths));
 
-      // Create file content (no header row, just data rows)
+      // Criar file content (no header row, just data rows)
       const fileContent = rows.join('\n');
 
       // Generate filename: DD_MMMM_GBCQ.txt where MMMM is Portuguese month name
@@ -311,7 +311,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       const monthName = monthNames[today.getMonth()];
       const filename = `DD_${monthName}_GBCQ.txt`;
 
-      // Create blob and download
+      // Criar blob and download
       const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -321,8 +321,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       document.body.removeChild(link);
       URL.revokeObjectURL(link.href);
     } catch (error) {
-      console.error('Error exporting DD file:', error);
-      alert('Error exporting DD file. Please try again.');
+      console.error('Erro exporting DD file:', error);
+      alert('Erro exporting DD file. Please try again.');
     }
   };
 
@@ -332,7 +332,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       // Get fresh data from database to ensure all fields are present
       const allMembers = await getMembers();
 
-      // Filter: Active, Direct Debit, with IBAN and NIF, and must have a fee > 0
+      // Filter: Ativo, Débito Direto, with IBAN and NIF, and must have a fee > 0
       const ddMembers = allMembers.filter(isEligibleDirectDebitMember);
       console.log('DD Excel export filtered members count:', ddMembers.length);
 
@@ -345,13 +345,13 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
           'CGDIPTL', // Fixed value as per DD standard
           formatFee(feeToUse), // Use custom fee if set, otherwise use member's fee
           'RCUR', // Fixed value as per DD standard
-          m.ref || '', // Student number
+          m.ref || '', // Aluno number
           exportDate, // DD-MM-AAAA (registration date)
-          normalizeText(m.name) // Name without accents, max 70 chars
+          normalizeText(m.name) // Nome without accents, max 70 chars
         ];
       });
 
-      // Create worksheet from array of arrays (no header row)
+      // Criar worksheet from array of arrays (no header row)
       const worksheet = XLSX.utils.aoa_to_sheet(excelData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'DD Export');
@@ -368,8 +368,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       // Generate and download Excel file
       XLSX.writeFile(workbook, filename);
     } catch (error) {
-      console.error('Error exporting DD Excel file:', error);
-      alert('Error exporting DD Excel file. Please try again.');
+      console.error('Erro exporting DD Excel file:', error);
+      alert('Erro exporting DD Excel file. Please try again.');
     }
   };
 
@@ -377,7 +377,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     e.preventDefault();
     if (isSubmittingMember) return;
     if (!newMember.name.trim()) {
-      console.error('Add member blocked: name is required.');
+      console.error('Adicionar member blocked: name is required.');
       return;
     }
 
@@ -432,11 +432,11 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       setMembers((prev) => [...prev, newMemberFormatted]);
       setNewMember({
         name: "",
-        belt_level: "White Belt",
-        status: "Active",
+        belt_level: "White Cinto",
+        status: "Ativo",
         phone: "",
         email: "",
-        payment_type: "Direct Debit",
+        payment_type: "Débito Direto",
         fee: 0,
         family_discount: false,
         date_of_birth: "",
@@ -449,14 +449,14 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       setEnrollmentTimestamp(new Date().toISOString());
       setShowAddModal(false);
     } catch (error) {
-      console.error('Error creating member in handleAddMember:', error);
+      console.error('Erro creating member in handleAddMember:', error);
     } finally {
       setIsSubmittingMember(false);
     }
   };
 
   const handleAddMemberButtonClick = () => {
-    console.log('Add Member submit button clicked');
+    console.log('Adicionar Membro submit button clicked');
   };
 
   const handleRemoveMember = async (id: string) => {
@@ -464,7 +464,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       await deleteMember(id);
       setMembers(members.filter((member) => member.id !== id));
     } catch (error) {
-      console.error('Error deleting member:', error);
+      console.error('Erro deleting member:', error);
     }
   };
 
@@ -490,16 +490,16 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       await updateMemberDb(updated.id, updates);
       await loadDashboardData();
     } catch (error) {
-      console.error('Error updating member:', error);
+      console.error('Erro updating member:', error);
       throw error;
     }
   };
 
   const openAcceptPendingForm = (member: any) => {
-    const nextPaymentType = member.payment_type === 'Cash' ? 'Cash' : 'Direct Debit';
+    const nextPaymentType = member.payment_type === 'Dinheiro' ? 'Dinheiro' : 'Débito Direto';
     setAcceptingPendingMemberId(member.id);
     setAcceptForm({
-      belt_level: member.belt_level || 'White Belt',
+      belt_level: member.belt_level || 'White Cinto',
       payment_type: nextPaymentType,
       fee: String(member.fee ?? calculateMonthlyFee(member.date_of_birth, nextPaymentType) ?? 0),
     });
@@ -511,7 +511,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       const safeFee = Number.isFinite(parsedFee) ? parsedFee : 0;
 
       await updateMemberDb(memberId, {
-        status: 'active' as any,
+        status: 'ativo' as any,
         belt_level: acceptForm.belt_level,
         payment_type: acceptForm.payment_type,
         fee: safeFee,
@@ -520,7 +520,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       setAcceptingPendingMemberId(null);
       await loadDashboardData();
     } catch (error) {
-      console.error('Error accepting pending member:', error);
+      console.error('Erro accepting pendente member:', error);
     }
   };
 
@@ -544,7 +544,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       setAcceptingPendingMemberId(null);
       await loadDashboardData();
     } catch (error) {
-      console.error('Error marking member as unknown:', error);
+      console.error('Erro marking member as unknown:', error);
     }
   };
 
@@ -554,7 +554,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       setAcceptingPendingMemberId(null);
       await loadDashboardData();
     } catch (error) {
-      console.error('Error rejecting pending member:', error);
+      console.error('Erro rejecting pendente member:', error);
     }
   };
 
@@ -583,7 +583,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         if (chosen || selectedMood) m.attendance[today] = true;
         else delete m.attendance[today];
 
-        if (isUnder16Member(m as Member)) {
+        if (isUnder16Member(m as Membro)) {
           if (!m.attendance_mood) m.attendance_mood = {};
           if (selectedMood) m.attendance_mood[today] = selectedMood;
           else delete m.attendance_mood[today];
@@ -672,11 +672,11 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
   const getBeltColor = (belt: string): string => {
     switch (belt) {
-      case "White Belt": return "#888888";
-      case "Blue Belt": return "#2596BE";
-      case "Purple Belt": return "#7D3C98";
-      case "Brown Belt": return "#8B4513";
-      case "Black Belt": return "#000000";
+      case "White Cinto": return "#888888";
+      case "Blue Cinto": return "#2596BE";
+      case "Purple Cinto": return "#7D3C98";
+      case "Brown Cinto": return "#8B4513";
+      case "Black Cinto": return "#000000";
       default: return "#888888";
     }
   };
@@ -690,7 +690,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
       fontFamily: '"Barlow", sans-serif'
     }}>
       {/* SIDEBAR */}
-      <TeacherSidebar active="dashboard" requestsCount={pendingMembers.length} onLogout={onLogout} onExportTxt={handleExportDD} onExportExcel={handleExportDDExcel} onAddMember={() => {
+      <TeacherSidebar ativo="dashboard" requestsCount={pendingMembers.length} onLogout={onLogout} onExportTxt={handleExportDD} onExportExcel={handleExportDDExcel} onAddMember={() => {
         setEnrollmentTimestamp(new Date().toISOString());
         setShowAddModal(true);
       }} />
@@ -755,7 +755,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 e.currentTarget.style.borderColor = '#2a2a2a';
               }}
             >
-              Quick Attendance
+              Quick Presenças
             </button>
           </div>
         </div>
@@ -770,10 +770,10 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             padding: '36px 40px 0'
           }}>
             {[
-              { label: 'Total Members', value: members.length, color: '#f0f0f0' },
-              { label: 'Active', value: members.filter((m) => m.status === "Active").length, color: '#f0f0f0' },
+              { label: 'Total Membros', value: members.length, color: '#f0f0f0' },
+              { label: 'Ativo', value: members.filter((m) => m.status === "Ativo").length, color: '#f0f0f0' },
               { label: 'Paused', value: members.filter((m) => m.status === "Paused").length, color: '#f0f0f0' },
-              { label: 'Unpaid', value: members.filter((m) => m.status === "Unpaid").length, color: '#f0f0f0' }
+              { label: 'Por Pagar', value: members.filter((m) => m.status === "Por Pagar").length, color: '#f0f0f0' }
             ].map((stat, idx) => (
               <div
                 key={idx}
@@ -802,7 +802,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             ))}
           </div>
 
-          {/* Members Section */}
+          {/* Membros Section */}
           <div style={{ padding: '24px 40px 40px' }}>
             {pendingMembers.length > 0 && (
               <div style={{ marginBottom: '24px' }}>
@@ -891,7 +891,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                           alignItems: 'end'
                         }}>
                           <div>
-                            <div style={{ fontSize: '10px', color: '#777', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Belt</div>
+                            <div style={{ fontSize: '10px', color: '#777', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Cinto</div>
                             <select
                               value={acceptForm.belt_level}
                               onChange={(e) => setAcceptForm((prev) => ({ ...prev, belt_level: e.target.value }))}
@@ -914,7 +914,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                             <div style={{ fontSize: '10px', color: '#777', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Payment</div>
                             <select
                               value={acceptForm.payment_type}
-                              onChange={(e) => setAcceptForm((prev) => ({ ...prev, payment_type: e.target.value as "Direct Debit" | "Cash" }))}
+                              onChange={(e) => setAcceptForm((prev) => ({ ...prev, payment_type: e.target.value as "Débito Direto" | "Dinheiro" }))}
                               style={{
                                 width: '100%',
                                 padding: '8px 10px',
@@ -924,8 +924,8 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                                 fontSize: '12px'
                               }}
                             >
-                              <option value="Direct Debit">Direct Debit</option>
-                              <option value="Cash">Cash</option>
+                              <option value="Débito Direto">Débito Direto</option>
+                              <option value="Dinheiro">Dinheiro</option>
                             </select>
                           </div>
 
@@ -959,7 +959,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                               cursor: 'pointer'
                             }}
                           >
-                            Confirm
+                            Confirmar
                           </button>
 
                           <button
@@ -974,7 +974,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                               cursor: 'pointer'
                             }}
                           >
-                            Cancel
+                            Cancelar
                           </button>
                         </div>
                       )}
@@ -997,7 +997,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               </div>
               <input
                 type="text"
-                placeholder="Search members..."
+                placeholder="Pesquisar members..."
                 style={{
                   background: '#1a1a1a',
                   border: '1px solid #2a2a2a',
@@ -1014,7 +1014,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #2a2a2a' }}>
-                  {['Name', 'Belt', 'Email', 'Enrolled', 'Payment', 'Fee', 'Status', 'Actions'].map((col) => (
+                  {['Nome', 'Cinto', 'Email', 'Enrolled', 'Payment', 'Fee', 'Estado', 'Ações'].map((col) => (
                     <th
                       key={col}
                       style={{
@@ -1100,9 +1100,9 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                         borderRadius: '3px',
                         textTransform: 'uppercase',
                         letterSpacing: '1px',
-                        color: member.status === 'Active' ? '#CC0000' : member.status === 'Paused' ? '#888888' : '#ff4444',
-                        background: member.status === 'Active' ? 'rgba(204,0,0,0.15)' : member.status === 'Paused' ? 'rgba(255,255,255,0.05)' : 'rgba(255,50,50,0.1)',
-                        border: member.status === 'Active' ? '1px solid #CC0000' : member.status === 'Paused' ? '1px solid #444444' : '1px solid #ff4444'
+                        color: member.status === 'Ativo' ? '#CC0000' : member.status === 'Paused' ? '#888888' : '#ff4444',
+                        background: member.status === 'Ativo' ? 'rgba(204,0,0,0.15)' : member.status === 'Paused' ? 'rgba(255,255,255,0.05)' : 'rgba(255,50,50,0.1)',
+                        border: member.status === 'Ativo' ? '1px solid #CC0000' : member.status === 'Paused' ? '1px solid #444444' : '1px solid #ff4444'
                       }}>
                         {member.status}
                       </div>
@@ -1139,7 +1139,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
 
             {members.length === 0 && (
               <div style={{ padding: '40px', textAlign: 'center', color: '#555555' }}>
-                No members yet. Add your first member to get started!
+                Não members yet. Adicionar your first member to get started!
               </div>
             )}
 
@@ -1162,7 +1162,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
               }}>
                 {under16Members.length === 0 ? (
                   <div style={{ padding: '16px', fontSize: '12px', color: '#888888' }}>
-                    No under 16 members found.
+                    Não under 16 members found.
                   </div>
                 ) : (
                   under16Members.map((member) => (
@@ -1195,7 +1195,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         setNewMember={setNewMember}
         beltOptions={addMemberBeltOptions}
         isSubmitting={isSubmittingMember}
-        submitLabel={isSubmittingMember ? 'Adding...' : 'Add Member'}
+        submitLabel={isSubmittingMember ? 'Adding...' : 'Adicionar Membro'}
         onNameChange={(name) => {
           const nextNum = (members.length + 1).toString().padStart(3, '0');
           setNewMember({ ...newMember, name, ref: `GBCQ${nextNum}` });
@@ -1212,10 +1212,10 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         studentNumberReadOnly
         studentNumberPlaceholder="Auto-generated (GBCQ###)"
         feeReadOnly
-        feeLabel="Monthly Fee (€) - Auto-Calculated"
+        feeLabel="Taxa Mensal (€) - Auto-Calculated"
       />
 
-      {/* Quick Attendance Modal */}
+      {/* Quick Presenças Modal */}
       {showQuickModal && (
         <div style={{
           position: 'fixed',
@@ -1296,7 +1296,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                   e.currentTarget.style.color = '#888888';
                 }}
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 onClick={handleQuickSave}
@@ -1314,7 +1314,7 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
                 onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
                 onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
               >
-                Save
+                Guardar
               </button>
             </div>
           </div>

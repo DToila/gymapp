@@ -13,15 +13,15 @@ export default function UnpaidPaymentsTable({ rows }: { rows: UnpaidPayment[] })
   };
 
   return (
-    <Panel title="Unpaid Payments" icon={<span className="text-[#f59e0b]">▤</span>} actionText="View all" onAction={() => router.push('/payments')}>
+    <Panel title="Por Pagar Pagamentos" icon={<span className="text-[#f59e0b]">▤</span>} actionText="Ver tudo" onAction={() => router.push('/payments')}>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="text-xs uppercase tracking-wide text-zinc-500">
             <tr>
-              <th className="pb-2 font-medium">Name</th>
-              <th className="pb-2 font-medium">Amount</th>
+              <th className="pb-2 font-medium">Nome</th>
+              <th className="pb-2 font-medium">Valor</th>
               <th className="pb-2 font-medium">Due</th>
-              <th className="pb-2 font-medium text-right">Action</th>
+              <th className="pb-2 font-medium text-right">Ação</th>
             </tr>
           </thead>
           <tbody>
@@ -35,7 +35,7 @@ export default function UnpaidPaymentsTable({ rows }: { rows: UnpaidPayment[] })
                     onClick={() => handleSendReminder(row.id, row.name)}
                     className="rounded-md border border-[#c81d25] bg-[#251113] px-2.5 py-1 text-xs text-[#fda4af] hover:bg-[#3a1418]"
                   >
-                    Send reminder
+                    Enviar lembrete
                   </button>
                 </td>
               </tr>

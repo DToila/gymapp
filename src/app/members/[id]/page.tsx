@@ -32,7 +32,7 @@ export default function MemberProfilePage() {
           setMember(null);
         }
       } catch (error) {
-        console.error('Error loading member profile by id:', error);
+        console.error('Erro loading member profile by id:', error);
         setMember(null);
       } finally {
         setLoading(false);
@@ -45,8 +45,8 @@ export default function MemberProfilePage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', display: 'flex' }}>
-        <TeacherSidebar active="members" onAddMember={() => router.push('/members?openAddMember=1')} />
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>
+        <TeacherSidebar ativo="members" onAddMember={() => router.push('/members?openAddMember=1')} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>A carregar...</div>
       </div>
     );
   }
@@ -54,10 +54,10 @@ export default function MemberProfilePage() {
   if (!member) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', display: 'flex' }}>
-        <TeacherSidebar active="members" onAddMember={() => router.push('/members?openAddMember=1')} />
+        <TeacherSidebar ativo="members" onAddMember={() => router.push('/members?openAddMember=1')} />
         <div style={{ flex: 1, padding: '24px' }}>
-          <button onClick={() => router.push('/members')} style={{ background: 'transparent', border: '1px solid #2a2a2a', color: '#999', padding: '8px 10px', cursor: 'pointer', marginBottom: '20px' }}>← Back</button>
-          <div>Member not found.</div>
+          <button onClick={() => router.push('/members')} style={{ background: 'transparent', border: '1px solid #2a2a2a', color: '#999', padding: '8px 10px', cursor: 'pointer', marginBottom: '20px' }}>← Voltar</button>
+          <div>Membro not found.</div>
         </div>
       </div>
     );
@@ -65,7 +65,7 @@ export default function MemberProfilePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f0f0f0', display: 'flex' }}>
-      <TeacherSidebar active="members" onAddMember={() => router.push('/members?openAddMember=1')} />
+      <TeacherSidebar ativo="members" onAddMember={() => router.push('/members?openAddMember=1')} />
       <div style={{ flex: 1 }}>
         <MemberProfile
           member={member}

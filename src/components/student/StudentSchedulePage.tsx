@@ -22,7 +22,7 @@ type ScheduleViewItem = {
   time: string;
   room: 'GBK' | 'GB1' | 'GB2';
   level: string;
-  type: 'Gi' | 'No-Gi' | 'Sparring';
+  type: 'Gi' | 'Não-Gi' | 'Sparring';
   notes?: string;
 };
 
@@ -142,12 +142,12 @@ export default function StudentSchedulePage() {
 
   return (
     <StudentShell
-      active="schedule"
+      ativo="schedule"
       title="Horário"
       subtitle="Gracie Barra Carnaxide e Oeiras"
       rightActions={
         <button className="rounded-xl border border-[#252525] bg-[#141414] px-4 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-[#3a3a3a] hover:text-white">
-          Download
+          Descarregar
         </button>
       }
     >

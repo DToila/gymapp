@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import { Member } from './types';
+import { Membro } from './types';
 
 interface RequestsListProps {
   items: Member[];
@@ -22,7 +22,7 @@ export default function RequestsList({ items, search }: RequestsListProps) {
   return (
     <div style={{ border: '1px solid #222', background: '#121212', borderRadius: '16px', boxShadow: '0 10px 24px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
       {filtered.length === 0 ? (
-        <div style={{ padding: '24px', color: '#888' }}>No requests found</div>
+        <div style={{ padding: '24px', color: '#888' }}>Não requests found</div>
       ) : (
         filtered.map((req) => (
           <div key={req.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr auto', gap: '12px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid #1f1f1f' }}>
@@ -32,11 +32,11 @@ export default function RequestsList({ items, search }: RequestsListProps) {
             </div>
             <div style={{ color: '#999', fontSize: '12px' }}>{req.enrolledAt || '-'}</div>
             <select
-              value={statuses[req.id] || req.requestStatus || 'Pending'}
+              value={statuses[req.id] || req.requestStatus || 'Pendente'}
               onChange={(e) => setStatuses((prev) => ({ ...prev, [req.id]: e.target.value }))}
               style={{ background: '#151515', color: '#f0f0f0', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '7px 10px', fontSize: '12px' }}
             >
-              <option>Pending</option>
+              <option>Pendente</option>
               <option>In review</option>
               <option>Rejected</option>
             </select>

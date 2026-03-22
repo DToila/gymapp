@@ -14,8 +14,8 @@ interface StudentData {
   name: string;
   email?: string;
   belt_level: string;
-  status: "Active" | "Paused" | "Unpaid";
-  payment_type?: "Direct Debit" | "Cash";
+  status: "Ativo" | "Paused" | "Por Pagar";
+  payment_type?: "Débito Direto" | "Dinheiro";
   fee?: number;
   family_discount: boolean;
   date_of_birth?: string;
@@ -62,7 +62,7 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
         setNotes(notesData);
       }
     } catch (error) {
-      console.error("Error loading student data:", error);
+      console.error("Erro loading student data:", error);
     } finally {
       setLoading(false);
     }
@@ -99,7 +99,7 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0a0a0a' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3px solid #CC0000', borderTop: '3px solid transparent', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }}></div>
-          <p style={{ color: '#555555' }}>Loading your profile...</p>
+          <p style={{ color: '#555555' }}>A carregar your profile...</p>
         </div>
       </div>
     );
@@ -124,7 +124,7 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
             onMouseEnter={(e) => e.currentTarget.style.background = '#990000'}
             onMouseLeave={(e) => e.currentTarget.style.background = '#CC0000'}
           >
-            Back to Login
+            Voltar to Login
           </button>
         </div>
       </div>
@@ -140,7 +140,7 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
             <GBLogo size={40} />
             <div>
               <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#f0f0f0', fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '4px' }}>GRACIE BARRA</h1>
-              <p style={{ color: '#888888', fontSize: '12px' }}>Carnaxide & Queijas / Student Portal</p>
+              <p style={{ color: '#888888', fontSize: '12px' }}>Carnaxide & Queijas / Aluno Portal</p>
             </div>
           </div>
           <button
@@ -166,13 +166,13 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
               e.currentTarget.style.color = '#888888';
             }}
           >
-            Logout
+            Sair
           </button>
         </div>
       </header>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
-        {/* Profile Card */}
+        {/* Perfil Card */}
         <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '32px', marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
             <div>
@@ -191,12 +191,12 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
             </div>
           </div>
 
-          {/* Profile Details Grid */}
+          {/* Perfil Details Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span>🥋</span>
               <div>
-                <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Belt Level</p>
+                <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Cinto Level</p>
                 <p style={{ fontWeight: 600, color: '#f0f0f0', fontSize: '14px' }}>{student.belt_level}</p>
               </div>
             </div>
@@ -205,7 +205,7 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span>💳</span>
                 <div>
-                  <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Payment Type</p>
+                  <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Tipo de Pagamento</p>
                   <p style={{ fontWeight: 600, color: '#f0f0f0', fontSize: '14px' }}>{student.payment_type}</p>
                 </div>
               </div>
@@ -215,7 +215,7 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span>💲</span>
                 <div>
-                  <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Monthly Fee</p>
+                  <p style={{ color: '#555555', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px' }}>Taxa Mensal</p>
                   <p style={{ fontWeight: 600, color: '#f0f0f0', fontSize: '14px' }}>€{student.fee?.toFixed(2)}</p>
                 </div>
               </div>
@@ -224,10 +224,10 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
-          {/* Attendance Calendar */}
+          {/* Presenças Calendar */}
           <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '24px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '24px', letterSpacing: '3px', textTransform: 'uppercase' }}>
-              Attendance - {new Date(year, selectedMonth).toLocaleString("default", { month: "long", year: "numeric" })}
+              Presenças - {new Date(year, selectedMonth).toLocaleString("default", { month: "long", year: "numeric" })}
             </h3>
 
             {/* Month Selector */}
@@ -313,22 +313,22 @@ export default function StudentDashboard({ studentId, onLogout }: StudentDashboa
               </div>
             </div>
 
-            {/* Attendance Percentage */}
+            {/* Presenças Percentage */}
             <div style={{ padding: '16px', background: 'rgba(204,0,0,0.1)', border: '1px solid #CC0000' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ color: '#888888', fontSize: '12px', fontWeight: 600 }}>Current Month Attendance</span>
+                <span style={{ color: '#888888', fontSize: '12px', fontWeight: 600 }}>Current Month Presenças</span>
                 <span style={{ fontSize: '24px', fontWeight: 900, color: '#CC0000' }}>{currentMonthAttendance}%</span>
               </div>
             </div>
           </div>
 
-          {/* Teacher Notes */}
+          {/* Professor Notas */}
           <div style={{ background: '#111111', border: '1px solid #2a2a2a', padding: '24px', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 800, fontFamily: '"Barlow Condensed", sans-serif', marginBottom: '16px', letterSpacing: '2px', textTransform: 'uppercase' }}>TEACHER NOTES</h3>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {notes.length === 0 ? (
-                <p style={{ color: '#555555', textAlign: 'center', paddingTop: '32px' }}>No notes yet</p>
+                <p style={{ color: '#555555', textAlign: 'center', paddingTop: '32px' }}>Não notes yet</p>
               ) : (
                 notes.map((note, index) => (
                   <div key={note.id}>

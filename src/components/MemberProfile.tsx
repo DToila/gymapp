@@ -29,7 +29,7 @@ interface MemberEditForm {
   phone: string;
   date_of_birth: string;
   belt_level: string;
-  payment_type: 'Direct Debit' | 'Cash';
+  payment_type: 'Débito Direto' | 'Dinheiro';
   fee: string;
   status: 'Active' | 'Paused' | 'Unpaid';
   iban: string;
@@ -50,10 +50,10 @@ const BEHAVIOR_EMOJIS: Record<'GOOD' | 'NEUTRAL' | 'BAD', string> = {
   BAD: "😡",
 };
 
-// Because Member is defined in TeacherDashboard, we can re-declare necessary parts here to avoid circular import.
+// Because Membro is defined in TeacherDashboard, we can re-declare necessary parts here to avoid circular import.
 interface MemberDetail extends Member {
   beltLevel?: string;
-  paymentType?: 'Direct Debit' | 'Cash';
+  paymentType?: 'Débito Direto' | 'Dinheiro';
   monthlyFee?: number;
   familyDiscount?: boolean;
   attendance?: { [date: string]: boolean };
@@ -64,8 +64,8 @@ const createEditForm = (member: MemberDetail): MemberEditForm => ({
   email: member.email || '',
   phone: member.phone || '',
   date_of_birth: member.date_of_birth || '',
-  belt_level: member.beltLevel || member.belt_level || 'White Belt',
-  payment_type: (member.paymentType || member.payment_type || 'Direct Debit') as 'Direct Debit' | 'Cash',
+  belt_level: member.beltLevel || member.belt_level || 'White Cinto',
+  payment_type: (member.paymentType || member.payment_type || 'Débito Direto') as 'Débito Direto' | 'Dinheiro',
   fee: String(member.monthlyFee ?? member.fee ?? 0),
   status: member.status,
   iban: member.iban || '',
@@ -74,9 +74,9 @@ const createEditForm = (member: MemberDetail): MemberEditForm => ({
 
 function statusBadgeClass(status: string): string {
   switch (status) {
-    case 'Active': return 'border-green-800 bg-green-900/30 text-green-400';
+    case 'Ativo': return 'border-green-800 bg-green-900/30 text-green-400';
     case 'Paused': return 'border-[#444] bg-[#1e1e1e] text-[#888]';
-    case 'Unpaid': return 'border-red-800 bg-red-900/20 text-red-400';
+    case 'Por Pagar': return 'border-red-800 bg-red-900/20 text-red-400';
     default: return 'border-[#444] bg-[#1e1e1e] text-[#888]';
   }
 }
@@ -116,7 +116,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [reportToDate, setReportToDate] = useState<string>('');
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const isPendingMember = (data.status as unknown as string) === 'pending';
+  const isPendingMember = (data.status as unknown as string) === 'pendente';
   void commentsEndRef;
 
   const age = data.date_of_birth ? getAgeFromDateOfBirth(data.date_of_birth) : null;
@@ -180,7 +180,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         try {
           setBehaviorMap(await loadKidBehaviorMap());
         } catch (error) {
-          console.error('Error loading kid behavior events:', error);
+          console.error('Erro loading kid behavior events:', error);
           setBehaviorMap(readLocalBehaviorMap());
         }
       } else {
@@ -198,7 +198,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       setComments(formattedComments);
 
     } catch (error) {
-      console.error('Error loading member data:', error);
+      console.error('Erro loading member data:', error);
     } finally {
       setLoading(false);
     }
@@ -249,14 +249,14 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     const currentAttended = attendanceMap[date] || false;
     const newAttended = !currentAttended;
 
-    // Update UI immediately (optimistic update)
+    // Atualizar UI immediately (optimistic update)
     setAttendanceMap(prev => ({
       ...prev,
       [date]: newAttended
     }));
 
     try {
-      // Save to database
+      // Guardar to database
       await setAttendance(member.id, date, newAttended);
       const nextAttendanceByDate = setMemberAttendanceForDate(readAttendanceByDate(), date, member.id, newAttended);
       writeAttendanceByDate(nextAttendanceByDate);
@@ -277,7 +277,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         try {
           await deleteKidBehaviorForDate({ kidId: member.id, dateKey: date });
         } catch (error) {
-          console.error('Error clearing behavior for date:', error);
+          console.error('Erro clearing behavior for date:', error);
         }
       }
 
@@ -293,7 +293,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         });
       }, 200);
     } catch (error) {
-      console.error('Error updating attendance:', error);
+      console.error('Erro updating attendance:', error);
       // Revert the optimistic update on error
       setAttendanceMap(prev => ({
         ...prev,
@@ -324,7 +324,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       await upsertKidBehavior({ kidId: member.id, dateKey: date, value: behavior });
       setEmojiPickerDate(null);
     } catch (error) {
-      console.error('Error setting behavior:', error);
+      console.error('Erro setting behavior:', error);
     }
   };
 
@@ -381,7 +381,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       const noteData = {
         member_id: member.id,
         date: new Date().toISOString().split('T')[0],
-        teacher_name: "Coach Silva", // In a real app, this would come from auth
+        teacher_name: "Professor Silva", // In a real app, this would come from auth
         note_text: newComment.trim(),
       };
 
@@ -397,7 +397,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       setComments([...comments, comment]);
       setNewComment("");
     } catch (error) {
-      console.error('Error creating note:', error);
+      console.error('Erro creating note:', error);
     }
   };
 
@@ -435,7 +435,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
   const handleEditSave = async () => {
     if (!editForm.name.trim()) {
-      console.error('Member profile save blocked: name is required.');
+      console.error('Membro profile save blocked: name is required.');
       return;
     }
 
@@ -465,7 +465,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       setEditForm(createEditForm(updatedMember));
       setIsEditing(false);
     } catch (error) {
-      console.error('Error saving member profile:', error);
+      console.error('Erro saving member profile:', error);
     } finally {
       setIsSaving(false);
     }
@@ -565,19 +565,19 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="w-12 h-12 rounded-full border-[3px] border-[#c81d25] border-t-transparent animate-spin mx-auto mb-4" />
-            <p className="text-[#555]">Loading member data...</p>
+            <p className="text-[#555]">A carregar member data...</p>
           </div>
         </div>
       ) : (
         <div className="max-w-5xl mx-auto">
 
-          {/* Top bar: Back + Edit/Save/Cancel */}
+          {/* Top bar: Voltar + Editar/Guardar/Cancelar */}
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={onBack}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#252525] bg-[#141414] text-sm font-semibold text-[#888] hover:text-[#ccc] hover:border-[#444] transition-colors cursor-pointer"
             >
-              ← Back
+              ← Voltar
             </button>
             {isEditing ? (
               <div className="flex gap-2">
@@ -586,14 +586,14 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   disabled={isSaving}
                   className="px-4 py-2 rounded-xl border border-[#252525] bg-[#141414] text-[#888] text-xs font-bold uppercase tracking-widest hover:text-[#ccc] disabled:opacity-50 transition-colors cursor-pointer"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button
                   onClick={handleEditSave}
                   disabled={isSaving}
                   className="px-4 py-2 rounded-xl bg-[#c81d25] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#a81520] disabled:opacity-50 transition-colors cursor-pointer"
                 >
-                  {isSaving ? 'Saving...' : 'Save'}
+                  {isSaving ? 'Saving...' : 'Guardar'}
                 </button>
               </div>
             ) : (
@@ -601,7 +601,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                 onClick={() => setIsEditing(true)}
                 className="px-4 py-2 rounded-xl border border-[#c81d25] text-[#c81d25] text-xs font-bold uppercase tracking-widest hover:bg-[#c81d25] hover:text-white transition-colors cursor-pointer"
               >
-                Edit Member
+                Editar Membro
               </button>
             )}
           </div>
@@ -614,7 +614,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                 {profileInitials}
               </div>
               <div className="flex-1 min-w-0">
-                {/* Name + badges */}
+                {/* Nome + badges */}
                 <div className="mb-5">
                   {isEditing ? (
                     <input
@@ -632,7 +632,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   {!isEditing && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       <span className="rounded-full px-3 py-0.5 text-[11px] font-bold border border-[#c81d25]/40 bg-[rgba(200,29,37,0.15)] text-[#ef4444]">
-                        {data.beltLevel || data.belt_level || 'No Belt'}
+                        {data.beltLevel || data.belt_level || 'Não Cinto'}
                       </span>
                       <span className={`rounded-full px-3 py-0.5 text-[11px] font-bold border ${statusBadgeClass(data.status)}`}>
                         {data.status}
@@ -652,7 +652,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Phone</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Telemóvel</div>
                     {isEditing ? (
                       <input type="tel" value={editForm.phone} onChange={(e) => handleEditFieldChange('phone', e.target.value)} className={inputCls} />
                     ) : (
@@ -660,7 +660,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Date of Birth</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Data of Birth</div>
                     {isEditing ? (
                       <input type="date" value={editForm.date_of_birth} onChange={(e) => handleEditDateOfBirthChange(e.target.value)} className={inputCls} />
                     ) : (
@@ -668,7 +668,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Belt Level</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Cinto Level</div>
                     {isEditing ? (
                       <select value={editForm.belt_level} onChange={(e) => handleEditFieldChange('belt_level', e.target.value)} className={selectCls}>
                         {editBeltOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -678,30 +678,30 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Status</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Estado</div>
                     {isEditing ? (
                       <select value={editForm.status} onChange={(e) => handleEditFieldChange('status', e.target.value as MemberEditForm['status'])} className={selectCls}>
-                        <option>Active</option>
+                        <option>Ativo</option>
                         <option>Paused</option>
-                        <option>Unpaid</option>
+                        <option>Por Pagar</option>
                       </select>
                     ) : (
                       <div className="text-sm text-[#f0f0f0]">{data.status}</div>
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Payment Type</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Tipo de Pagamento</div>
                     {isEditing ? (
                       <select value={editForm.payment_type} onChange={(e) => handleEditPaymentTypeChange(e.target.value as MemberEditForm['payment_type'])} className={selectCls}>
-                        <option>Direct Debit</option>
-                        <option>Cash</option>
+                        <option>Débito Direto</option>
+                        <option>Dinheiro</option>
                       </select>
                     ) : (
                       <div className="text-sm text-[#f0f0f0]">{data.paymentType || data.payment_type || 'N/A'}</div>
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Monthly Fee</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Taxa Mensal</div>
                     {isEditing ? (
                       <input type="number" step="0.01" value={editForm.fee} onChange={(e) => handleEditFieldChange('fee', e.target.value)} className={inputCls} />
                     ) : (
@@ -729,10 +729,10 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
             </div>
           </div>
 
-          {/* Pending notice (no blur) */}
+          {/* Pendente notice (no blur) */}
           {isPendingMember && (
             <div className="mb-4 rounded-xl border border-[#c81d25]/20 bg-[#c81d25]/5 px-4 py-3 text-sm text-[#888] text-center">
-              This member&apos;s registration is pending approval.
+              This member&apos;s registration is pendente approval.
             </div>
           )}
 
@@ -744,19 +744,19 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                 const { attended, total } = getMonthAttendanceCount(year, m);
                 const displayValue = showPercentage ? `${percent}%` : `${attended}/${total}`;
                 const monthName = new Date(year, m).toLocaleString("default", { month: "short" });
-                const active = selectedMonth === m;
+                const ativo = selectedMonth === m;
                 return (
                   <button
                     key={m}
                     onClick={() => setSelectedMonth(m)}
                     title={`${percent}% attendance`}
                     className={`relative flex flex-col items-center justify-center w-16 h-16 rounded-xl border shrink-0 text-xs font-bold transition-colors overflow-hidden cursor-pointer ${
-                      active
+                      ativo
                         ? 'bg-[#c81d25] border-[#c81d25] text-white'
                         : 'bg-[#141414] border-[#252525] text-[#888] hover:bg-[#1a1a1a] hover:text-[#aaa]'
                     }`}
                   >
-                    {!active && (
+                    {!ativo && (
                       <div className="absolute bottom-0 left-0 h-[2px] bg-[#c81d25]" style={{ width: `${percent}%` }} />
                     )}
                     <span>{monthName}</span>
@@ -781,7 +781,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
             </div>
           </div>
 
-          {/* Two-column: Calendar + Notes */}
+          {/* Two-column: Calendar + Notas */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
             {/* Calendar card */}
@@ -879,14 +879,14 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
               </div>
             </div>
 
-            {/* Notes card */}
+            {/* Notas card */}
             <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 flex flex-col" style={{ minHeight: '400px' }}>
               <h3 className="text-sm font-black uppercase tracking-widest text-[#f0f0f0] mb-4 shrink-0" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
-                Notes &amp; Comments
+                Notas &amp; Comments
               </h3>
               <div className="flex-1 overflow-y-auto mb-4" style={{ maxHeight: '320px' }}>
                 {comments.length === 0 ? (
-                  <p className="text-[#555] text-sm text-center pt-8">No comments yet. Add the first note!</p>
+                  <p className="text-[#555] text-sm text-center pt-8">Não comments yet. Adicionar the first note!</p>
                 ) : (
                   <div className="space-y-4">
                     {[...comments].reverse().map((comment) => (
@@ -911,7 +911,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendComment()}
-                  placeholder="Add a note or comment..."
+                  placeholder="Adicionar a note or comment..."
                   className="flex-1 px-3 py-2 rounded-xl border border-[#2a2a2a] bg-[#161616] text-sm text-[#f0f0f0] placeholder-[#444] focus:outline-none focus:border-[#c81d25]/50 transition-colors"
                   style={{ fontFamily: '"Barlow", sans-serif' }}
                 />
@@ -920,7 +920,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   disabled={!newComment.trim()}
                   className="px-4 py-2 rounded-xl bg-[#c81d25] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#a81520] disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
-                  Add
+                  Adicionar
                 </button>
               </div>
             </div>
@@ -932,10 +932,10 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
               Graduation Report
             </h3>
 
-            {/* Date Range Filter */}
+            {/* Data Range Filter */}
             <div className="mb-6 p-4 rounded-xl border border-[#252525] bg-[#141414]">
               <div className="mb-3">
-                <label className="text-[9px] font-bold uppercase tracking-widest text-[#555] block mb-2">Custom Date Range (Optional)</label>
+                <label className="text-[9px] font-bold uppercase tracking-widest text-[#555] block mb-2">Custom Data Range (Optional)</label>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1">
                     <input
@@ -977,7 +977,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Total attendance */}
                   <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Total Attendance</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Total Presenças</div>
                     <div className="text-3xl font-black text-[#f0f0f0] mb-1">
                       {stats.totalAttendance}
                     </div>
@@ -1004,7 +1004,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     <div className="text-[11px] text-[#888]">days attended</div>
                   </div>
 
-                  {/* Attendance percentage */}
+                  {/* Presenças percentage */}
                   <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
                     <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Total Percentage</div>
                     <div className="flex items-baseline gap-2">

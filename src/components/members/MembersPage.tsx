@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createMember, getKidBehaviorEvents, getMembers } from '../../../lib/database';
 import { calculateMonthlyFee, getAgeFromDateOfBirth, getBeltOptions } from '../../../lib/types';
 import { mockMembers } from './mockData';
-import { AdultsFilters, KidsFilters, Member, MembersTab, QuickView } from './types';
+import { AdultsFilters, KidsFilters, Membro, MembersTab, QuickView } from './types';
 import SearchBar from './SearchBar';
 import MembersTabs from './MembersTabs';
 import QuickViewsDropdown from './QuickViewsDropdown';
@@ -34,15 +34,15 @@ type MembersAddForm = AddMemberFormData;
 
 function normalizeStatus(rawStatus: string | undefined): Member['status'] {
   const value = String(rawStatus || '').trim().toLowerCase();
-  if (value === 'pending') return 'Pending';
-  if (value === 'active') return 'Active';
-  if (value === 'paused') return 'Paused';
-  if (value === 'unpaid') return 'Unpaid';
-  return 'Active';
+  if (value === 'pendente') return 'Pendente';
+  if (value === 'ativo') return 'Ativo';
+  if (value === 'pausado') return 'Paused';
+  if (value === 'unpaid') return 'Por Pagar';
+  return 'Ativo';
 }
 
 function toTitleBelt(rawBelt: string | undefined): string {
-  const value = String(rawBelt || 'White').trim().replace(' Belt', '');
+  const value = String(rawBelt || 'White').trim().replace(' Cinto', '');
   return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 }
 
@@ -57,13 +57,13 @@ function mapDbMember(member: any): Member {
     status,
     paymentMethod: member.payment_type || undefined,
     fee: Number(member.fee || 0),
-    amountDue: status === 'Unpaid' ? Number(member.fee || 0) : 0,
+    amountDue: status === 'Por Pagar' ? Number(member.fee || 0) : 0,
     nextPaymentDate: undefined,
     behaviorState: undefined,
     enrolledAt: (member.created_at || '').split('T')[0] || '',
     dateOfBirth: member.date_of_birth,
     lastAttendanceAt: undefined,
-    requestStatus: status === 'Pending' ? 'Pending' : undefined,
+    requestStatus: status === 'Pendente' ? 'Pendente' : undefined,
     group: undefined
   };
 }
@@ -77,9 +77,9 @@ function isKidsMember(member: Member): boolean {
 function inferKidsGroup(member: Member): Member['group'] {
   if (member.group) return member.group;
   const age = getAgeFromDateOfBirth(member.dateOfBirth);
-  if (age === null) return 'Kids 1';
-  if (age <= 8) return 'Kids 1';
-  if (age <= 12) return 'Kids 2';
+  if (age === null) return 'Crianças 1';
+  if (age <= 8) return 'Crianças 1';
+  if (age <= 12) return 'Crianças 2';
   return 'Teens';
 }
 
@@ -130,11 +130,11 @@ export default function MembersPage() {
   const [isSubmittingMember, setIsSubmittingMember] = useState(false);
   const [newMember, setNewMember] = useState<MembersAddForm>({
     name: '',
-    belt_level: 'White Belt',
-    status: 'Active',
+    belt_level: 'White Cinto',
+    status: 'Ativo',
     phone: '',
     email: '',
-    payment_type: 'Direct Debit',
+    payment_type: 'Débito Direto',
     fee: 0,
     family_discount: false,
     date_of_birth: '',
@@ -176,7 +176,7 @@ export default function MembersPage() {
       try {
         behaviorEvents = await getKidBehaviorEvents({ fromDateKey, toDateKey: toDate });
       } catch (error) {
-        console.error('Error loading 30-day kid behavior events for members page:', error);
+        console.error('Erro loading 30-day kid behavior events for members page:', error);
       }
 
       const localBehaviorEvents = readBehaviorEvents().filter(
@@ -210,13 +210,13 @@ export default function MembersPage() {
         };
       });
 
-      const pending = withBehavior.filter((m) => m.status === 'Pending');
-      const nonPending = withBehavior.filter((m) => m.status !== 'Pending');
+      const pendente = withBehavior.filter((m) => m.status === 'Pendente');
+      const nonPending = withBehavior.filter((m) => m.status !== 'Pendente');
 
       setAllMembers(nonPending.length > 0 ? nonPending : mockMembers);
-      setRequests(pending);
+      setRequests(pendente);
     } catch (error) {
-      console.error('Error loading members page data:', error);
+      console.error('Erro loading members page data:', error);
       setAllMembers(mockMembers);
       setRequests([]);
     } finally {
@@ -264,7 +264,7 @@ export default function MembersPage() {
       if (quickView === 'recent') {
         setKidsFilters((prev) => ({ ...prev, sort: 'recent' }));
       }
-      if (quickView === 'inactive') {
+      if (quickView === 'inativo') {
         setKidsFilters((prev) => ({ ...prev, sort: 'attentionFirst' }));
       }
     }
@@ -282,17 +282,17 @@ export default function MembersPage() {
       })
       .filter((member) => {
         if (adultsFilters.status === 'all') return true;
-        if (adultsFilters.status === 'active') return member.status === 'Active';
-        if (adultsFilters.status === 'paused') return member.status === 'Paused';
-        return member.status === 'Unpaid' || (member.amountDue || 0) > 0;
+        if (adultsFilters.status === 'ativo') return member.status === 'Ativo';
+        if (adultsFilters.status === 'pausado') return member.status === 'Paused';
+        return member.status === 'Por Pagar' || (member.amountDue || 0) > 0;
       })
       .filter((member) => adultsFilters.belt === 'all' || String(member.belt || '').toLowerCase() === adultsFilters.belt.toLowerCase())
       .filter((member) => adultsFilters.payment === 'all' || member.paymentMethod === adultsFilters.payment)
       .filter((member) => {
-        if (quickView === 'unpaid') return (member.amountDue || 0) > 0 || member.status === 'Unpaid';
+        if (quickView === 'unpaid') return (member.amountDue || 0) > 0 || member.status === 'Por Pagar';
         if (quickView === 'birthdays') return isWithinNext7DaysBirthday(member.dateOfBirth);
         if (quickView === 'newThisMonth') return isNewThisMonth(member.enrolledAt);
-        if (quickView === 'inactive') return isInactive(member.lastAttendanceAt);
+        if (quickView === 'inativo') return isInactive(member.lastAttendanceAt);
         return true;
       });
 
@@ -319,7 +319,7 @@ export default function MembersPage() {
       .filter((member) => {
         if (quickView === 'birthdays') return isWithinNext7DaysBirthday(member.dateOfBirth);
         if (quickView === 'newThisMonth') return isNewThisMonth(member.enrolledAt);
-        if (quickView === 'inactive') return isInactive(member.lastAttendanceAt);
+        if (quickView === 'inativo') return isInactive(member.lastAttendanceAt);
         return true;
       });
 
@@ -379,11 +379,11 @@ export default function MembersPage() {
       setShowAddModal(false);
       setNewMember({
         name: '',
-        belt_level: 'White Belt',
-        status: 'Active',
+        belt_level: 'White Cinto',
+        status: 'Ativo',
         phone: '',
         email: '',
-        payment_type: 'Direct Debit',
+        payment_type: 'Débito Direto',
         fee: 0,
         family_discount: false,
         date_of_birth: '',
@@ -395,8 +395,8 @@ export default function MembersPage() {
       });
       await load();
     } catch (error) {
-      console.error('Error creating member from members page:', error);
-      alert('Error creating member. Please try again.');
+      console.error('Erro creating member from members page:', error);
+      alert('Erro creating member. Please try again.');
     } finally {
       setIsSubmittingMember(false);
     }
@@ -404,7 +404,7 @@ export default function MembersPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0b0b0b 0%, #101010 100%)', color: '#f0f0f0', display: 'flex' }}>
-      <TeacherSidebar active="members" requestsCount={filteredRequests.length} onAddMember={() => setShowAddModal(true)} />
+      <TeacherSidebar ativo="members" requestsCount={filteredRequests.length} onAddMember={() => setShowAddModal(true)} />
       <div style={{ flex: 1, padding: '26px' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -420,12 +420,12 @@ export default function MembersPage() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
-            <h1 className="text-4xl font-bold text-white">Members</h1>
-            <p className="mt-1 text-sm text-zinc-500">Student Management | BJJ/Gym</p>
+            <h1 className="text-4xl font-bold text-white">Membros</h1>
+            <p className="mt-1 text-sm text-zinc-500">Aluno Management | BJJ/Gym</p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-[#c81d25] px-4 py-2 text-xs font-semibold text-white shadow-lg hover:bg-[#b01720] transition">
-              + Add member
+              + Adicionar member
             </button>
             <RowActionsMenu
               options={[
@@ -478,7 +478,7 @@ export default function MembersPage() {
         setNewMember={setNewMember}
         beltOptions={addMemberBeltOptions}
         isSubmitting={isSubmittingMember}
-        submitLabel={isSubmittingMember ? 'Saving...' : 'Save member'}
+        submitLabel={isSubmittingMember ? 'Saving...' : 'Guardar member'}
         onNameChange={(name) => {
           const nextNum = (allMembers.length + 1).toString().padStart(3, '0');
           setNewMember((prev) => ({ ...prev, name, ref: `GBCQ${nextNum}` }));
@@ -494,7 +494,7 @@ export default function MembersPage() {
         studentNumberReadOnly
         studentNumberPlaceholder="Auto-generated (GBCQ###)"
         feeReadOnly
-        feeLabel="Monthly Fee (€) - Auto-Calculated"
+        feeLabel="Taxa Mensal (€) - Auto-Calculated"
       />
     </div>
   );

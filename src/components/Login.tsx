@@ -42,7 +42,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         // For student login, find member by email
         const student = await getMemberByEmail(email);
         if (!student) {
-          setError("Student profile not found. Please check your email.");
+          setError("Aluno profile not found. Please check your email.");
           setIsLoading(false);
           return;
         }
@@ -188,7 +188,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             </div>
           </div>
 
-          {/* Role Selector */}
+          {/* Função Selector */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -338,7 +338,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
         padding: '64px 56px',
         overflowY: 'auto'
       }}>
-        {/* Back Button */}
+        {/* Voltar Button */}
         <button
           onClick={handleBackClick}
           style={{
@@ -405,7 +405,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
         {/* Form */}
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', maxWidth: '420px' }}>
-          {/* Error Message */}
+          {/* Erro Message */}
           {error && (
             <div style={{
               padding: '14px 16px',
@@ -476,7 +476,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             </button>
           )}
 
-          {/* Password Input - Only for Teacher */}
+          {/* Palavra-passe Input - Only for Professor */}
           {userType === "teacher" && (
             <div style={{ position: 'relative', marginBottom: '16px' }}>
               <input
@@ -521,7 +521,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Enviar Button */}
           <button
             type="submit"
             disabled={isLoading}

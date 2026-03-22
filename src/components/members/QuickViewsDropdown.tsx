@@ -16,11 +16,11 @@ export default function QuickViewsDropdown({ value, onChange }: QuickViewsDropdo
         onChange={(e) => onChange(e.target.value as QuickView)}
         className="rounded-lg border border-[#252525] bg-[#151515] px-3 py-2 text-xs text-zinc-100"
       >
-        <option value="recent">Recent</option>
-        <option value="unpaid">Unpaid / To pay</option>
+        <option value="recent">Recente</option>
+        <option value="unpaid">Por Pagar / To pay</option>
         <option value="birthdays">Birthdays (next 7 days)</option>
         <option value="newThisMonth">New this month</option>
-        <option value="inactive">Inactive</option>
+        <option value="inativo">Inativo</option>
       </select>
     </div>
   );

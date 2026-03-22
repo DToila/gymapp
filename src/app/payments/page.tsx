@@ -58,7 +58,7 @@ const normalizeMemberStatus = (value: unknown): string => normalizeText(value).t
 const isRequestMember = (member: MemberPaymentView): boolean => {
   const status = normalizeMemberStatus(member.status)
   const requestStatus = normalizeMemberStatus(member.request_status)
-  return status === 'pending' || status === 'request' || requestStatus === 'pending' || requestStatus === 'request'
+  return status === 'pendente' || status === 'pedido' || requestStatus === 'pendente' || requestStatus === 'pedido'
 }
 
 const normalizeStatus = (value: unknown): ParsedStatus => {
@@ -158,7 +158,7 @@ const resolveMemberMatch = (
   const memberIbansWithValues = members.filter(m => m.iban).map(m => `${m.name}:${normalizeIban(m.iban)}`)
   const memberNifsWithValues = members.filter(m => m.nif).map(m => `${m.name}:${normalizeNif(m.nif)}`)
   if (memberIbansWithValues.length === 0 && memberNifsWithValues.length === 0) {
-    console.warn('⚠️ WARNING: No members have IBAN or NIF values in database!')
+    console.warn('⚠️ WARNING: Não members have IBAN or NIF values in database!')
   }
   
   const memberIdRaw = normalizeText(extractRowValue(row, ['member_id', 'memberid', 'id', 'student_id']))
@@ -221,8 +221,8 @@ const resolveMemberMatch = (
     return { memberId: null, matchKey: null, reason: 'Multiple member matches found (phone/email).' }
   }
 
-  console.log(`✗ No match found for row:`, row)
-  return { memberId: null, matchKey: null, reason: 'Unmatched member (missing member_id/iban/nif/phone/email match).' }
+  console.log(`✗ Não match found for row:`, row)
+  return { memberId: null, matchKey: null, reason: 'Não Correspondido member (missing member_id/iban/nif/phone/email match).' }
 }
 
 const sumAmount = (rows: Array<{ amount: number }>): number => rows.reduce((total, row) => total + Number(row.amount || 0), 0)
@@ -230,7 +230,7 @@ const sumAmount = (rows: Array<{ amount: number }>): number => rows.reduce((tota
 const mapMethodLabel = (method: PaymentMethod): string => {
   if (method === 'TPA_CARD') return 'TPA'
   if (method === 'TPA_MBWAY') return 'TPA MBWAY'
-  if (method === 'CASH') return 'Cash'
+  if (method === 'CASH') return 'Dinheiro'
   return 'DD'
 }
 
@@ -300,7 +300,7 @@ export default function PaymentsPage() {
       }
     } catch (fetchError) {
       console.error('PAYMENTS_FETCH_ERROR', fetchError)
-      setError("Couldn't load payments. Retry")
+      setError("Não foi possível carregar pagamentos. Tenta novamente")
     } finally {
       setLoading(false)
     }
@@ -312,7 +312,7 @@ export default function PaymentsPage() {
       setPaidMonthPayments(rows.filter((row) => !row.voided))
     } catch (fetchError) {
       console.error('PAYMENTS_FETCH_ERROR', fetchError)
-      setError("Couldn't load payments. Retry")
+      setError("Não foi possível carregar pagamentos. Tenta novamente")
       setErrorDismissed(false)
       setPaidMonthPayments([])
     }
@@ -356,7 +356,7 @@ export default function PaymentsPage() {
   }, [members])
 
   const filteredPaidMonthPayments = useMemo(() => {
-    // Only show non-DD payments in 'Paid' tab (DD payments show separately in 'DD Success')
+    // Only show non-DD payments in 'Pago' tab (DD payments show separately in 'DD Sucesso')
     return paidMonthPayments.filter(
       (payment) => payment.member_id && activeMemberIds.has(payment.member_id) && payment.method !== 'DD'
     )
@@ -434,7 +434,7 @@ export default function PaymentsPage() {
       await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (submitError) {
       console.error('PAYMENTS_FETCH_ERROR', submitError)
-      setError("Couldn't load payments. Retry")
+      setError("Não foi possível carregar pagamentos. Tenta novamente")
       setErrorDismissed(false)
     } finally {
       setSubmitting(false)
@@ -473,7 +473,7 @@ export default function PaymentsPage() {
 
   const scanDdImage = async (file: File): Promise<Record<string, unknown>[]> => {
     try {
-      console.log(`🖼️ Processing image via API: ${file.name}`)
+      console.log(`🖼️ A processar imagem via API: ${file.name}`)
       const base64Data = await fileToBase64(file)
       console.log(`✓ Image converted to base64 (${base64Data.length} chars)`)
 
@@ -498,7 +498,7 @@ export default function PaymentsPage() {
 
       if (!Array.isArray(extractedData) || extractedData.length === 0) {
         console.error('❌ Image API returned invalid array')
-        throw new Error('No data rows found in image')
+        throw new Error('Não data rows found in image')
       }
 
       console.log(`✅ Image extracted ${extractedData.length} rows successfully`)
@@ -507,7 +507,7 @@ export default function PaymentsPage() {
 
       return extractedData
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error processing image'
+      const errorMessage = error instanceof Error ? error.message : 'Erro processing image'
       console.error(`❌ Image processing failed: ${errorMessage}`)
       throw new Error(errorMessage)
     }
@@ -540,7 +540,7 @@ export default function PaymentsPage() {
 
       if (!Array.isArray(extractedData) || extractedData.length === 0) {
         console.error('❌ PDF API returned invalid array')
-        throw new Error('No data rows found in PDF')
+        throw new Error('Não data rows found in PDF')
       }
 
       console.log(`✅ PDF extracted ${extractedData.length} rows successfully`)
@@ -549,7 +549,7 @@ export default function PaymentsPage() {
 
       return extractedData
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error processing PDF'
+      const errorMessage = error instanceof Error ? error.message : 'Erro processing PDF'
       console.error(`❌ PDF processing failed: ${errorMessage}`)
       throw new Error(errorMessage)
     }
@@ -568,7 +568,7 @@ export default function PaymentsPage() {
           console.log('   Sample data:', rawRow)
           console.log('   NIF value:', rawRow.nif, `(type: ${typeof rawRow.nif})`)
           console.log('   IBAN value:', rawRow.iban, `(type: ${typeof rawRow.iban})`)
-          console.log('   Status value:', rawRow.status, `(type: ${typeof rawRow.status})`)
+          console.log('   Estado value:', rawRow.status, `(type: ${typeof rawRow.status})`)
         }
       }
       
@@ -626,20 +626,20 @@ export default function PaymentsPage() {
       const matched = parsedRows.filter(r => r.memberId)
       const unmatched = parsedRows.filter(r => !r.memberId)
       
-      console.log(`\n✅ Upload Processing Summary:`)
+      console.log(`\n✅ Carregar Processing Summary:`)
       console.log(`   Total rows extracted: ${parsedRows.length}`)
       console.log(`   Matched to members: ${matched.length} (${((matched.length / parsedRows.length) * 100).toFixed(1)}%)`)
-      console.log(`   Unmatched rows: ${unmatched.length}`)
-      console.log(`   Success status: ${parsedRows.filter(r => r.status === 'success').length}`)
-      console.log(`   Failed status: ${parsedRows.filter(r => r.status === 'failed').length}`)
+      console.log(`   Não Correspondido rows: ${unmatched.length}`)
+      console.log(`   Sucesso status: ${parsedRows.filter(r => r.status === 'success').length}`)
+      console.log(`   Falhado status: ${parsedRows.filter(r => r.status === 'failed').length}`)
 
       // Debug: Log members and their IBAN/NIF
       const membersWithIbanNif = members.filter(m => m.iban || m.nif)
-      console.log(`\n👥 Database Members:`)
+      console.log(`\n👥 Database Membros:`)
       console.log(`   Total members: ${members.length}`)
       console.log(`   With IBAN/NIF: ${membersWithIbanNif.length}`)
       if (membersWithIbanNif.length === 0) {
-        console.warn(`   ⚠️ WARNING: No members have IBAN or NIF populated!`)
+        console.warn(`   ⚠️ WARNING: Não members have IBAN or NIF populated!`)
       }
       membersWithIbanNif.slice(0, 5).forEach(m => {
         console.log(`   - ${m.name}: IBAN=${m.iban || '(empty)'}, NIF=${m.nif || '(empty)'}`)
@@ -676,7 +676,7 @@ export default function PaymentsPage() {
     } catch (uploadError) {
       const errorMsg = uploadError instanceof Error ? uploadError.message : 'Unknown error processing file'
       console.error('File processing error:', errorMsg, uploadError)
-      setError(`Error: ${errorMsg}. Please try again or use a different file.`)
+      setError(`Erro: ${errorMsg}. Please try again or use a different file.`)
       setErrorDismissed(false)
     } finally {
       setUploading(false)
@@ -698,18 +698,18 @@ export default function PaymentsPage() {
       setMessage('DD batch deleted and payment effects reversed.')
       console.log('✅ Batch deleted, payments voided, and counters refreshed')
       
-      // Refresh core data to update payment counters
+      // Atualizar core data to update payment counters
       await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (deleteError) {
       const errorMsg = deleteError instanceof Error ? deleteError.message : 'Unknown error deleting batch'
-      console.error('❌ Error deleting batch:', errorMsg)
-      setError(`Error deleting batch: ${errorMsg}`)
+      console.error('❌ Erro deleting batch:', errorMsg)
+      setError(`Erro deleting batch: ${errorMsg}`)
     }
   }
 
   const handleResetPaidCounter = async () => {
-    // Confirm before resetting
-    const confirmed = window.confirm('Are you sure you want to reset the paid counter to 0 for this month? This will delete all payments.')
+    // Confirmar before resetting
+    const confirmed = window.confirm('Tens a certeza you want to reset the paid counter to 0 for this month? This will delete all payments.')
     if (!confirmed) return
 
     try {
@@ -717,15 +717,15 @@ export default function PaymentsPage() {
       console.log(`🔄 Resetting paid counter for month: ${paidMonth}`)
       await resetPaidCounterForMonth(paidMonth)
       
-      setMessage('Paid counter reset to 0. All payments for this month have been deleted.')
-      console.log('✅ Paid counter reset successfully')
+      setMessage('Pago counter reset to 0. Todos payments for this month have been deleted.')
+      console.log('✅ Pago counter reset successfully')
       
-      // Refresh data
+      // Atualizar data
       await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (resetError) {
       const errorMsg = resetError instanceof Error ? resetError.message : 'Unknown error resetting counter'
-      console.error('❌ Error resetting counter:', errorMsg)
-      setError(`Error resetting counter: ${errorMsg}`)
+      console.error('❌ Erro resetting counter:', errorMsg)
+      setError(`Erro resetting counter: ${errorMsg}`)
     }
   }
 
@@ -751,7 +751,7 @@ export default function PaymentsPage() {
       await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (ignoreError) {
       console.error('PAYMENTS_FETCH_ERROR', ignoreError)
-      setError("Couldn't load payments. Retry")
+      setError("Não foi possível carregar pagamentos. Tenta novamente")
       setErrorDismissed(false)
     }
   }
@@ -774,7 +774,7 @@ export default function PaymentsPage() {
       await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (mapError) {
       console.error('PAYMENTS_FETCH_ERROR', mapError)
-      setError("Couldn't load payments. Retry")
+      setError("Não foi possível carregar pagamentos. Tenta novamente")
       setErrorDismissed(false)
     } finally {
       setSubmitting(false)
@@ -791,12 +791,12 @@ export default function PaymentsPage() {
 
   return (
     <div className="flex h-screen bg-[#0b0b0b]">
-      <TeacherSidebar active="payments" />
+      <TeacherSidebar ativo="payments" />
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="border-b border-[#222] bg-[#0d0d0d] px-8 py-6">
-          <h1 className="text-4xl font-bold text-white">Payments</h1>
-          <p className="mt-1 text-sm text-zinc-500">Unpaid(Non-DD) and Direct Debit follow-up flow</p>
+          <h1 className="text-4xl font-bold text-white">Pagamentos</h1>
+          <p className="mt-1 text-sm text-zinc-500">Por Pagar(Non-DD) and Débito Direto follow-up flow</p>
         </div>
 
         <div className="flex-1 overflow-auto p-8 space-y-6">
@@ -807,15 +807,15 @@ export default function PaymentsPage() {
                 ))
               : (
                   <>
-                    {renderKpiCard('Unpaid (Non-DD)', String(kpi.unpaidCount), `€${kpi.unpaidTotal.toFixed(2)}`)}
-                    {renderKpiCard('Paid (This month)', String(kpi.paidCount), `€${kpi.paidTotal.toFixed(2)}`)}
+                    {renderKpiCard('Por Pagar (Non-DD)', String(kpi.unpaidCount), `€${kpi.unpaidTotal.toFixed(2)}`)}
+                    {renderKpiCard('Pago (This month)', String(kpi.paidCount), `€${kpi.paidTotal.toFixed(2)}`)}
                     {renderKpiCard(
-                      'DD Success (This month)',
+                      'DD Sucesso (This month)',
                       kpi.ddSuccessCount === null ? '—' : String(kpi.ddSuccessCount),
                       kpi.ddSuccessTotal === null ? '—' : `€${kpi.ddSuccessTotal.toFixed(2)}`
                     )}
                     {renderKpiCard(
-                      'DD Failed (This month)',
+                      'DD Falhado (This month)',
                       kpi.ddFailedCount === null ? '—' : String(kpi.ddFailedCount),
                       kpi.ddFailedTotal === null ? '—' : `€${kpi.ddFailedTotal.toFixed(2)}`
                     )}
@@ -832,7 +832,7 @@ export default function PaymentsPage() {
                     onClick={handleRetry}
                     className="rounded-md border border-[#ef4444]/50 px-3 py-1 text-xs font-semibold text-[#fecaca] hover:bg-[#7f1d1d]/30"
                   >
-                    Retry
+                    Tentar novamente
                   </button>
                   <button
                     onClick={() => setErrorDismissed(true)}
@@ -856,7 +856,7 @@ export default function PaymentsPage() {
                 activeTab === 'unpaid' ? 'border-b-2 border-[#c81d25] text-white' : 'text-zinc-400 hover:text-zinc-300'
               }`}
             >
-              Unpaid
+              Por Pagar
             </button>
             <button
               onClick={() => setActiveTab('paid')}
@@ -864,7 +864,7 @@ export default function PaymentsPage() {
                 activeTab === 'paid' ? 'border-b-2 border-[#c81d25] text-white' : 'text-zinc-400 hover:text-zinc-300'
               }`}
             >
-              Paid
+              Pago
             </button>
             <button
               onClick={() => setActiveTab('dd')}
@@ -872,7 +872,7 @@ export default function PaymentsPage() {
                 activeTab === 'dd' ? 'border-b-2 border-[#c81d25] text-white' : 'text-zinc-400 hover:text-zinc-300'
               }`}
             >
-              Direct Debit
+              Débito Direto
             </button>
           </div>
 
@@ -886,27 +886,27 @@ export default function PaymentsPage() {
 
           {!loading && activeTab === 'unpaid' ? (
             <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
-              <h2 className="text-xl font-semibold text-white">Unpaid(Non-DD)</h2>
-              <p className="mt-1 text-xs text-zinc-500">Members without DD, unpaid this month ({currentMonth}), overdue after day 8.</p>
+              <h2 className="text-xl font-semibold text-white">Por Pagar(Non-DD)</h2>
+              <p className="mt-1 text-xs text-zinc-500">Membros without DD, unpaid this month ({currentMonth}), overdue after day 8.</p>
 
               {!showOverdueList ? (
                 <div className="mt-4 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
-                  Overdue unpaid list becomes active on day 8 of the month.
+                  Vencido unpaid list becomes ativo on day 8 of the month.
                 </div>
               ) : unpaidRows.length === 0 ? (
                 <div className="mt-4 rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
-                  No non-DD unpaid members for this month.
+                  Não non-DD unpaid members for this month.
                 </div>
               ) : (
                 <div className="mt-4 overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-[#222]">
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Member</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Membro</th>
                         <th className="px-4 py-3 text-left font-semibold text-zinc-300">Type</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Amount due</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Overdue days</th>
-                        <th className="px-4 py-3 text-right font-semibold text-zinc-300">Actions</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor due</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Vencido days</th>
+                        <th className="px-4 py-3 text-right font-semibold text-zinc-300">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -937,8 +937,8 @@ export default function PaymentsPage() {
             <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
               <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-white">Paid</h2>
-                  <p className="mt-1 text-xs text-zinc-500">Payments recorded for selected month.</p>
+                  <h2 className="text-xl font-semibold text-white">Pago</h2>
+                  <p className="mt-1 text-xs text-zinc-500">Pagamentos recorded for selected month.</p>
                 </div>
                 <div className="flex flex-wrap items-end gap-4">
                   <div>
@@ -962,18 +962,18 @@ export default function PaymentsPage() {
 
               {filteredPaidMonthPayments.length === 0 ? (
                 <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">
-                  No payments recorded for this month yet.
+                  Não payments recorded for this month yet.
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-[#222]">
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Member</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Amount</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Method</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Paid at</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Notes</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Membro</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Método</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Pago at</th>
+                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Notas</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1000,8 +1000,8 @@ export default function PaymentsPage() {
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
                 <div className="mb-4 flex items-end justify-between gap-4">
                   <div className="flex-1">
-                    <h2 className="mb-2 text-xl font-semibold text-white">Upload DD Result (.xlsx, .xls, .pdf, or Image)</h2>
-                    <p className="mb-4 text-xs text-zinc-500">Upload imported direct debit result file (Excel, PDF, or image) to create DD batch items. Files are processed with AI.</p>
+                    <h2 className="mb-2 text-xl font-semibold text-white">Carregar DD Result (.xlsx, .xls, .pdf, or Image)</h2>
+                    <p className="mb-4 text-xs text-zinc-500">Carregar imported direct debit result file (Excel, PDF, or image) to create DD batch items. Files are processed with AI.</p>
                     <input
                       type="file"
                       accept=".xlsx,.xls,.pdf,image/"
@@ -1026,24 +1026,24 @@ export default function PaymentsPage() {
 
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
                 <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-zinc-300">
-                  <span>Success: {ddSummary.successCount}</span>
+                  <span>Sucesso: {ddSummary.successCount}</span>
                   <span>•</span>
-                  <span>Failed: {ddSummary.failedCount}</span>
+                  <span>Falhado: {ddSummary.failedCount}</span>
                   <span>•</span>
-                  <span>Unmatched: {ddSummary.unmatchedCount}</span>
+                  <span>Não Correspondido: {ddSummary.unmatchedCount}</span>
                 </div>
 
                 <h3 className="mb-3 text-lg font-semibold text-white">DD Results</h3>
                 {ddItems.length === 0 ? (
-                  <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">No DD items yet.</div>
+                  <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">Não DD items yet.</div>
                 ) : (
                   <div className="overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[#222]">
-                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Member</th>
-                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Amount</th>
-                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Status</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Membro</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Estado</th>
                           <th className="px-4 py-3 text-left font-semibold text-zinc-300">Reason/Note</th>
                           <th className="px-4 py-3 text-left font-semibold text-zinc-300">Match</th>
                           <th className="px-4 py-3 text-right font-semibold text-zinc-300">Ignore</th>
@@ -1058,7 +1058,7 @@ export default function PaymentsPage() {
                               key={item.id}
                               className={`border-b border-[#0f0f0f] ${isFailed ? 'bg-[#7f1d1d]/20' : 'hover:bg-[#0f0f0f]'} ${item.ignored ? 'opacity-60' : ''}`}
                             >
-                              <td className="px-4 py-3 font-medium text-white">{member?.name || 'Unmatched'}</td>
+                              <td className="px-4 py-3 font-medium text-white">{member?.name || 'Não Correspondido'}</td>
                               <td className="px-4 py-3 text-white">€{Number(item.amount || 0).toFixed(2)}</td>
                               <td className="px-4 py-3">
                                 <span
@@ -1095,14 +1095,14 @@ export default function PaymentsPage() {
               </section>
 
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
-                <h3 className="mb-3 text-lg font-semibold text-white">Unmatched Rows</h3>
+                <h3 className="mb-3 text-lg font-semibold text-white">Não Correspondido Rows</h3>
                 {unmatchedRows.length === 0 ? (
-                  <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">No unmatched rows.</div>
+                  <div className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-zinc-400">Não unmatched rows.</div>
                 ) : (
                   <div className="space-y-2">
                     {unmatchedRows.map((item) => (
                       <div key={item.id} className="rounded-lg border border-[#2a2a2a] bg-[#0f0f0f] p-3">
-                        <div className="mb-2 text-xs text-zinc-400">{item.reason || 'Unmatched row'}</div>
+                        <div className="mb-2 text-xs text-zinc-400">{item.reason || 'Não Correspondido row'}</div>
                         <div className="flex flex-wrap items-center gap-2">
                           <select
                             value={mappingByItemId[item.id] || ''}
@@ -1145,7 +1145,7 @@ export default function PaymentsPage() {
             <h2 className="mb-5 text-xl font-bold text-white">Mark as paid</h2>
             <form className="space-y-4" onSubmit={handleMarkPaidSubmit}>
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Method</label>
+                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Método</label>
                 <select
                   value={markPaidForm.method}
                   onChange={(event) =>
@@ -1163,7 +1163,7 @@ export default function PaymentsPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Amount</label>
+                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Valor</label>
                 <input
                   type="number"
                   min="0"
@@ -1199,7 +1199,7 @@ export default function PaymentsPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Paid at</label>
+                <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Pago at</label>
                 <input
                   type="datetime-local"
                   value={markPaidForm.paidAt}
@@ -1235,14 +1235,14 @@ export default function PaymentsPage() {
                   onClick={() => setShowMarkPaidModal(false)}
                   className="flex-1 rounded-lg border border-[#222] px-4 py-2.5 font-semibold text-white hover:bg-[#0f0f0f]"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 rounded-lg bg-[#c81d25] px-4 py-2.5 font-semibold text-white hover:bg-[#b01720] disabled:opacity-60"
                 >
-                  Save
+                  Guardar
                 </button>
               </div>
             </form>

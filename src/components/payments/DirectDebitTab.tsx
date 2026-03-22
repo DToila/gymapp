@@ -8,24 +8,24 @@ interface DirectDebitTabProps {
 }
 
 export default function DirectDebitTab({ records, onMarkResolved }: DirectDebitTabProps) {
-  const pendingRecords = records.filter((r) => r.status === 'Pending');
-  const failedRecords = records.filter((r) => r.status === 'Failed' || r.status === 'Returned');
+  const pendingRecords = records.filter((r) => r.status === 'Pendente');
+  const failedRecords = records.filter((r) => r.status === 'Falhado' || r.status === 'Returned');
 
   return (
     <div className="space-y-6">
-      {/* Pending / To Export */}
+      {/* Pendente / To Export */}
       <div>
-        <h3 className="text-lg font-semibold text-white mb-3">Pending Export</h3>
+        <h3 className="text-lg font-semibold text-white mb-3">Pendente Export</h3>
         {pendingRecords.length > 0 ? (
           <div className="overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#222]">
-                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Name</th>
-                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Amount</th>
-                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Due Date</th>
+                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Nome</th>
+                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor</th>
+                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Data de Vencimento</th>
                   <th className="px-4 py-3 text-left font-semibold text-zinc-300">Batch</th>
-                  <th className="px-4 py-3 text-right font-semibold text-zinc-300">Action</th>
+                  <th className="px-4 py-3 text-right font-semibold text-zinc-300">Ação</th>
                 </tr>
               </thead>
               <tbody>
@@ -46,25 +46,25 @@ export default function DirectDebitTab({ records, onMarkResolved }: DirectDebitT
             </table>
           </div>
         ) : (
-          <p className="text-zinc-400">No pending exports</p>
+          <p className="text-zinc-400">Não pendente exports</p>
         )}
       </div>
 
       <div className="border-b border-[#222]"></div>
 
-      {/* Failed / Returned */}
+      {/* Falhado / Returned */}
       <div>
-        <h3 className="text-lg font-semibold text-white mb-3">Failed / Returned</h3>
+        <h3 className="text-lg font-semibold text-white mb-3">Falhado / Returned</h3>
         {failedRecords.length > 0 ? (
           <div className="overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#222]">
-                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Name</th>
-                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Amount</th>
-                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Date</th>
-                  <th className="px-4 py-3 text-right font-semibold text-zinc-300">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Nome</th>
+                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor</th>
+                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Estado</th>
+                  <th className="px-4 py-3 text-left font-semibold text-zinc-300">Data</th>
+                  <th className="px-4 py-3 text-right font-semibold text-zinc-300">Ação</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,7 +92,7 @@ export default function DirectDebitTab({ records, onMarkResolved }: DirectDebitT
             </table>
           </div>
         ) : (
-          <p className="text-zinc-400">No failed or returned payments</p>
+          <p className="text-zinc-400">Não failed or returned payments</p>
         )}
       </div>
     </div>

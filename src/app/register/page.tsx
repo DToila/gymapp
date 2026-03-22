@@ -105,11 +105,11 @@ export default function RegisterPage() {
         nif: formData.nif.trim() || null,
         email: formData.email.trim(),
         phone: formData.telemovel.trim() || null,
-        status: "pending",
-        belt_level: "White Belt",
+        status: "pendente",
+        belt_level: "White Cinto",
         family_discount: false,
         fee: 0,
-        payment_type: "Cash",
+        payment_type: "Dinheiro",
         ref: registrationNotes || null,
       };
 

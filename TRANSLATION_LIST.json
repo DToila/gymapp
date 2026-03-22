@@ -1,0 +1,1550 @@
+[
+  {
+    "english": "Access",
+    "portuguese": "Acesso",
+    "filePath": "src/app/login/page.tsx",
+    "context": "heading - main page title"
+  },
+  {
+    "english": "Choose the type of account to enter.",
+    "portuguese": "Escolhe o tipo de conta para entrar.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "subheading - login page instruction"
+  },
+  {
+    "english": "Teacher",
+    "portuguese": "Professor",
+    "filePath": "src/app/login/page.tsx",
+    "context": "button label - login as teacher"
+  },
+  {
+    "english": "Student",
+    "portuguese": "Aluno",
+    "filePath": "src/app/login/page.tsx",
+    "context": "button label - login as student"
+  },
+  {
+    "english": "Log in as Teacher",
+    "portuguese": "Entrar como Professor",
+    "filePath": "src/app/login/page.tsx",
+    "context": "heading - teacher login form"
+  },
+  {
+    "english": "Use your staff credentials.",
+    "portuguese": "Use as suas credenciais de staff.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "description - under teacher login heading"
+  },
+  {
+    "english": "Log in as Student",
+    "portuguese": "Entrar como Aluno",
+    "filePath": "src/app/login/page.tsx",
+    "context": "heading - student login form"
+  },
+  {
+    "english": "Use your student email.",
+    "portuguese": "Use o seu email de aluno.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "description - under student login heading"
+  },
+  {
+    "english": "Email",
+    "portuguese": "Email",
+    "filePath": "src/app/login/page.tsx",
+    "context": "input label - email field"
+  },
+  {
+    "english": "Password",
+    "portuguese": "Palavra-passe",
+    "filePath": "src/app/login/page.tsx",
+    "context": "input label - password field"
+  },
+  {
+    "english": "Invalid credentials.",
+    "portuguese": "Credenciais inválidas.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "error message - login failed"
+  },
+  {
+    "english": "No user returned from authentication.",
+    "portuguese": "Nenhum utilizador retornado pela autenticação.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "error message - authentication error"
+  },
+  {
+    "english": "Profile role not found. Contact admin.",
+    "portuguese": "Função de perfil não encontrada. Contacte o administrador.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "error message - role missing"
+  },
+  {
+    "english": "Login failed. Try again.",
+    "portuguese": "Falha no login. Tenta novamente.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "error message - general login error"
+  },
+  {
+    "english": "Student profile not found. Please check your email.",
+    "portuguese": "Perfil de aluno não encontrado. Verifica o teu email.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "error message - student not found"
+  },
+  {
+    "english": "This student is still pending and cannot log in.",
+    "portuguese": "Este aluno ainda está como pedido e não pode fazer login.",
+    "filePath": "src/app/login/page.tsx",
+    "context": "error message - pending student"
+  },
+  {
+    "english": "Logging in...",
+    "portuguese": "A entrar...",
+    "filePath": "src/app/login/page.tsx",
+    "context": "button text - loading state"
+  },
+  {
+    "english": "Log in",
+    "portuguese": "Entrar",
+    "filePath": "src/app/login/page.tsx",
+    "context": "button label - login button"
+  },
+  {
+    "english": "Back",
+    "portuguese": "Voltar",
+    "filePath": "src/app/login/page.tsx",
+    "context": "button label - go back to role selection"
+  },
+  {
+    "english": "Loading login...",
+    "portuguese": "A carregar login...",
+    "filePath": "src/app/login/page.tsx",
+    "context": "loading message - fallback for suspense"
+  },
+  {
+    "english": "Back",
+    "portuguese": "← Voltar",
+    "filePath": "src/app/register/page.tsx",
+    "context": "button label - return to home"
+  },
+  {
+    "english": "NEW REGISTRATION",
+    "portuguese": "NOVA INSCRIÇÃO",
+    "filePath": "src/app/register/page.tsx",
+    "context": "heading - registration form"
+  },
+  {
+    "english": "Name",
+    "portuguese": "Nome",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - full name"
+  },
+  {
+    "english": "Date of Birth",
+    "portuguese": "Data de Nascimento",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - birth date"
+  },
+  {
+    "english": "NIF",
+    "portuguese": "NIF",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - Portuguese tax ID"
+  },
+  {
+    "english": "Gender",
+    "portuguese": "Sexo",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - gender selection"
+  },
+  {
+    "english": "Phone",
+    "portuguese": "Telemóvel",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - phone number"
+  },
+  {
+    "english": "Address",
+    "portuguese": "Morada",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - street address"
+  },
+  {
+    "english": "Postal Code",
+    "portuguese": "Código Postal",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - postal code"
+  },
+  {
+    "english": "Emergency Contact",
+    "portuguese": "Contacto de Emergência",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - emergency contact"
+  },
+  {
+    "english": "How did you hear about us?",
+    "portuguese": "Como soubeste da GBCQ",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select label - source of information"
+  },
+  {
+    "english": "Select (optional)",
+    "portuguese": "Selecionar (opcional)",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select placeholder"
+  },
+  {
+    "english": "Website",
+    "portuguese": "Website",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Social Media",
+    "portuguese": "Social Media",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Other GB academies",
+    "portuguese": "Outras academias GB",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Current students",
+    "portuguese": "Alunos GBCQ",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Street visibility",
+    "portuguese": "Visibilidade Rua",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Flyer",
+    "portuguese": "Flyer",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Other",
+    "portuguese": "Outro",
+    "filePath": "src/app/register/page.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Other (optional)",
+    "portuguese": "Outro (opcional)",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - other source description"
+  },
+  {
+    "english": "Father's Name",
+    "portuguese": "Nome do Pai",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - parent name for under 18"
+  },
+  {
+    "english": "Mother's Name",
+    "portuguese": "Nome da Mãe",
+    "filePath": "src/app/register/page.tsx",
+    "context": "input label - parent name for under 18"
+  },
+  {
+    "english": "Submit",
+    "portuguese": "Enviar",
+    "filePath": "src/app/register/page.tsx",
+    "context": "button label - submit registration"
+  },
+  {
+    "english": "Request sent! We'll contact you soon.",
+    "portuguese": "Pedido enviado! Entraremos em contacto em breve.",
+    "filePath": "src/app/register/page.tsx",
+    "context": "success message"
+  },
+  {
+    "english": "Could not submit request. Try again.",
+    "portuguese": "Não foi possível enviar o pedido. Tenta novamente.",
+    "filePath": "src/app/register/page.tsx",
+    "context": "error message"
+  },
+  {
+    "english": "Search...",
+    "portuguese": "Procurar...",
+    "filePath": "src/components/dashboard/Topbar.tsx",
+    "context": "placeholder - search input"
+  },
+  {
+    "english": "All Overdue Days",
+    "portuguese": "Todos os dias vencidos",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "select option - payment filter"
+  },
+  {
+    "english": "Overdue 30+ days",
+    "portuguese": "Vencido há 30+ dias",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "select option - payment filter"
+  },
+  {
+    "english": "Overdue 60+ days",
+    "portuguese": "Vencido há 60+ dias",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "select option - payment filter"
+  },
+  {
+    "english": "All Methods",
+    "portuguese": "Todos os métodos",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "select option - payment method filter"
+  },
+  {
+    "english": "Direct Debit",
+    "portuguese": "Débito Direto",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "select option - payment method"
+  },
+  {
+    "english": "Transfer",
+    "portuguese": "Transferência",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "select option - payment method"
+  },
+  {
+    "english": "Cash",
+    "portuguese": "Dinheiro",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "select option - payment method"
+  },
+  {
+    "english": "Name",
+    "portuguese": "Nome",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "table header - member name"
+  },
+  {
+    "english": "Amount",
+    "portuguese": "Valor",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "table header - payment amount"
+  },
+  {
+    "english": "Due Date",
+    "portuguese": "Data de Vencimento",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "table header"
+  },
+  {
+    "english": "Overdue (days)",
+    "portuguese": "Vencido (dias)",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "table header"
+  },
+  {
+    "english": "Method",
+    "portuguese": "Método",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "table header - payment method"
+  },
+  {
+    "english": "Actions",
+    "portuguese": "Ações",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "table header"
+  },
+  {
+    "english": "Mark Paid",
+    "portuguese": "Marcar como Pago",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Remind",
+    "portuguese": "Lembrar",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "button label - send payment reminder"
+  },
+  {
+    "english": "days",
+    "portuguese": "dias",
+    "filePath": "src/components/payments/UnpaidTab.tsx",
+    "context": "suffix - overdue days"
+  },
+  {
+    "english": "ADD NEW MEMBER",
+    "portuguese": "ADICIONAR NOVO MEMBRO",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "modal title"
+  },
+  {
+    "english": "Enrollment: ",
+    "portuguese": "Inscrição: ",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "label - enrollment date display"
+  },
+  {
+    "english": "Name",
+    "portuguese": "Nome",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "Member name",
+    "portuguese": "Nome do membro",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input placeholder"
+  },
+  {
+    "english": "Student Number",
+    "portuguese": "Número do Aluno",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "Student reference",
+    "portuguese": "Referência do aluno",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input placeholder"
+  },
+  {
+    "english": "IBAN",
+    "portuguese": "IBAN",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label - bank account"
+  },
+  {
+    "english": "PT50 0002 0123 1234 5678 9015",
+    "portuguese": "PT50 0002 0123 1234 5678 9015",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input placeholder - IBAN example"
+  },
+  {
+    "english": "NIF",
+    "portuguese": "NIF",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label - tax ID"
+  },
+  {
+    "english": "Portuguese tax ID",
+    "portuguese": "NIF português",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input placeholder"
+  },
+  {
+    "english": "Phone",
+    "portuguese": "Telemóvel",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "(555) 123-4567",
+    "portuguese": "(555) 123-4567",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input placeholder - phone example"
+  },
+  {
+    "english": "Date of Birth",
+    "portuguese": "Data de Nascimento",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "Email",
+    "portuguese": "Email",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "member@example.com",
+    "portuguese": "membro@exemplo.com",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input placeholder - email example"
+  },
+  {
+    "english": "Payment Type",
+    "portuguese": "Tipo de Pagamento",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "select label"
+  },
+  {
+    "english": "Direct Debit",
+    "portuguese": "Débito Direto",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Cash",
+    "portuguese": "Dinheiro",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Monthly Fee (€)",
+    "portuguese": "Taxa Mensal (€)",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "Family discount",
+    "portuguese": "Desconto familiar",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "checkbox label"
+  },
+  {
+    "english": "Custom fee",
+    "portuguese": "Taxa personalizada",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "checkbox label"
+  },
+  {
+    "english": "Custom Fee Amount (€)",
+    "portuguese": "Valor da Taxa Personalizada (€)",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "Enter custom fee amount",
+    "portuguese": "Introduza o valor da taxa personalizada",
+    "filePath": "src/components/members/AddMemberModal.tsx",
+    "context": "input placeholder"
+  },
+  {
+    "english": "Create announcement",
+    "portuguese": "Criar anúncio",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "modal title - create mode"
+  },
+  {
+    "english": "Manage announcements",
+    "portuguese": "Gerir anúncios",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "modal title - manage mode"
+  },
+  {
+    "english": "Create",
+    "portuguese": "Criar",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "tab label"
+  },
+  {
+    "english": "Manage",
+    "portuguese": "Gerir",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "tab label"
+  },
+  {
+    "english": "Pending approvals",
+    "portuguese": "Aprovações pendentes",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "tab label"
+  },
+  {
+    "english": "Cancel",
+    "portuguese": "Cancelar",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Submit for approval",
+    "portuguese": "Enviar para aprovação",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - coach role"
+  },
+  {
+    "english": "Publish",
+    "portuguese": "Publicar",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - admin/staff role"
+  },
+  {
+    "english": "Write an announcement...",
+    "portuguese": "Escreva um anúncio...",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "textarea placeholder - announcement title"
+  },
+  {
+    "english": "Hide details",
+    "portuguese": "Ocultar detalhes",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - collapse details"
+  },
+  {
+    "english": "Add details (optional)",
+    "portuguese": "Adicionar detalhes (opcional)",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - expand details"
+  },
+  {
+    "english": "Add more details (optional)...",
+    "portuguese": "Adicione mais detalhes (opcional)...",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "textarea placeholder - announcement details"
+  },
+  {
+    "english": "Type",
+    "portuguese": "Tipo",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - announcement type"
+  },
+  {
+    "english": "URGENT",
+    "portuguese": "URGENTE",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "tag option"
+  },
+  {
+    "english": "INFO",
+    "portuguese": "INFO",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "tag option"
+  },
+  {
+    "english": "EVENT",
+    "portuguese": "EVENTO",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "tag option"
+  },
+  {
+    "english": "PAYMENTS",
+    "portuguese": "PAGAMENTOS",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "tag option"
+  },
+  {
+    "english": "Audience",
+    "portuguese": "Público",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - who sees the announcement"
+  },
+  {
+    "english": "All",
+    "portuguese": "Todos",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - audience"
+  },
+  {
+    "english": "Adults",
+    "portuguese": "Adultos",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - audience"
+  },
+  {
+    "english": "Kids",
+    "portuguese": "Crianças",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - audience"
+  },
+  {
+    "english": "Staff",
+    "portuguese": "Equipa",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - audience"
+  },
+  {
+    "english": "Kids group",
+    "portuguese": "Grupo de crianças",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - specific kids group"
+  },
+  {
+    "english": "All kids",
+    "portuguese": "Todas as crianças",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option"
+  },
+  {
+    "english": "Kids 1",
+    "portuguese": "Crianças 1",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - age group"
+  },
+  {
+    "english": "Kids 2",
+    "portuguese": "Crianças 2",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - age group"
+  },
+  {
+    "english": "Teens",
+    "portuguese": "Adolescentes",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - age group"
+  },
+  {
+    "english": "Expiration",
+    "portuguese": "Expiração",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - expiration date"
+  },
+  {
+    "english": "1 day",
+    "portuguese": "1 dia",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - quick expiration"
+  },
+  {
+    "english": "3 days",
+    "portuguese": "3 dias",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - quick expiration"
+  },
+  {
+    "english": "1 week",
+    "portuguese": "1 semana",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - quick expiration"
+  },
+  {
+    "english": "1 month",
+    "portuguese": "1 mês",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - quick expiration"
+  },
+  {
+    "english": "Expiration cannot be in the past.",
+    "portuguese": "A expiração não pode estar no passado.",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "error message - past expiration"
+  },
+  {
+    "english": "Pin to top",
+    "portuguese": "Fixar no topo",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "checkbox label"
+  },
+  {
+    "english": "Pinned announcements appear first.",
+    "portuguese": "Os anúncios fixados aparecem primeiro.",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "helper text"
+  },
+  {
+    "english": "Require staff acknowledgement",
+    "portuguese": "Exigir reconhecimento da equipa",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "checkbox label"
+  },
+  {
+    "english": "Live preview",
+    "portuguese": "Pré-visualização ao vivo",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - announcement preview"
+  },
+  {
+    "english": "Announcement title preview",
+    "portuguese": "Pré-visualização do título do anúncio",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "placeholder - in preview"
+  },
+  {
+    "english": "Audience: ",
+    "portuguese": "Público: ",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - in preview"
+  },
+  {
+    "english": "Expires: ",
+    "portuguese": "Expira: ",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - in preview"
+  },
+  {
+    "english": "Search announcements...",
+    "portuguese": "Procurar anúncios...",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "input placeholder"
+  },
+  {
+    "english": "All types",
+    "portuguese": "Todos os tipos",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "Urgent",
+    "portuguese": "Urgente",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "Info",
+    "portuguese": "Informação",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "Event",
+    "portuguese": "Evento",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "All audiences",
+    "portuguese": "Todos os públicos",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "All status",
+    "portuguese": "Todos os estados",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "Active",
+    "portuguese": "Ativo",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - status filter"
+  },
+  {
+    "english": "Expired",
+    "portuguese": "Expirado",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - status filter"
+  },
+  {
+    "english": "All pin states",
+    "portuguese": "Todos os estados de fixação",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "Pinned",
+    "portuguese": "Fixado",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "Unpinned",
+    "portuguese": "Não fixado",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "select option - filter"
+  },
+  {
+    "english": "No announcements match these filters.",
+    "portuguese": "Nenhum anúncio corresponde a estes filtros.",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "empty state message"
+  },
+  {
+    "english": "Edit",
+    "portuguese": "Editar",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Pin",
+    "portuguese": "Fixar",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Unpin",
+    "portuguese": "Desafixar",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Delete",
+    "portuguese": "Eliminar",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - delete announcement"
+  },
+  {
+    "english": "Pending announcements are submitted by coaches and require staff/admin approval before publishing.",
+    "portuguese": "Os anúncios pendentes são submetidos por treinadores e requerem aprovação do pessoal/administrador antes de publicação.",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "helper text - pending announcements info"
+  },
+  {
+    "english": "No pending announcements.",
+    "portuguese": "Sem anúncios pendentes.",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "empty state message"
+  },
+  {
+    "english": "Pending",
+    "portuguese": "Pendente",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "status badge"
+  },
+  {
+    "english": "Rejection reason (optional)",
+    "portuguese": "Motivo da rejeição (opcional)",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "input placeholder"
+  },
+  {
+    "english": "Confirm reject",
+    "portuguese": "Confirmar rejeição",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Approve",
+    "portuguese": "Aprovar",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "button label - approve announcement"
+  },
+  {
+    "english": "Created by: ",
+    "portuguese": "Criado por: ",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - announcement creator"
+  },
+  {
+    "english": "Status: ",
+    "portuguese": "Estado: ",
+    "filePath": "src/components/dashboard/AnnouncementsModal.tsx",
+    "context": "label - announcement status"
+  },
+  {
+    "english": "Announcements",
+    "portuguese": "Anúncios",
+    "filePath": "src/components/dashboard/AnnouncementsPanel.tsx",
+    "context": "panel title"
+  },
+  {
+    "english": "+ New",
+    "portuguese": "+ Novo",
+    "filePath": "src/components/dashboard/AnnouncementsPanel.tsx",
+    "context": "button label - create new announcement"
+  },
+  {
+    "english": "View all",
+    "portuguese": "Ver tudo",
+    "filePath": "src/components/dashboard/AnnouncementsPanel.tsx",
+    "context": "button label - view all announcements"
+  },
+  {
+    "english": "No announcements right now.",
+    "portuguese": "Nenhum anúncio neste momento.",
+    "filePath": "src/components/dashboard/AnnouncementsPanel.tsx",
+    "context": "empty state message"
+  },
+  {
+    "english": "Showing ",
+    "portuguese": "Mostrando ",
+    "filePath": "src/components/dashboard/AnnouncementsPanel.tsx",
+    "context": "text - announcements count"
+  },
+  {
+    "english": " of ",
+    "portuguese": " de ",
+    "filePath": "src/components/dashboard/AnnouncementsPanel.tsx",
+    "context": "text - announcements count separator"
+  },
+  {
+    "english": " published",
+    "portuguese": " publicados",
+    "filePath": "src/components/dashboard/AnnouncementsPanel.tsx",
+    "context": "text - announcements count suffix"
+  },
+  {
+    "english": "Kids Behavior",
+    "portuguese": "Comportamento das Crianças",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "panel title"
+  },
+  {
+    "english": "Now (7 days)",
+    "portuguese": "Agora (7 dias)",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "select option - time filter"
+  },
+  {
+    "english": "This month",
+    "portuguesa texto": "Este mês",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "select option - time filter"
+  },
+  {
+    "english": "View all",
+    "portuguese": "Ver tudo",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Needs Attention (Now)",
+    "portuguese": "Requer Atenção (Agora)",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "section title - needs attention"
+  },
+  {
+    "english": "Needs Attention (This month)",
+    "portuguese": "Requer Atenção (Este mês)",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "section title - needs attention"
+  },
+  {
+    "english": "Great Behavior (Now)",
+    "portuguese": "Comportamento Excelente (Agora)",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "section title - great behavior"
+  },
+  {
+    "english": "Great Behavior (This month)",
+    "portuguese": "Comportamento Excelente (Este mês)",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "section title - great behavior"
+  },
+  {
+    "english": "All good ✅",
+    "portuguese": "Tudo bem ✅",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "empty state - no attention needed"
+  },
+  {
+    "english": "No stars yet",
+    "portuguese": "Sem estrelas ainda",
+    "filePath": "src/components/dashboard/KidsBehaviorPanel.tsx",
+    "context": "empty state - no great behavior"
+  },
+  {
+    "english": "Pending Requests",
+    "portuguese": "Pedidos Pendentes",
+    "filePath": "src/components/dashboard/PendingRequestsList.tsx",
+    "context": "panel title"
+  },
+  {
+    "english": "Unpaid Payments",
+    "portuguese": "Pagamentos Não Pagos",
+    "filePath": "src/components/dashboard/UnpaidPaymentsTable.tsx",
+    "context": "panel title"
+  },
+  {
+    "english": "Send reminder",
+    "portuguese": "Enviar lembrete",
+    "filePath": "src/components/dashboard/UnpaidPaymentsTable.tsx",
+    "context": "button label - send payment reminder"
+  },
+  {
+    "english": "+ 8 more unpaid",
+    "portuguese": "+ 8 mais não pagos",
+    "filePath": "src/components/dashboard/UnpaidPaymentsTable.tsx",
+    "context": "button label - view more unpaid"
+  },
+  {
+    "english": "No requests found",
+    "portuguese": "Nenhum pedido encontrado",
+    "filePath": "src/components/members/RequestsList.tsx",
+    "context": "empty state message"
+  },
+  {
+    "english": "Pending",
+    "portuguese": "Pendente",
+    "filePath": "src/components/members/RequestsList.tsx",
+    "context": "select option - request status"
+  },
+  {
+    "english": "In review",
+    "portuguese": "Em revisão",
+    "filePath": "src/components/members/RequestsList.tsx",
+    "context": "select option - request status"
+  },
+  {
+    "english": "Rejected",
+    "portuguese": "Rejeitado",
+    "filePath": "src/components/members/RequestsList.tsx",
+    "context": "select option - request status"
+  },
+  {
+    "english": "Approve",
+    "portuguese": "Aprovar",
+    "filePath": "src/components/members/RequestsList.tsx",
+    "context": "button label - approve request"
+  },
+  {
+    "english": "Reject",
+    "portuguese": "Rejeitar",
+    "filePath": "src/components/members/RequestsList.tsx",
+    "context": "button label - reject request"
+  },
+  {
+    "english": "Adults",
+    "portuguese": "Adultos",
+    "filePath": "src/components/members/MembersTabs.tsx",
+    "context": "tab label"
+  },
+  {
+    "english": "Kids",
+    "portuguese": "Crianças",
+    "filePath": "src/components/members/MembersTabs.tsx",
+    "context": "tab label"
+  },
+  {
+    "english": "Requests",
+    "portuguese": "Pedidos",
+    "filePath": "src/components/members/MembersTabs.tsx",
+    "context": "tab label"
+  },
+  {
+    "english": "Search by name, email, phone...",
+    "portuguese": "Procurar por nome, email, telemóvel...",
+    "filePath": "src/components/members/SearchBar.tsx",
+    "context": "input placeholder"
+  },
+  {
+    "english": "All",
+    "portuguese": "Todos",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "filter option - status"
+  },
+  {
+    "english": "Active",
+    "portuguese": "Ativo",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "filter option - status"
+  },
+  {
+    "english": "Paused",
+    "portuguese": "Pausado",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "filter option - status"
+  },
+  {
+    "english": "Unpaid",
+    "portuguese": "Não pago",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "filter option - status"
+  },
+  {
+    "english": "All belts",
+    "portuguese": "Todas as fitas",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - belt filter"
+  },
+  {
+    "english": "White",
+    "portuguese": "Branca",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - belt color"
+  },
+  {
+    "english": "Blue",
+    "portuguese": "Azul",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - belt color"
+  },
+  {
+    "english": "Purple",
+    "portuguese": "Roxa",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - belt color"
+  },
+  {
+    "english": "Brown",
+    "portuguese": "Castanha",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - belt color"
+  },
+  {
+    "english": "Black",
+    "portuguese": "Preta",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - belt color"
+  },
+  {
+    "english": "All payment methods",
+    "portuguese": "Todos os métodos de pagamento",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - payment filter"
+  },
+  {
+    "english": "MBWay",
+    "portuguese": "MBWay",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - payment method"
+  },
+  {
+    "english": "Other",
+    "portuguese": "Outro",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - payment method"
+  },
+  {
+    "english": "Recent",
+    "portuguese": "Recente",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - sort"
+  },
+  {
+    "english": "Name A-Z",
+    "portuguese": "Nome A-Z",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - sort"
+  },
+  {
+    "english": "Payment due first",
+    "portuguese": "Pagamento vencido primeiro",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - sort"
+  },
+  {
+    "english": "Enrollment date (desc)",
+    "portuguese": "Data de inscrição (desc)",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - sort"
+  },
+  {
+    "english": "All groups",
+    "portuguese": "Todos os grupos",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - kids group filter"
+  },
+  {
+    "english": "😀 Good",
+    "portuguese": "😀 Bom",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "filter option - behavior"
+  },
+  {
+    "english": "😐 Neutral",
+    "portuguese": "😐 Neutro",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "filter option - behavior"
+  },
+  {
+    "english": "😡 Needs attention",
+    "portuguese": "😡 Requer atenção",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "filter option - behavior"
+  },
+  {
+    "english": "Needs attention first",
+    "portuguese": "Requer atenção primeiro",
+    "filePath": "src/components/members/FiltersBar.tsx",
+    "context": "select option - sort kids"
+  },
+  {
+    "english": "Member",
+    "portuguese": "Membro",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "table header"
+  },
+  {
+    "english": "Belt",
+    "portuguese": "Fita",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "table header"
+  },
+  {
+    "english": "Status",
+    "portuguese": "Estado",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "table header"
+  },
+  {
+    "english": "Next payment / Amount due",
+    "portuguese": "Próximo pagamento / Valor devido",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "table header"
+  },
+  {
+    "english": "Group",
+    "portuguese": "Grupo",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "table header - kids group"
+  },
+  {
+    "english": "Behavior",
+    "portuguese": "Comportamento",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "table header"
+  },
+  {
+    "english": "No members found",
+    "portuguese": "Nenhum membro encontrado",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "empty state message"
+  },
+  {
+    "english": "Clear filters",
+    "portuguese": "Limpar filtros",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "€",
+    "portuguese": "€",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "currency symbol - amount due"
+  },
+  {
+    "english": " due",
+    "portuguese": " devido",
+    "filePath": "src/components/members/MembersTable.tsx",
+    "context": "text suffix - amount due"
+  },
+  {
+    "english": "View",
+    "portuguese": "Ver",
+    "filePath": "src/components/members/QuickViewsDropdown.tsx",
+    "context": "label - quick view selector"
+  },
+  {
+    "english": "Recent",
+    "portuguese": "Recente",
+    "filePath": "src/components/members/QuickViewsDropdown.tsx",
+    "context": "select option - view"
+  },
+  {
+    "english": "Unpaid / To pay",
+    "portuguese": "Não pago / A pagar",
+    "filePath": "src/components/members/QuickViewsDropdown.tsx",
+    "context": "select option - view"
+  },
+  {
+    "english": "Birthdays (next 7 days)",
+    "portuguese": "Aniversários (próximos 7 dias)",
+    "filePath": "src/components/members/QuickViewsDropdown.tsx",
+    "context": "select option - view"
+  },
+  {
+    "english": "New this month",
+    "portuguese": "Novo este mês",
+    "filePath": "src/components/members/QuickViewsDropdown.tsx",
+    "context": "select option - view"
+  },
+  {
+    "english": "Inactive",
+    "portuguese": "Inativo",
+    "filePath": "src/components/members/QuickViewsDropdown.tsx",
+    "context": "select option - view"
+  },
+  {
+    "english": "Settings",
+    "portuguese": "Definições",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "page heading"
+  },
+  {
+    "english": "Manage academy config, staff roles, and pricing rules",
+    "portuguese": "Gerir configuração da academia, funções do pessoal e regras de preços",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "page description"
+  },
+  {
+    "english": "Staff Management",
+    "portuguese": "Gestão de Pessoal",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "button label - navigate to staff management"
+  },
+  {
+    "english": "Academy",
+    "portuguese": "Academia",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "section title"
+  },
+  {
+    "english": "Academy Name",
+    "portuguese": "Nome da Academia",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "Gracie Barra - Carnaxide & Queijas",
+    "portuguese": "Gracie Barra - Carnaxide & Queijas",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "input placeholder - academy name"
+  },
+  {
+    "english": "Address",
+    "portuguese": "Morada",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "City",
+    "portuguese": "Cidade",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "Phone",
+    "portuguese": "Telemóvel",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "input label"
+  },
+  {
+    "english": "Save Academy Settings",
+    "portuguese": "Guardar Definições da Academia",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Staff & Roles",
+    "portuguese": "Equipa & Funções",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "section title"
+  },
+  {
+    "english": "+ Invite Staff",
+    "portuguese": "+ Convidar Equipa",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "button label - invite staff member"
+  },
+  {
+    "english": "Send Invitation",
+    "portuguese": "Enviar Convite",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "button label"
+  },
+  {
+    "english": "Coach",
+    "portuguese": "Treinador",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "select option - role"
+  },
+  {
+    "english": "Admin",
+    "portuguese": "Administrador",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "select option - role"
+  },
+  {
+    "english": "Staff",
+    "portuguese": "Pessoal",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "select option - role"
+  },
+  {
+    "english": "Settings saved!",
+    "portuguese": "Definições guardadas!",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "success message"
+  },
+  {
+    "english": "Pricing rules saved!",
+    "portuguese": "Regras de preço guardadas!",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "success message"
+  },
+  {
+    "english": "Invitation sent to ",
+    "portuguese": "Convite enviado para ",
+    "filePath": "src/app/settings/page.tsx",
+    "context": "success message suffix"
+  },
+  {
+    "english": "Recently checked in",
+    "portuguese": "Registados recentemente",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "section title - recent attendance"
+  },
+  {
+    "english": "Available to check in",
+    "portuguese": "Disponível para registar",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "section title - available members"
+  },
+  {
+    "english": "Not checked in",
+    "portuguese": "Não registado",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "section title - missing attendance"
+  },
+  {
+    "english": "Select date",
+    "portuguese": "Selecione a data",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "button label - open date picker"
+  },
+  {
+    "english": "Today",
+    "portuguese": "Hoje",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "date label - current date"
+  },
+  {
+    "english": "Good",
+    "portuguese": "Bom",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "behavior option"
+  },
+  {
+    "english": "Neutral",
+    "portuguese": "Neutro",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "behavior option"
+  },
+  {
+    "english": "Bad",
+    "portuguese": "Mau",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "behavior option"
+  },
+  {
+    "english": "January",
+    "portuguese": "Janeiro",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "February",
+    "portuguese": "Fevereiro",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "March",
+    "portuguese": "Março",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "April",
+    "portuguese": "Abril",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "May",
+    "portuguese": "Maio",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "June",
+    "portuguese": "Junho",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "July",
+    "portuguese": "Julho",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "August",
+    "portuguese": "Agosto",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "September",
+    "portuguese": "Setembro",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "October",
+    "portuguese": "Outubro",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "November",
+    "portuguese": "Novembro",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  },
+  {
+    "english": "December",
+    "portuguese": "Dezembro",
+    "filePath": "src/components/attendance/AttendancePage.tsx",
+    "context": "month name"
+  }
+]

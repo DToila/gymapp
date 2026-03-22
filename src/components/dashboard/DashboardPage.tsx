@@ -48,7 +48,7 @@ const normalizeMemberStatus = (value: unknown): string => normalizeText(value).t
 const isRequestMember = (member: { status?: string | null; request_status?: string | null }): boolean => {
   const status = normalizeMemberStatus(member.status);
   const requestStatus = normalizeMemberStatus(member.request_status);
-  return status === 'pending' || status === 'request' || requestStatus === 'pending' || requestStatus === 'request';
+  return status === 'pendente' || status === 'pedido' || requestStatus === 'pendente' || requestStatus === 'pedido';
 };
 
 export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
@@ -115,16 +115,16 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
 
         return {
           id: note.id,
-          name: member?.name || 'Unknown Student',
+          name: member?.name || 'Unknown Aluno',
           audience,
           preview: `${note.teacher_name}: ${note.note_text}`,
           time: getRelativeTime(note.created_at),
         };
       });
 
-      // Build pending requests
+      // Build pendente requests
       const mappedPendingRequests: RequestItem[] = allMembers
-        .filter((member) => String((member.status || '')).trim().toLowerCase() === 'pending')
+        .filter((member) => String((member.status || '')).trim().toLowerCase() === 'pendente')
         .map((member) => {
           const createdAt = new Date(member.created_at || '');
           const createdAtMs = Number.isNaN(createdAt.getTime()) ? 0 : createdAt.getTime();
@@ -176,7 +176,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       setTotalUnpaidCount(totalCount);
       setTotalUnpaidAmount(totalAmount);
     } catch (error) {
-      console.error('Error loading recent notes:', error);
+      console.error('Erro loading recent notes:', error);
       setRecentNotes([]);
       setPendingRequests([]);
       setUnpaidPayments([]);
@@ -199,7 +199,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         .map((member, index) => ({
           id: member.id,
           name: member.name,
-          group: `Kids ${(index % 3) + 1}`,
+          group: `Crianças ${(index % 3) + 1}`,
         }));
 
       const now = new Date();
@@ -288,7 +288,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       setKidsMembers(realKids);
       setKidsBehaviorEvents(mappedEvents);
     } catch (error) {
-      console.error('Error fetching kids behavior:', error);
+      console.error('Erro fetching kids behavior:', error);
       setKidsMembers([]);
       setKidsBehaviorEvents([]);
     }
@@ -310,7 +310,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
           return {
             id: `${memberId}-${index}`,
             name: member.name,
-            time: 'Today',
+            time: 'Hoje',
           };
         })
         .filter((item): item is AttendanceRecentItem => item !== null)
@@ -320,7 +320,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       setTodayTotalMembers(members.length);
       setTodayRecentAttendance(recent);
     } catch (error) {
-      console.error('Error fetching today attendance:', error);
+      console.error('Erro fetching today attendance:', error);
       setTodayCheckedIn(0);
       setTodayTotalMembers(0);
       setTodayRecentAttendance([]);
@@ -417,27 +417,27 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
 
     const computedKpis: KpiItem[] = [
       {
-        id: 'active',
+        id: 'ativo',
         value: String(todayTotalMembers),
-        label: 'Active Members',
+        label: 'Ativo Membros',
         accent: 'neutral',
       },
       {
         id: 'unpaid',
         value: `€${totalUnpaidAmount.toFixed(2)}`,
-        label: `Unpaid (${totalUnpaidCount} people)`,
+        label: `Por Pagar (${totalUnpaidCount} people)`,
         accent: 'warning',
       },
       {
         id: 'kids-attention',
         value: String(kidsWithBadBehavior.size),
-        label: 'Kids - Needs Attention',
+        label: 'Crianças - Precisa Atenção',
         accent: 'danger',
       },
       {
-        id: 'pending-requests',
+        id: 'pendente-requests',
         value: String(pendingRequests.length),
-        label: 'Pending Requests',
+        label: 'Pedidos Pendentes',
         accent: 'success',
       },
     ];
@@ -448,7 +448,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
       <TeacherSidebar
-        active="dashboard"
+        ativo="dashboard"
         role={currentRole}
         requestsCount={pendingRequests.length}
         onLogout={onLogout}
@@ -459,7 +459,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
 
         <header className="mb-6">
           <h1 className="text-4xl font-bold text-white">Dashboard</h1>
-          <p className="mt-1 text-sm text-zinc-500">Welcome back, {currentName}</p>
+          <p className="mt-1 text-sm text-zinc-500">Bem-vindo back, {currentName}</p>
         </header>
 
         {!isCoach ? (

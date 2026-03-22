@@ -23,7 +23,7 @@ const fullNameFromMetadata = (metadata: unknown): string | null => {
 };
 
 interface TeacherSidebarProps {
-  active: 'dashboard' | 'schedule' | 'members' | 'attendance' | 'leads' | 'payments' | 'settings';
+  ativo: 'dashboard' | 'schedule' | 'members' | 'attendance' | 'leads' | 'payments' | 'settings';
   requestsCount?: number;
   role?: AppRole;
   onLogout?: () => void;
@@ -32,7 +32,7 @@ interface TeacherSidebarProps {
   onAddMember?: () => void;
 }
 
-export default function TeacherSidebar({ active, requestsCount = 0, role: roleProp, onLogout, onExportTxt, onExportExcel, onAddMember }: TeacherSidebarProps) {
+export default function TeacherSidebar({ ativo, requestsCount = 0, role: roleProp, onLogout, onExportTxt, onExportExcel, onAddMember }: TeacherSidebarProps) {
   const router = useRouter();
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
@@ -90,7 +90,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
           window.sessionStorage.setItem('cached_profile_role', resolvedRole);
         }
       } catch (error) {
-        console.error('Failed to load profile for sidebar:', error);
+        console.error('Falhado to load profile for sidebar:', error);
       }
     };
 
@@ -130,8 +130,8 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
         await exportDDTxt();
       }
     } catch (error) {
-      console.error('Error exporting DD TXT:', error);
-      alert('Error exporting DD TXT. Please try again.');
+      console.error('Erro exporting DD TXT:', error);
+      alert('Erro exporting DD TXT. Please try again.');
     } finally {
       setShowExportDropdown(false);
     }
@@ -145,8 +145,8 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
         await exportDDExcel();
       }
     } catch (error) {
-      console.error('Error exporting DD Excel:', error);
-      alert('Error exporting DD Excel. Please try again.');
+      console.error('Erro exporting DD Excel:', error);
+      alert('Erro exporting DD Excel. Please try again.');
     } finally {
       setShowExportDropdown(false);
     }
@@ -204,7 +204,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
 
       <nav className="flex-1 overflow-visible px-3 py-4">
         {visibleNavItems.map((item) => {
-          const isActive = active === (item.key as any);
+          const isActive = ativo === (item.key as any);
           return (
             <div
               key={item.key}
@@ -274,7 +274,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
           onClick={handleAddMemberClick}
           className="w-full rounded-lg border border-[#c81d25] bg-[#c81d25] px-3 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#a8141c]"
         >
-          + Add Member
+          + Adicionar Membro
         </button>
 
         <div className="flex items-center gap-3 rounded-lg bg-[#111] p-2.5">
@@ -287,7 +287,7 @@ export default function TeacherSidebar({ active, requestsCount = 0, role: rolePr
             onClick={handleLogoutClick}
             className="rounded-md border border-[#2a2a2a] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-zinc-400 hover:border-zinc-200 hover:text-zinc-100"
           >
-            Logout
+            Sair
           </button>
         </div>
       </div>

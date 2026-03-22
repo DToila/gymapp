@@ -28,7 +28,7 @@ export default function StudentAttendancePage() {
         });
         setAttendanceMap(next);
       })
-      .catch((error) => console.error('Error loading student attendance page:', error));
+      .catch((error) => console.error('Erro loading student attendance page:', error));
   }, [member]);
 
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
@@ -45,7 +45,7 @@ export default function StudentAttendancePage() {
   }, [attendanceMap, selectedMonth, selectedYear]);
 
   return (
-    <StudentShell active="attendance" title="Presenças" subtitle="Attendance history and schedule context">
+    <StudentShell ativo="attendance" title="Presenças" subtitle="Presenças history and schedule context">
       <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -95,7 +95,7 @@ export default function StudentAttendancePage() {
         ) : (
           <ul className="space-y-2">
             {attendedList.length === 0 ? (
-              <li className="rounded-xl border border-[#202020] bg-[#111] px-3 py-3 text-sm text-zinc-500">No attendance records this month.</li>
+              <li className="rounded-xl border border-[#202020] bg-[#111] px-3 py-3 text-sm text-zinc-500">Não attendance records this month.</li>
             ) : (
               attendedList.map((date) => (
                 <li key={date} className="rounded-xl border border-[#202020] bg-[#111] px-3 py-2 text-sm text-zinc-200">

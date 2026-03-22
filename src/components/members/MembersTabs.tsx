@@ -8,9 +8,9 @@ interface MembersTabsProps {
 }
 
 const tabs: Array<{ key: MembersTab; label: string }> = [
-  { key: 'adults', label: 'Adults' },
-  { key: 'kids', label: 'Kids' },
-  { key: 'requests', label: 'Requests' }
+  { key: 'adults', label: 'Adultos' },
+  { key: 'kids', label: 'Crianças' },
+  { key: 'requests', label: 'Pedidos' }
 ];
 
 export default function MembersTabs({ activeTab, onChange }: MembersTabsProps) {

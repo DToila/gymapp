@@ -23,7 +23,7 @@ export default function StudentProfilePage() {
       await updateMember(member.id, { phone, email });
       await refresh(member.id);
     } catch (error) {
-      console.error('Error updating student profile:', error);
+      console.error('Erro updating student profile:', error);
       alert('Could not update profile. Please try again.');
     } finally {
       setIsSaving(false);
@@ -31,15 +31,15 @@ export default function StudentProfilePage() {
   };
 
   return (
-    <StudentShell active="profile" title="Perfil" subtitle="Manage your basic account information">
+    <StudentShell ativo="profile" title="Perfil" subtitle="Manage your basic account information">
       <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>
-            <p className="mb-1 text-xs uppercase tracking-[0.12em] text-zinc-500">Name</p>
+            <p className="mb-1 text-xs uppercase tracking-[0.12em] text-zinc-500">Nome</p>
             <div className="rounded-xl border border-[#2a2a2a] bg-[#171717] px-3 py-2 text-zinc-100">{member?.name || '—'}</div>
           </div>
           <div>
-            <p className="mb-1 text-xs uppercase tracking-[0.12em] text-zinc-500">Belt</p>
+            <p className="mb-1 text-xs uppercase tracking-[0.12em] text-zinc-500">Cinto</p>
             <div className="rounded-xl border border-[#2a2a2a] bg-[#171717] px-3 py-2 text-zinc-100">{member?.belt_level || '—'}</div>
           </div>
           <div>
@@ -47,7 +47,7 @@ export default function StudentProfilePage() {
             <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-[#2a2a2a] bg-[#171717] px-3 py-2 text-zinc-100 outline-none" />
           </div>
           <div>
-            <p className="mb-1 text-xs uppercase tracking-[0.12em] text-zinc-500">Phone</p>
+            <p className="mb-1 text-xs uppercase tracking-[0.12em] text-zinc-500">Telemóvel</p>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-xl border border-[#2a2a2a] bg-[#171717] px-3 py-2 text-zinc-100 outline-none" />
           </div>
           <div>
@@ -62,7 +62,7 @@ export default function StudentProfilePage() {
             disabled={isSaving}
             className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
           >
-            {isSaving ? 'Saving...' : 'Save changes'}
+            {isSaving ? 'Saving...' : 'Guardar changes'}
           </button>
         </div>
       </section>

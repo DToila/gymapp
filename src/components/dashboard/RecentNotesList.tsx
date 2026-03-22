@@ -13,11 +13,11 @@ export default function RecentNotesList({ notes, loading = false }: { notes: Not
   const router = useRouter();
 
   return (
-    <Panel title="Recent Notes" icon={<span className="text-[#c81d25]">✎</span>} actionText="View all" onAction={() => router.push('/members')}>
+    <Panel title="Notas Recentes" icon={<span className="text-[#c81d25]">✎</span>} actionText="Ver tudo" onAction={() => router.push('/members')}>
       {loading ? (
-        <p className="py-4 text-sm text-zinc-500">Loading recent notes...</p>
+        <p className="py-4 text-sm text-zinc-500">A carregar recent notes...</p>
       ) : notes.length === 0 ? (
-        <p className="py-4 text-sm text-zinc-500">No teacher comments yet.</p>
+        <p className="py-4 text-sm text-zinc-500">Não teacher comments yet.</p>
       ) : (
         <ul className="space-y-1">
           {notes.map((note) => (
