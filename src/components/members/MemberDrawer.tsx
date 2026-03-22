@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from 'react';
-import { Membro } from './types';
 
 interface MemberDrawerProps {
-  member: Member | null;
+  member: any | null;
   onClose: () => void;
 }
 
@@ -40,7 +39,7 @@ export default function MemberDrawer({ member, onClose }: MemberDrawerProps) {
             <div style={{ fontSize: '10px', color: '#777', letterSpacing: '2px', textTransform: 'uppercase' }}>Membro Perfil</div>
             <div style={{ fontSize: '22px', color: '#f0f0f0', fontWeight: 800 }}>{member.name}</div>
             <div style={{ color: '#888', fontSize: '12px' }}>
-              {member.belt || member.group || '-'} · {member.status}
+              {(member as any).belt_level || (member as any).group || '-'} · {member.status}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: '1px solid #2a2a2a', color: '#999', cursor: 'pointer', height: '28px', width: '28px' }}>×</button>
@@ -72,8 +71,8 @@ export default function MemberDrawer({ member, onClose }: MemberDrawerProps) {
           <div style={{ border: '1px solid #2a2a2a', background: '#111111', padding: '12px', marginBottom: '12px' }}>
             <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Email: {member.email || '-'}</div>
             <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Telemóvel: {member.phone || '-'}</div>
-            <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Payment method: {member.paymentMethod || '-'}</div>
-            <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Enrollment date: {member.enrolledAt || '-'}</div>
+            <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Payment method: {(member as any).payment_type || '-'}</div>
+            <div style={{ color: '#bbb', fontSize: '12px', marginBottom: '6px' }}>Enrollment date: {(member as any).created_at || '-'}</div>
             <div style={{ color: '#bbb', fontSize: '12px' }}>Fee: €{(member.fee || 0).toFixed(2)}</div>
           </div>
         )}

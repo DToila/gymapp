@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createMember, getKidBehaviorEvents, getMembers } from '../../../lib/database';
 import { calculateMonthlyFee, getAgeFromDateOfBirth, getBeltOptions } from '../../../lib/types';
 import { mockMembers } from './mockData';
-import { AdultsFilters, KidsFilters, Membro, MembersTab, QuickView } from './types';
+import { AdultsFilters, KidsFilters, MembersTab, QuickView } from './types';
 import SearchBar from './SearchBar';
 import MembersTabs from './MembersTabs';
 import QuickViewsDropdown from './QuickViewsDropdown';
@@ -34,11 +34,11 @@ type MembersAddForm = AddMemberFormData;
 
 function normalizeStatus(rawStatus: string | undefined): Member['status'] {
   const value = String(rawStatus || '').trim().toLowerCase();
-  if (value === 'pendente') return 'Pendente';
-  if (value === 'ativo') return 'Ativo';
+  if (value === 'pendente') return 'Unpaid';
+  if (value === 'ativo') return 'Active';
   if (value === 'pausado') return 'Paused';
-  if (value === 'unpaid') return 'Por Pagar';
-  return 'Ativo';
+  if (value === 'unpaid') return 'Unpaid';
+  return 'Active';
 }
 
 function toTitleBelt(rawBelt: string | undefined): string {
@@ -57,13 +57,13 @@ function mapDbMember(member: any): Member {
     status,
     paymentMethod: member.payment_type || undefined,
     fee: Number(member.fee || 0),
-    amountDue: status === 'Por Pagar' ? Number(member.fee || 0) : 0,
+    amountDue: status === 'Unpaid' ? Number(member.fee || 0) : 0,
     nextPaymentDate: undefined,
     behaviorState: undefined,
     enrolledAt: (member.created_at || '').split('T')[0] || '',
     dateOfBirth: member.date_of_birth,
     lastAttendanceAt: undefined,
-    requestStatus: status === 'Pendente' ? 'Pendente' : undefined,
+    requestStatus: status === 'Unpaid' ? 'Unpaid' : undefined,
     group: undefined
   };
 }

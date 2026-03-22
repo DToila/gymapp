@@ -29,7 +29,7 @@ interface MemberEditForm {
   phone: string;
   date_of_birth: string;
   belt_level: string;
-  payment_type: 'Débito Direto' | 'Dinheiro';
+  payment_type: 'Direct Debit' | 'Cash';
   fee: string;
   status: 'Active' | 'Paused' | 'Unpaid';
   iban: string;
@@ -53,7 +53,7 @@ const BEHAVIOR_EMOJIS: Record<'GOOD' | 'NEUTRAL' | 'BAD', string> = {
 // Because Membro is defined in TeacherDashboard, we can re-declare necessary parts here to avoid circular import.
 interface MemberDetail extends Member {
   beltLevel?: string;
-  paymentType?: 'Débito Direto' | 'Dinheiro';
+  paymentType?: 'Direct Debit' | 'Cash';
   monthlyFee?: number;
   familyDiscount?: boolean;
   attendance?: { [date: string]: boolean };
@@ -64,8 +64,8 @@ const createEditForm = (member: MemberDetail): MemberEditForm => ({
   email: member.email || '',
   phone: member.phone || '',
   date_of_birth: member.date_of_birth || '',
-  belt_level: member.beltLevel || member.belt_level || 'White Cinto',
-  payment_type: (member.paymentType || member.payment_type || 'Débito Direto') as 'Débito Direto' | 'Dinheiro',
+  belt_level: member.beltLevel || member.belt_level || 'White Belt',
+  payment_type: (member.paymentType || member.payment_type || 'Direct Debit') as 'Direct Debit' | 'Cash',
   fee: String(member.monthlyFee ?? member.fee ?? 0),
   status: member.status,
   iban: member.iban || '',
