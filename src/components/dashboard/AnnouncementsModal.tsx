@@ -80,12 +80,12 @@ export default function AnnouncementsModal({
   mode: ModalMode;
   announcements: AnnouncementItem[];
   onClose: () => void;
-  onCreate: (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => void;
-  onUpdate: (id: string, announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => void;
-  onDelete: (id: string) => void;
-  onTogglePin: (id: string) => void;
-  onApprove: (id: string) => void;
-  onReject: (id: string, reason?: string) => void;
+  onCreate: (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => Promise<void>;
+  onUpdate: (id: string, announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onTogglePin: (id: string) => Promise<void>;
+  onApprove: (id: string) => Promise<void>;
+  onReject: (id: string, reason?: string) => Promise<void>;
   canApprove: boolean;
   currentUserRole: AppRole;
   titleMaxChars?: number;
@@ -175,7 +175,7 @@ export default function AnnouncementsModal({
     setDraft((prev) => ({ ...prev, expiresAt: toDateKey(next) }));
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!canPublish) return;
 
     const payload: Omit<AnnouncementItem, 'id' | 'createdAt'> = {
@@ -195,14 +195,18 @@ export default function AnnouncementsModal({
       rejectionReason: null,
     };
 
-    if (editingId) {
-      onUpdate(editingId, payload);
-    } else {
-      onCreate(payload);
-    }
+    try {
+      if (editingId) {
+        await onUpdate(editingId, payload);
+      } else {
+        await onCreate(payload);
+      }
 
-    resetDraft();
-    onClose();
+      resetDraft();
+      onClose();
+    } catch (error) {
+      console.error('Failed to publish announcement:', error);
+    }
   };
 
   const handleCancel = () => {
@@ -518,10 +522,14 @@ export default function AnnouncementsModal({
 
                         <div className="flex items-center gap-2">
                           <button onClick={() => loadIntoComposer(item)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1 text-xs text-zinc-200">Edit</button>
-                          <button onClick={() => onTogglePin(item.id)} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1 text-xs text-zinc-200">
+                          <button onClick={() => { 
+                            onTogglePin(item.id).catch(console.error); 
+                          }} className="rounded-md border border-[#2a2a2a] bg-[#171717] px-2.5 py-1 text-xs text-zinc-200">
                             {item.pinned ? 'Unpin' : 'Pin'}
                           </button>
-                          <button onClick={() => onDelete(item.id)} className="rounded-md border border-[#5b1f24] bg-[rgba(91,31,36,0.25)] px-2.5 py-1 text-xs text-rose-300">Delete</button>
+                          <button onClick={() => { 
+                            onDelete(item.id).catch(console.error); 
+                          }} className="rounded-md border border-[#5b1f24] bg-[rgba(91,31,36,0.25)] px-2.5 py-1 text-xs text-rose-300">Delete</button>
                         </div>
                       </li>
                     ))}
@@ -569,7 +577,7 @@ export default function AnnouncementsModal({
                               />
                               <button
                                 onClick={() => {
-                                  onReject(item.id, rejectReasonById[item.id]);
+                                  onReject(item.id, rejectReasonById[item.id]).catch(console.error);
                                   setRejectingId(null);
                                 }}
                                 className="rounded-md border border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] px-3 py-2 text-xs font-semibold text-rose-300"
@@ -585,9 +593,11 @@ export default function AnnouncementsModal({
                             </div>
                           ) : null}
 
-                          <div className="mt-2 flex items-center gap-2">
+                          <div className="flex items-center gap-2">
                             <button
-                              onClick={() => onApprove(item.id)}
+                              onClick={() => { 
+                                onApprove(item.id).catch(console.error); 
+                              }}
                               className="rounded-md border border-[#14532d] bg-[rgba(20,83,45,0.35)] px-2.5 py-1 text-xs font-semibold text-green-300"
                             >
                               Approve

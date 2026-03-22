@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import { announcements } from '../dashboard/mockData';
 import { AnnouncementItem } from '../dashboard/types';
 import StudentShell from './StudentShell';
 import { audienceMatchesStudent } from './studentData';
 import { useStudentMember } from './useStudentMember';
+import { useAnnouncements } from '@/lib/useAnnouncements';
 
 const tagChipClass: Record<AnnouncementItem['tag'], string> = {
   URGENT: 'border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] text-[#fda4af]',
@@ -16,6 +16,7 @@ const tagChipClass: Record<AnnouncementItem['tag'], string> = {
 
 export default function StudentAnnouncementsPage() {
   const { isKid } = useStudentMember();
+  const { announcements } = useAnnouncements();
   const [filter, setFilter] = useState<'ALL' | 'KIDS' | 'ADULTS'>('ALL');
 
   const rows = useMemo(() => {
@@ -30,7 +31,7 @@ export default function StudentAnnouncementsPage() {
         return item.audience === filter || item.audience === 'ALL';
       })
       .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.expiresAt.localeCompare(a.expiresAt));
-  }, [filter, isKid]);
+  }, [announcements, filter, isKid]);
 
   return (
     <StudentShell active="announcements" title="Anúncios" subtitle="Latest student announcements">

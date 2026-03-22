@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { announcements, kpis, unpaidPayments } from './mockData';
+import { kpis, unpaidPayments } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -374,7 +374,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
 
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-7">
-            <AnnouncementsPanel items={announcements} currentUserRole={currentRole} currentUserName={currentName} />
+            <AnnouncementsPanel currentUserRole={currentRole} currentUserName={currentName} />
             <RecentNotesList notes={recentNotes} loading={recentNotesLoading} />
             {!isCoach ? <UnpaidPaymentsTable rows={unpaidPayments} /> : null}
           </div>

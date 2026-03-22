@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import AnnouncementsModal from './AnnouncementsModal';
 import { AnnouncementAudience, AnnouncementItem, AppRole } from './types';
+import { useAnnouncements } from '@/lib/useAnnouncements';
 
 const tagChipClass: Record<AnnouncementItem['tag'], string> = {
   URGENT: 'border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] text-[#fda4af]',
@@ -25,27 +26,30 @@ const formatDateLabel = (dateValue: string): string => {
 };
 
 export default function AnnouncementsPanel({
-  items,
   maxVisible = 3,
   canCreate = true,
   currentUserRole = 'admin',
   currentUserName = 'Professor',
   currentUserId = 'local-user',
 }: {
-  items: AnnouncementItem[];
   maxVisible?: number;
   canCreate?: boolean;
   currentUserRole?: AppRole;
   currentUserName?: string;
   currentUserId?: string;
 }) {
+  const {
+    announcements,
+    createAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
+    togglePin,
+    approveAnnouncement,
+    rejectAnnouncement,
+  } = useAnnouncements();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'manage'>('create');
-  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(items);
-
-  useEffect(() => {
-    setAnnouncements(items);
-  }, [items]);
 
   const sortedAnnouncements = useMemo(() => {
     return [...announcements].sort((a, b) => {
@@ -83,83 +87,62 @@ export default function AnnouncementsPanel({
     setIsModalOpen(true);
   };
 
-  const handleCreate = (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
-    const isCoach = currentUserRole === 'coach';
-    const approvalStatus: AnnouncementItem['approvalStatus'] = isCoach ? 'pending' : 'approved';
-
-    setAnnouncements((prev) => [
-      {
+  const handleCreate = async (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
+    try {
+      const isCoach = currentUserRole === 'coach';
+      await createAnnouncement({
         ...announcement,
-        id: `a-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        approvalStatus,
+        approvalStatus: isCoach ? 'pending' : 'approved',
         createdBy: currentUserName,
         createdById: currentUserId,
-        approvedBy: approvalStatus === 'approved' ? currentUserName : null,
-        approvedById: approvalStatus === 'approved' ? currentUserId : null,
-        approvedAt: approvalStatus === 'approved' ? new Date().toISOString() : null,
+        approvedBy: isCoach ? null : currentUserName,
+        approvedById: isCoach ? null : currentUserId,
+        approvedAt: isCoach ? null : new Date().toISOString(),
         rejectionReason: null,
-      },
-      ...prev,
-    ]);
+      });
+    } catch (error) {
+      console.error('Failed to create announcement:', error);
+    }
   };
 
-  const handleUpdate = (id: string, announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
-    setAnnouncements((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              ...announcement,
-              approvalStatus: item.approvalStatus,
-            }
-          : item
-      )
-    );
+  const handleUpdate = async (id: string, announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
+    try {
+      await updateAnnouncement(id, announcement);
+    } catch (error) {
+      console.error('Failed to update announcement:', error);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setAnnouncements((prev) => prev.filter((item) => item.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAnnouncement(id);
+    } catch (error) {
+      console.error('Failed to delete announcement:', error);
+    }
   };
 
-  const handleTogglePin = (id: string) => {
-    setAnnouncements((prev) => prev.map((item) => (item.id === id ? { ...item, pinned: !item.pinned } : item)));
+  const handleTogglePin = async (id: string) => {
+    try {
+      await togglePin(id);
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+    }
   };
 
-  const handleApprove = (id: string) => {
-    if (!canApprove) return;
-    setAnnouncements((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              approvalStatus: 'approved',
-              approvedBy: currentUserName,
-              approvedById: currentUserId,
-              approvedAt: new Date().toISOString(),
-              rejectionReason: null,
-            }
-          : item
-      )
-    );
+  const handleApprove = async (id: string) => {
+    try {
+      await approveAnnouncement(id, currentUserName);
+    } catch (error) {
+      console.error('Failed to approve announcement:', error);
+    }
   };
 
-  const handleReject = (id: string, reason?: string) => {
-    if (!canApprove) return;
-    setAnnouncements((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              approvalStatus: 'rejected',
-              approvedBy: currentUserName,
-              approvedById: currentUserId,
-              approvedAt: new Date().toISOString(),
-              rejectionReason: reason?.trim() || null,
-            }
-          : item
-      )
-    );
+  const handleReject = async (id: string, reason?: string) => {
+    try {
+      await rejectAnnouncement(id, reason ?? null, currentUserName);
+    } catch (error) {
+      console.error('Failed to reject announcement:', error);
+    }
   };
 
   return (

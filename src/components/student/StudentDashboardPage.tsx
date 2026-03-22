@@ -2,16 +2,17 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { announcements } from '../dashboard/mockData';
 import StudentShell from './StudentShell';
 import { audienceMatchesStudent, getTodayClasses, studentSchedule } from './studentData';
 import { useStudentMember } from './useStudentMember';
 import { getAttendanceForMember } from '../../../lib/database';
 import { useEffect } from 'react';
+import { useAnnouncements } from '@/lib/useAnnouncements';
 
 export default function StudentDashboardPage() {
   const router = useRouter();
   const { member, isKid } = useStudentMember();
+  const { announcements } = useAnnouncements();
   const [attendanceMap, setAttendanceMap] = useState<Record<string, boolean>>({});
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [viewMode, setViewMode] = useState<'month' | 'list'>('month');
@@ -59,7 +60,7 @@ export default function StudentDashboardPage() {
       .filter((item) => item.expiresAt >= nowKey)
       .filter((item) => audienceMatchesStudent(item, isKid))
       .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.expiresAt.localeCompare(a.expiresAt));
-  }, [isKid]);
+  }, [announcements, isKid]);
 
   const todayClasses = getTodayClasses();
   const isPaid = member?.status !== 'Unpaid';
