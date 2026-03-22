@@ -346,11 +346,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             background: 'none',
             border: 'none',
             color: '#CC0000',
-            fontSize: '14px',
+            fontSize: '16px',
             cursor: 'pointer',
             marginBottom: '32px',
             transition: 'color 0.3s',
-            fontFamily: 'var(--font-body)'
+            fontFamily: 'var(--font-body)',
+            fontWeight: '600'
           }}
           onMouseEnter={(e) => e.currentTarget.style.color = '#990000'}
           onMouseLeave={(e) => e.currentTarget.style.color = '#CC0000'}
@@ -428,14 +429,15 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             required
             style={{
               width: '100%',
-              padding: '22px 24px',
+              padding: '32px 40px',
               background: 'var(--bg3)',
               border: '1px solid var(--border)',
               color: 'var(--text)',
-              fontSize: '16px',
-              marginBottom: '0',
+              fontSize: '18px',
+              marginBottom: '16px',
               fontFamily: 'var(--font-body)',
-              transition: 'border-color 0.3s'
+              transition: 'border-color 0.3s',
+              borderRadius: '8px'
             }}
             onFocus={(e) => e.currentTarget.style.borderColor = '#CC0000'}
             onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
@@ -449,12 +451,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 width: '100%',
                 background: 'none',
                 border: 'none',
-                padding: 0,
+                padding: '12px 16px',
                 cursor: 'pointer',
-                fontSize: '13px',
+                fontSize: '15px',
                 color: '#555',
                 textAlign: 'center',
-                marginTop: '12px',
+                marginTop: '8px',
                 marginBottom: '16px',
                 letterSpacing: '1px',
                 fontFamily: 'var(--font-body)',
@@ -485,14 +487,16 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 required
                 style={{
                   width: '100%',
-                  padding: '22px 24px',
+                  padding: '32px 40px',
                   background: 'var(--bg3)',
                   border: '1px solid var(--border)',
                   color: 'var(--text)',
-                  fontSize: '16px',
+                  fontSize: '18px',
                   fontFamily: 'var(--font-body)',
                   transition: 'border-color 0.3s',
-                  paddingRight: '40px'
+                  paddingRight: '50px',
+                  marginBottom: '16px',
+                  borderRadius: '8px'
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#CC0000'}
                 onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
@@ -523,18 +527,20 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             disabled={isLoading}
             style={{
               width: '100%',
-              padding: '22px 24px',
+              padding: '32px 40px',
               background: isLoading ? '#888888' : '#CC0000',
               color: 'white',
               fontFamily: 'var(--font-display)',
-              fontSize: '16px',
+              fontSize: '18px',
               fontWeight: 900,
               letterSpacing: '5px',
               textTransform: 'uppercase',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.3s',
               border: 'none',
-              marginTop: '24px'
+              marginTop: '8px',
+              marginBottom: '16px',
+              borderRadius: '8px'
             }}
             onMouseEnter={(e) => {
               if (!isLoading) e.currentTarget.style.background = '#990000';
