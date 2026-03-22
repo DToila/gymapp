@@ -428,11 +428,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             required
             style={{
               width: '100%',
-              padding: '14px 16px',
+              padding: '22px 24px',
               background: 'var(--bg3)',
               border: '1px solid var(--border)',
               color: 'var(--text)',
-              fontSize: '15px',
+              fontSize: '16px',
               marginBottom: '0',
               fontFamily: 'var(--font-body)',
               transition: 'border-color 0.3s'
@@ -485,11 +485,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 required
                 style={{
                   width: '100%',
-                  padding: '14px 16px',
+                  padding: '22px 24px',
                   background: 'var(--bg3)',
                   border: '1px solid var(--border)',
                   color: 'var(--text)',
-                  fontSize: '15px',
+                  fontSize: '16px',
                   fontFamily: 'var(--font-body)',
                   transition: 'border-color 0.3s',
                   paddingRight: '40px'
@@ -523,11 +523,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             disabled={isLoading}
             style={{
               width: '100%',
-              padding: '16px',
+              padding: '22px 24px',
               background: isLoading ? '#888888' : '#CC0000',
               color: 'white',
               fontFamily: 'var(--font-display)',
-              fontSize: '15px',
+              fontSize: '16px',
               fontWeight: 900,
               letterSpacing: '5px',
               textTransform: 'uppercase',
