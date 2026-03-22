@@ -154,44 +154,59 @@ export default function LeadsPage() {
 
       const base64Data = await fileToBase64(file);
 
-      // Use server-side proxy to avoid CORS and keep API key secure
-      const response = await fetch('/api/scan-file', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileBase64: base64Data,
-          fileType: file.type.startsWith('image/') ? 'image' : 'pdf',
-          mimeType: file.type,
-          prompt: 'This is a Gracie Barra welcome form. Extract these fields and return ONLY valid JSON with no markdown: name, date_of_birth (YYYY-MM-DD), nif, phone, email, address, emergency_contact, how_they_found_us, parent_name (if minor). If a field is not visible or legible return null.',
-        }),
-      });
+      // Create abort controller with 60 second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process image');
+      try {
+        // Use server-side proxy to avoid CORS and keep API key secure
+        const response = await fetch('/api/scan-file', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            fileBase64: base64Data,
+            fileType: file.type.startsWith('image/') ? 'image' : 'pdf',
+            mimeType: file.type,
+            prompt: 'This is a Gracie Barra welcome form. Extract these fields and return ONLY valid JSON with no markdown: name, date_of_birth (YYYY-MM-DD), nif, phone, email, address, emergency_contact, how_they_found_us, parent_name (if minor). If a field is not visible or legible return null.',
+          }),
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to process image');
+        }
+
+        const data = await response.json();
+
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid response format from server');
+        }
+
+        // data is already parsed from the proxy
+        const extractedData = data;
+
+        const newLead = emptyLead();
+        if (extractedData.name) newLead.name = extractedData.name;
+        if (extractedData.phone) newLead.phone = extractedData.phone;
+        if (extractedData.email) newLead.email = extractedData.email;
+
+        setSelectedLead(newLead);
+        setIsCreatingLead(true);
+        setIsLeadDrawerOpen(true);
+        closeScanModal();
+        setIsScanning(false);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('Image processing took too long. Please try with a clearer or smaller image.');
+        }
+        throw fetchError;
       }
-
-      const data = await response.json();
-
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid response format from server');
-      }
-
-      // data is already parsed from the proxy
-      const extractedData = data;
-
-      const newLead = emptyLead();
-      if (extractedData.name) newLead.name = extractedData.name;
-      if (extractedData.phone) newLead.phone = extractedData.phone;
-      if (extractedData.email) newLead.email = extractedData.email;
-
-      setSelectedLead(newLead);
-      setIsCreatingLead(true);
-      setIsLeadDrawerOpen(true);
-      closeScanModal();
-      setIsScanning(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error processing image. Please try again.';
       setScanError(errorMessage);

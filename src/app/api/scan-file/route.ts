@@ -139,14 +139,21 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API] Starting OCR for ${fileType}, size: ${buffer.length} bytes`)
 
-    // Run Tesseract OCR
-    const result = await Tesseract.recognize(buffer, 'por', {
+    // Run Tesseract OCR with timeout
+    const ocrPromise = Tesseract.recognize(buffer, 'por', {
       logger: (m) => {
         if (m.status === 'recognizing') {
           console.log(`[OCR] Progress: ${Math.round(m.progress * 100)}%`)
         }
       },
     })
+
+    // Race against 55 second timeout
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('OCR processing timeout - image too complex or server overloaded')), 55000)
+    )
+
+    const result = await Promise.race([ocrPromise, timeoutPromise]) as Awaited<typeof ocrPromise>
 
     const ocrText = result.data.text
 
