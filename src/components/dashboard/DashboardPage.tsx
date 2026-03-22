@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import { kpis, unpaidPayments } from './mockData';
+import { unpaidPayments } from './mockData';
 import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
@@ -13,7 +13,7 @@ import AttendancePanel from './AttendancePanel';
 import PendingRequestsList from './PendingRequestsList';
 import AnnouncementsPanel from './AnnouncementsPanel';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { AppRole, AttendanceRecentItem, KidBehaviorItem, NoteItem, RequestItem } from './types';
+import { AppRole, AttendanceRecentItem, KidBehaviorItem, KpiItem, NoteItem, RequestItem } from './types';
 import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
 
@@ -54,6 +54,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const [pendingRequests, setPendingRequests] = useState<RequestItem[]>([]);
   const [currentRole, setCurrentRole] = useState<AppRole>('coach');
   const [currentName, setCurrentName] = useState('Professor');
+  const [kpis, setKpis] = useState<KpiItem[]>([]);
 
   const isCoach = currentRole === 'coach';
 
@@ -346,6 +347,52 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       supabase.removeChannel(channel);
     };
   }, [behaviorMode, fetchKidsBehavior, fetchTodayAttendance, loadDashboardData]);
+
+  // Compute KPIs from actual data
+  useEffect(() => {
+    // Count kids with bad behavior
+    const kidsWithBadBehavior = new Set<string>();
+    kidsBehaviorEvents.forEach((event) => {
+      if (event.value === 'BAD') {
+        kidsWithBadBehavior.add(event.kidId);
+      }
+    });
+
+    // Calculate total unpaid amount
+    const totalUnpaid = unpaidPayments.reduce((sum, payment) => {
+      const amount = parseFloat(payment.amount.replace('€', '').replace(',', ''));
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
+
+    const computedKpis: KpiItem[] = [
+      {
+        id: 'active',
+        value: String(todayTotalMembers),
+        label: 'Active Members',
+        accent: 'neutral',
+      },
+      {
+        id: 'unpaid',
+        value: `€${totalUnpaid.toFixed(2)}`,
+        label: `Unpaid (${unpaidPayments.length} people)`,
+        accent: 'warning',
+      },
+      {
+        id: 'kids-attention',
+        value: String(kidsWithBadBehavior.size),
+        label: 'Kids - Needs Attention',
+        accent: 'danger',
+      },
+      {
+        id: 'pending-requests',
+        value: String(pendingRequests.length),
+        label: 'Pending Requests',
+        accent: 'success',
+      },
+    ];
+
+    setKpis(computedKpis);
+  }, [todayTotalMembers, kidsBehaviorEvents, pendingRequests]);
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
