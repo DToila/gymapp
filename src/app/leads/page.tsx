@@ -65,6 +65,10 @@ export default function LeadsPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importData, setImportData] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch leads on component mount
@@ -304,6 +308,77 @@ export default function LeadsPage() {
     }
   };
 
+  const handleBulkImport = async () => {
+    if (!importData.trim()) {
+      setImportError('Cola dados em formato de tabela (nome, telefone, email, etc)');
+      return;
+    }
+
+    try {
+      setImporting(true);
+      setImportError(null);
+
+      // Parse pasted data (assumes tab-separated or comma-separated values)
+      const lines = importData.trim().split('\n');
+      const leadsToInsert: Lead[] = [];
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        // Split by tab or comma
+        const parts = line.split(/\t|,/).map((p) => p.trim()).filter(Boolean);
+        if (parts.length < 1) continue;
+
+        const lead: Lead = {
+          id: `lead-${Date.now()}-${Math.random()}`,
+          name: parts[0] || '',
+          phone: parts[1] || '',
+          email: parts[2] || '',
+          contact_source: 'Outros',
+          contact_date: new Date().toISOString().slice(0, 10),
+          class_type: (parts[3] || 'GB1') as any,
+          notes: parts[4] || '',
+          next_contact_date: parts[5] || '',
+          followup_note: '',
+          status: 'Por contactar',
+          trial_date: '',
+          enrolled: false,
+          not_enrolled_reason: undefined,
+          not_enrolled_reason_text: '',
+        };
+
+        if (lead.name) {
+          leadsToInsert.push(lead);
+        }
+      }
+
+      if (leadsToInsert.length === 0) {
+        setImportError('Nenhum lead válido encontrado nos dados');
+        return;
+      }
+
+      // Bulk insert to Supabase
+      const { error: insertError } = await supabase.from('leads').insert(leadsToInsert);
+
+      if (insertError) throw insertError;
+
+      // Reload leads
+      const { data } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      setLeads(data || []);
+      setImportData('');
+      setIsImportModalOpen(false);
+    } catch (err) {
+      console.error('Error importing leads:', err);
+      setImportError(err instanceof Error ? err.message : 'Erro ao importar leads');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-[#0b0b0b]">
       <TeacherSidebar active="leads" />
@@ -333,10 +408,20 @@ export default function LeadsPage() {
                   </button>
                   <button
                     onClick={openScanModal}
-                    className="w-full px-4 py-3 text-left text-sm text-white hover:bg-[#1a1a1a] transition last:rounded-b-xl"
+                    className="w-full px-4 py-3 text-left text-sm text-white hover:bg-[#1a1a1a] transition border-b border-[#222]"
                   >
                     <p className="font-semibold">Scan da folha de boas-vindas</p>
                     <p className="text-xs text-zinc-400 mt-1">Fotografe ou carregue a folha de boas-vindas</p>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsImportModalOpen(true);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-white hover:bg-[#1a1a1a] transition last:rounded-b-xl"
+                  >
+                    <p className="font-semibold">Importar Leads</p>
+                    <p className="text-xs text-zinc-400 mt-1">Importar multiplos leads de um ficheiro ou planilha</p>
                   </button>
                 </div>
               )}
@@ -650,6 +735,60 @@ export default function LeadsPage() {
             >
               Cancelar
             </button>
+          </div>
+        </div>
+      )}
+
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/50" onClick={() => setIsImportModalOpen(false)}>
+          <div
+            className="w-full max-w-2xl rounded-2xl border border-[#222] bg-[#121212] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-white">Importar Leads</h2>
+              <p className="mt-1 text-xs text-zinc-400">Cole dados em formato de tabela (nome, telefone, email, aula, observações)</p>
+            </div>
+
+            {importError && (
+              <div className="mb-4 rounded-xl border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fca5a5]">
+                {importError}
+              </div>
+            )}
+
+            <div className="mb-6">
+              <textarea
+                value={importData}
+                onChange={(e) => setImportData(e.target.value)}
+                disabled={importing}
+                placeholder="Nome&#10;Telefone&#10;Email&#10;Aula&#10;Observações&#10;...&#10;&#10;Pode colar dados do Excel/Google Sheets aqui."
+                className="w-full h-48 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#c81d25] resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleBulkImport}
+                disabled={importing || !importData.trim()}
+                className="flex-1 rounded-xl bg-[#c81d25] px-4 py-2 font-semibold text-white hover:bg-[#b01720] transition disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {importing ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    A importar...
+                  </>
+                ) : (
+                  <>📋 Importar</>
+                )}
+              </button>
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                disabled={importing}
+                className="flex-1 rounded-xl border border-[#222] px-4 py-2 font-semibold text-white hover:bg-[#161616] transition disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}
