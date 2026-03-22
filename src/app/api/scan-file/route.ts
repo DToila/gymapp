@@ -148,9 +148,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Race against 55 second timeout
+    // Race against 110 second timeout
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('OCR processing timeout - image too complex or server overloaded')), 55000)
+      setTimeout(() => reject(new Error('OCR processing timeout - image too complex or server overloaded')), 110000)
     )
 
     const result = await Promise.race([ocrPromise, timeoutPromise]) as Awaited<typeof ocrPromise>

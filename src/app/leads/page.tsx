@@ -154,9 +154,9 @@ export default function LeadsPage() {
 
       const base64Data = await fileToBase64(file);
 
-      // Create abort controller with 60 second timeout
+      // Create abort controller with 120 second timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
 
       try {
         // Use server-side proxy to avoid CORS and keep API key secure
@@ -203,7 +203,7 @@ export default function LeadsPage() {
       } catch (fetchError) {
         clearTimeout(timeoutId);
         if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          throw new Error('Image processing took too long. Please try with a clearer or smaller image.');
+          throw new Error('Image processing took too long (over 2 minutes). The form may be too complex. Try a cropped/closer photo of just the relevant fields.');
         }
         throw fetchError;
       }
@@ -731,9 +731,12 @@ export default function LeadsPage() {
                 className="w-full rounded-xl border-2 border-dashed border-[#c81d25] bg-[#0d0d0d] px-4 py-8 text-center hover:bg-[#161616] transition disabled:opacity-60"
               >
                 {isScanning ? (
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex flex-col items-center justify-center gap-3">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#c81d25] border-t-transparent"></div>
-                    <span className="text-white">A processar imagem...</span>
+                    <div>
+                      <p className="text-white font-semibold">A processar imagem...</p>
+                      <p className="text-xs text-zinc-400 mt-1">Isto pode levar alguns minutos</p>
+                    </div>
                   </div>
                 ) : (
                   <div>
