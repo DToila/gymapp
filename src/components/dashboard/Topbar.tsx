@@ -9,15 +9,6 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-3 text-zinc-300">
-        <button className="relative grid h-10 w-10 place-items-center rounded-full border border-[#252525] bg-[#121212]">
-          🔔
-          <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-[#c81d25]" />
-        </button>
-        <button className="grid h-10 w-10 place-items-center rounded-full border border-[#252525] bg-[#121212]">💬</button>
-        <button className="grid h-10 w-10 place-items-center rounded-full border border-[#252525] bg-[#121212]">🔔</button>
-        <button className="grid h-10 w-10 place-items-center rounded-full border border-[#252525] bg-[#121212] text-sm font-semibold text-white">
-          P
-        </button>
       </div>
     </div>
   );
