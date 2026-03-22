@@ -421,7 +421,35 @@ export const listDdBatchesForMonth = async (month: string): Promise<DdBatchRow[]
 }
 
 export const deleteDdBatch = async (batchId: string): Promise<void> => {
-  // First delete all batch items
+  // First, get all batch items so we can undo their effects
+  const batchItems = await listDdBatchItems(batchId)
+  
+  // Undo payment effects for each item
+  for (const item of batchItems) {
+    // If item has a linked payment, void it
+    if (item.payment_id) {
+      try {
+        await voidPayment(item.payment_id)
+      } catch (error) {
+        console.warn(`Failed to void payment ${item.payment_id}:`, error)
+      }
+    }
+    
+    // If item had failed status and member_id, remove the failed flag
+    if (item.status === 'failed' && item.member_id) {
+      try {
+        // Check if there are other failed items for this member
+        const otherFailed = batchItems.some(
+          (row) => row.id !== item.id && row.member_id === item.member_id && row.status === 'failed'
+        )
+        await setDdFailedFlag(item.member_id, batchId.substring(0, 7), !otherFailed)
+      } catch (error) {
+        console.warn(`Failed to update dd_failed flag for member ${item.member_id}:`, error)
+      }
+    }
+  }
+  
+  // Now delete all batch items
   const { error: itemsError } = await supabase
     .from('dd_batch_items')
     .delete()

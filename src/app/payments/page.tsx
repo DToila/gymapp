@@ -661,8 +661,11 @@ export default function PaymentsPage() {
       setLatestBatchId(null)
       setDdItems([])
       setMappingByItemId({})
-      setMessage('DD batch deleted successfully.')
-      console.log('✅ Batch deleted and cleared')
+      setMessage('DD batch deleted and payment effects reversed.')
+      console.log('✅ Batch deleted, payments voided, and counters refreshed')
+      
+      // Refresh core data to update payment counters
+      await Promise.all([refreshCore(), refreshPaidMonth()])
     } catch (deleteError) {
       const errorMsg = deleteError instanceof Error ? deleteError.message : 'Unknown error deleting batch'
       console.error('❌ Error deleting batch:', errorMsg)
