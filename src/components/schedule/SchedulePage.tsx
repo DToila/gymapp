@@ -85,16 +85,22 @@ export default function SchedulePage() {
   const [coachSecondaryId, setCoachSecondaryId] = useState('');
   const [initialPlanSnapshot, setInitialPlanSnapshot] = useState('');
   const [toast, setToast] = useState<ToastState>(null);
+  const [selectedMonday, setSelectedMonday] = useState<Date | null>(null);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
-  const weekDatesByDay = useMemo(() => {
-    const now = new Date();
-    const currentDay = now.getDay();
+  const getWeekMonday = (date: Date): Date => {
+    const d = new Date(date);
+    const currentDay = d.getDay();
     const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
-    const monday = new Date(now);
-    monday.setHours(0, 0, 0, 0);
-    monday.setDate(now.getDate() + mondayOffset);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + mondayOffset);
+    return d;
+  };
+
+  const weekDatesByDay = useMemo(() => {
+    const referenceDate = selectedMonday || new Date();
+    const monday = getWeekMonday(referenceDate);
 
     const result: Record<DayKey, { dateKey: string; dateLabel: string }> = {
       SEG: { dateKey: '', dateLabel: '' },
@@ -119,7 +125,7 @@ export default function SchedulePage() {
     });
 
     return result;
-  }, []);
+  }, [selectedMonday]);
 
   const planSnapshot = JSON.stringify({
     topic: topic || '',
@@ -800,6 +806,57 @@ export default function SchedulePage() {
           <header className="mb-6">
             <h1 className="text-4xl font-bold text-white">Horário</h1>
             <p className="mt-1 text-lg text-zinc-400">Gracie Barra Carnaxide e Oeiras</p>
+            
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const prevWeek = new Date(selectedMonday || new Date());
+                  prevWeek.setDate(prevWeek.getDate() - 7);
+                  setSelectedMonday(prevWeek);
+                }}
+                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
+                title="Semana anterior"
+              >
+                ← Anterior
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setSelectedMonday(null)}
+                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
+                title="Voltar à semana atual"
+              >
+                Hoje
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  const nextWeek = new Date(selectedMonday || new Date());
+                  nextWeek.setDate(nextWeek.getDate() + 7);
+                  setSelectedMonday(nextWeek);
+                }}
+                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
+                title="Próxima semana"
+              >
+                Próxima →
+              </button>
+
+              <div className="border-l border-[#2a2a2a] pl-3">
+                <p className="text-sm text-zinc-400">
+                  Semana de{' '}
+                  <span className="font-semibold text-zinc-200">
+                    {(() => {
+                      const monday = selectedMonday || new Date();
+                      const sunday = new Date(monday);
+                      sunday.setDate(monday.getDate() + 6);
+                      return `${monday.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })} a ${sunday.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+                    })()}
+                  </span>
+                </p>
+              </div>
+            </div>
           </header>
 
           <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.35)] lg:p-6">
