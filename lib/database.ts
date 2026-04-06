@@ -437,3 +437,63 @@ export const getUnpaidPayments = async (limit?: number): Promise<UnpaidPaymentRe
 
   return limit ? unpaid.slice(0, limit) : unpaid
 }
+
+// ─── Grupos Familiares ───────────────────────────────────────────────────────
+
+export interface FamilyGroup {
+  id: string
+  name: string
+  discount_per_member: number  // desconto em € por membro (ex: 5)
+  created_at: string
+}
+
+/**
+ * Listar todos os grupos familiares.
+ * Requer a tabela `family_groups` no Supabase.
+ */
+export const getFamilyGroups = async (): Promise<FamilyGroup[]> => {
+  const { data, error } = await supabase
+    .from('family_groups')
+    .select('*')
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.warn('family_groups table may not exist yet:', error.message)
+    return []
+  }
+  return (data ?? []) as FamilyGroup[]
+}
+
+/**
+ * Criar um novo grupo familiar.
+ */
+export const createFamilyGroup = async (params: {
+  name: string
+  discountPerMember: number
+}): Promise<FamilyGroup> => {
+  const { data, error } = await supabase
+    .from('family_groups')
+    .insert({ name: params.name, discount_per_member: params.discountPerMember })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as FamilyGroup
+}
+
+/**
+ * Obter membros de um grupo familiar.
+ */
+export const getMembersByFamilyGroup = async (familyGroupId: string): Promise<Member[]> => {
+  const { data, error } = await supabase
+    .from('members')
+    .select('*')
+    .eq('family_group_id', familyGroupId)
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.warn('Error fetching family group members:', error.message)
+    return []
+  }
+  return (data ?? []) as Member[]
+}

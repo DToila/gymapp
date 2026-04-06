@@ -1,3 +1,26 @@
+export type MemberSource =
+  | 'Website'
+  | 'Instagram'
+  | 'Walk in'
+  | 'GB Referral'
+  | 'Alunos GBCQ'
+  | 'WhatsApp'
+  | 'Telefone'
+  | 'Flyer'
+  | 'Outros';
+
+export const MEMBER_SOURCE_OPTIONS: MemberSource[] = [
+  'Instagram',
+  'GB Referral',
+  'Alunos GBCQ',
+  'Walk in',
+  'Website',
+  'WhatsApp',
+  'Telefone',
+  'Flyer',
+  'Outros',
+];
+
 export interface Member {
   id: string;
   name: string;
@@ -15,6 +38,20 @@ export interface Member {
   custom_fee?: boolean;
   custom_fee_amount?: number;
   created_at: string;
+  // Contacto de emergência
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  // Morada
+  address?: string;
+  postal_code?: string;
+  city?: string;
+  // Faturação (pode ser diferente do membro — ex: pais de crianças)
+  billing_name?: string;
+  billing_nif?: string;
+  // Como chegou ao ginásio
+  source?: MemberSource;
+  // Grupo familiar
+  family_group_id?: string;
 }
 
 export interface Attendance {

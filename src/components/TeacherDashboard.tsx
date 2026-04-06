@@ -45,6 +45,14 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
     ref: "",
     custom_fee: false,
     custom_fee_amount: 0,
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    address: "",
+    postal_code: "",
+    city: "",
+    billing_name: "",
+    billing_nif: "",
+    source: "",
   });
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [showQuickModal, setShowQuickModal] = useState(false);
@@ -445,6 +453,14 @@ export default function TeacherDashboard({ onLogout }: TeacherDashboardProps) {
         ref: "",
         custom_fee: false,
         custom_fee_amount: 0,
+        emergency_contact_name: "",
+        emergency_contact_phone: "",
+        address: "",
+        postal_code: "",
+        city: "",
+        billing_name: "",
+        billing_nif: "",
+        source: "",
       });
       setEnrollmentTimestamp(new Date().toISOString());
       setShowAddModal(false);

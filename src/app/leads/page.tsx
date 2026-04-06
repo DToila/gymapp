@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { supabase } from '../../../lib/supabase';
-import LeadsTable from '@/components/leads/LeadsTable';
+import LeadsKanban from '@/components/leads/LeadsKanban';
 import {
   Lead,
   LEAD_CLASS_TYPES,
@@ -221,6 +221,11 @@ export default function LeadsPage() {
     }
   };
 
+  const handleStatusChange = async (lead: Lead, newStatus: Lead['status']) => {
+    setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, status: newStatus } : l)));
+    await supabase.from('leads').update({ status: newStatus }).eq('id', lead.id);
+  };
+
   const openEditLead = (lead: Lead) => {
     setFormError(null);
     setDedupeWarning(null);
@@ -396,23 +401,28 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0b0b0b]">
+    <div className="flex min-h-screen bg-[#0b0b0b]">
       <TeacherSidebar ativo="leads" />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="border-b border-[#222] bg-[#0d0d0d] px-5 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-white">Leads</h1>
-              <p className="mt-1 text-sm text-zinc-500">Gestao de contactos, follow-up, aula experimental e inscricao.</p>
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="rounded-xl bg-[#c81d25] px-6 py-2.5 font-semibold text-white hover:bg-[#b01720] transition"
-              >
-                + Novo Lead
-              </button>
+      <main className="flex-1 p-3 sm:p-5 lg:p-7">
+        {/* Hero */}
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-1 text-sm font-medium uppercase tracking-widest text-zinc-500 capitalize sm:text-xs">
+              {new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+            <h1 className="text-4xl font-black leading-tight text-white">
+              Gestão de <span className="text-[#c81d25]">Leads</span>
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">Contactos, follow-up e aula experimental</p>
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-2 rounded-xl bg-[#c81d25] px-4 py-3 text-base font-semibold text-white hover:bg-[#a8141c] transition-colors sm:py-2.5 sm:text-sm"
+            >
+              + Novo Lead
+            </button>
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 rounded-xl border border-[#222] bg-[#121212] shadow-lg z-20">
                   <button
@@ -442,12 +452,9 @@ export default function LeadsPage() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          </header>
 
-        <div className="flex-1 overflow-auto">
-          <div className="p-5">
-            <div className="mb-6 flex gap-3">
+          <div className="mb-5 flex gap-3">
               <div className="flex-1">
                 <input
                   type="text"
@@ -467,25 +474,21 @@ export default function LeadsPage() {
               </select>
             </div>
 
-            <div className="rounded-2xl border border-[#222] bg-[#121212] overflow-hidden">
-              {loading ? (
-                <div className="flex items-center justify-center p-12">
-                  <div className="text-center">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#333] border-t-[#c81d25]"></div>
-                    <p className="mt-4 text-zinc-400">Carregando leads...</p>
-                  </div>
+            {loading ? (
+              <div className="flex items-center justify-center p-12">
+                <div className="text-center">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#333] border-t-[#c81d25]"></div>
+                  <p className="mt-4 text-zinc-400">Carregando leads...</p>
                 </div>
-              ) : error ? (
-                <div className="rounded-lg border border-[#7f1d1d] bg-[#1a0202] p-6">
-                  <p className="text-[#fecaca] font-medium">Erro ao carregar leads:</p>
-                  <p className="text-[#fca5a5] text-sm mt-1">{error}</p>
-                </div>
-              ) : (
-                <LeadsTable leads={filteredLeads} onRowClick={openEditLead} />
-              )}
-            </div>
-          </div>
-        </div>
+              </div>
+            ) : error ? (
+              <div className="rounded-lg border border-[#7f1d1d] bg-[#1a0202] p-6">
+                <p className="text-[#fecaca] font-medium">Erro ao carregar leads:</p>
+                <p className="text-[#fca5a5] text-sm mt-1">{error}</p>
+              </div>
+            ) : (
+              <LeadsKanban leads={filteredLeads} onCardClick={openEditLead} onStatusChange={handleStatusChange} />
+            )}
       </main>
 
       {isLeadDrawerOpen && selectedLead && (

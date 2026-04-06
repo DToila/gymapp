@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import GBLogo from '@/components/GBLogo';
 import { exportDDTxt, exportDDExcel } from '../../../lib/ddExport';
 import { supabase } from '../../../lib/supabase';
+import {
+  LayoutDashboard, Calendar, Users, CheckSquare,
+  Megaphone, CreditCard, Settings, Download, UserPlus,
+  LogOut, ChevronDown, Menu, X
+} from 'lucide-react';
 
 type AppRole = 'admin' | 'staff' | 'coach';
 
@@ -34,6 +39,7 @@ interface TeacherSidebarProps {
 
 export default function TeacherSidebar({ ativo, requestsCount = 0, role: roleProp, onLogout, onExportTxt, onExportExcel, onAddMember }: TeacherSidebarProps) {
   const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const [profileRole, setProfileRole] = useState<AppRole>(() => {
@@ -51,246 +57,258 @@ export default function TeacherSidebar({ ativo, requestsCount = 0, role: rolePro
   useEffect(() => {
     if (roleProp) {
       setProfileRole(roleProp);
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.setItem('cached_profile_role', roleProp);
-      }
+      if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', roleProp);
       return;
     }
-
     let cancelled = false;
-
     const loadProfile = async () => {
       try {
         const { data: authData } = await supabase.auth.getUser();
         const user = authData?.user;
         if (!user) return;
-
-        const { data } = await supabase
-          .from('profiles')
-          .select('role, full_name')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        const roleFromProfile = data?.role && isRole(data.role) ? data.role : null;
-        const roleFromUserMeta = roleFromMetadata(user.user_metadata);
-        const roleFromAppMeta = roleFromMetadata(user.app_metadata);
-        const resolvedRole = roleFromProfile || roleFromUserMeta || roleFromAppMeta || 'coach';
-        if (!cancelled) {
-          setProfileRole(resolvedRole);
-        }
-
-        const nameFromProfile = data?.full_name || null;
-        const nameFromUserMeta = fullNameFromMetadata(user.user_metadata);
-        const nameFromAppMeta = fullNameFromMetadata(user.app_metadata);
-        if (!cancelled) {
-          setProfileName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Professor');
-        }
-
-        if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem('cached_profile_role', resolvedRole);
-        }
-      } catch (error) {
-        console.error('Falhado to load profile for sidebar:', error);
-      }
+        const { data } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).maybeSingle();
+        const resolvedRole =
+          (data?.role && isRole(data.role) ? data.role : null) ||
+          roleFromMetadata(user.user_metadata) ||
+          roleFromMetadata(user.app_metadata) || 'coach';
+        if (!cancelled) setProfileRole(resolvedRole);
+        const name = data?.full_name || fullNameFromMetadata(user.user_metadata) || fullNameFromMetadata(user.app_metadata) || 'Professor';
+        if (!cancelled) setProfileName(name);
+        if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', resolvedRole);
+      } catch (e) { console.error(e); }
     };
-
     loadProfile();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [roleProp]);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handle = (e: MouseEvent) => {
       if (
         exportRef.current && !exportRef.current.contains(e.target as Node) &&
         exportTriggerRef.current && !exportTriggerRef.current.contains(e.target as Node)
-      ) {
-        setShowExportDropdown(false);
-      }
+      ) setShowExportDropdown(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
   }, []);
+
+  // Lock body scroll when drawer open on mobile
+  useEffect(() => {
+    if (drawerOpen) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [drawerOpen]);
 
   const handleExportToggle = () => {
     if (!showExportDropdown && exportTriggerRef.current) {
       const rect = exportTriggerRef.current.getBoundingClientRect();
-      setDropdownPos({ top: rect.top, left: rect.right + 4 });
+      setDropdownPos({ top: rect.top, left: rect.right + 8 });
     }
     setShowExportDropdown(v => !v);
   };
 
   const handleExportTxtClick = async () => {
-    try {
-      if (onExportTxt) {
-        await Promise.resolve(onExportTxt());
-      } else {
-        await exportDDTxt();
-      }
-    } catch (error) {
-      console.error('Erro exporting DD TXT:', error);
-      alert('Erro exporting DD TXT. Please try again.');
-    } finally {
-      setShowExportDropdown(false);
-    }
+    try { onExportTxt ? await Promise.resolve(onExportTxt()) : await exportDDTxt(); }
+    catch (e) { console.error(e); alert('Erro ao exportar TXT.'); }
+    finally { setShowExportDropdown(false); }
   };
 
   const handleExportExcelClick = async () => {
-    try {
-      if (onExportExcel) {
-        await Promise.resolve(onExportExcel());
-      } else {
-        await exportDDExcel();
-      }
-    } catch (error) {
-      console.error('Erro exporting DD Excel:', error);
-      alert('Erro exporting DD Excel. Please try again.');
-    } finally {
-      setShowExportDropdown(false);
-    }
+    try { onExportExcel ? await Promise.resolve(onExportExcel()) : await exportDDExcel(); }
+    catch (e) { console.error(e); alert('Erro ao exportar Excel.'); }
+    finally { setShowExportDropdown(false); }
   };
 
   const handleAddMemberClick = () => {
-    if (onAddMember) {
-      onAddMember();
-      return;
-    }
-    router.push('/members?openAddMember=1');
+    setDrawerOpen(false);
+    onAddMember ? onAddMember() : router.push('/members?openAddMember=1');
   };
 
   const handleLogoutClick = async () => {
-    if (onLogout) {
-      onLogout();
-      return;
-    }
-
+    setDrawerOpen(false);
+    if (onLogout) { onLogout(); return; }
     await supabase.auth.signOut();
     router.push('/login');
   };
 
+  const navigate = (path: string) => {
+    setDrawerOpen(false);
+    router.push(path);
+  };
+
   const navItems = [
-    { key: 'dashboard', label: 'Dashboard', icon: '📊', onClick: () => router.push('/dashboard') },
-    { key: 'schedule', label: 'Horário', icon: '📅', onClick: () => router.push('/schedule') },
-    { key: 'members', label: 'Membros', icon: '👥', onClick: () => router.push('/members') },
-    { key: 'attendance', label: 'Presenças', icon: '✅', onClick: () => router.push('/attendance') },
-    { key: 'leads', label: 'Leads', icon: '📢', onClick: () => router.push('/leads') },
-    { key: 'payments', label: 'Pagamentos', icon: '💰', onClick: () => router.push('/payments') },
-    { key: 'settings', label: 'Definições', icon: '⚙️', onClick: () => router.push('/settings') }
+    { key: 'dashboard',  label: 'Dashboard',  Icon: LayoutDashboard, path: '/dashboard' },
+    { key: 'schedule',   label: 'Horário',    Icon: Calendar,        path: '/schedule' },
+    { key: 'members',    label: 'Membros',    Icon: Users,           path: '/members' },
+    { key: 'attendance', label: 'Presenças',  Icon: CheckSquare,     path: '/attendance' },
+    { key: 'leads',      label: 'Leads',      Icon: Megaphone,       path: '/leads' },
+    { key: 'payments',   label: 'Pagamentos', Icon: CreditCard,      path: '/payments' },
+    { key: 'settings',   label: 'Definições', Icon: Settings,        path: '/settings' },
   ];
 
-  const visibleNavItems = navItems.filter((item) => {
-    if (profileRole === 'coach') {
-      return !['leads', 'payments', 'settings'].includes(item.key);
-    }
-    return true;
-  });
+  const visibleNavItems = navItems.filter(item =>
+    profileRole === 'coach' ? !['leads', 'payments', 'settings'].includes(item.key) : true
+  );
 
   const canExportDd = profileRole !== 'coach';
-  const roleLabel = profileRole.toUpperCase();
+  const initials = profileName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
-  return (
-    <aside className="sticky top-0 z-10 flex h-screen w-[260px] min-w-[260px] flex-col border-r border-[#222] bg-[#0d0d0d]">
-      <div className="border-b border-[#202020] px-5 py-5">
-        <div className="mb-2 flex items-center gap-3">
-          <GBLogo size={46} />
-          <div>
-            <div className="text-sm font-extrabold tracking-[0.22em] text-zinc-100">GRACIE BARRA</div>
-            <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Carnaxide & Queijas / GymApp</div>
-          </div>
-        </div>
-      </div>
+  // Shared nav content used in both desktop sidebar and mobile drawer
+  const NavContent = () => (
+    <>
+      <nav className="flex-1 overflow-y-auto px-4 py-3">
+        <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-600">Menu</p>
 
-      <nav className="flex-1 overflow-visible px-3 py-4">
         {visibleNavItems.map((item) => {
-          const isActive = ativo === (item.key as any);
+          const isActive = ativo === item.key;
           return (
             <div
               key={item.key}
-              onClick={item.onClick}
-              className={`mb-1 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
-                isActive
-                  ? 'border-l-2 border-[#c81d25] bg-[#2a1113] text-white'
-                  : 'text-zinc-400 hover:bg-[#161616] hover:text-zinc-200'
+              onClick={() => navigate(item.path)}
+              className={`mb-1 flex cursor-pointer items-center justify-between rounded-xl px-3 py-3.5 transition-colors ${
+                isActive ? 'bg-[#1e1e1e] text-white' : 'text-zinc-400 hover:bg-[#1a1a1a] hover:text-zinc-100'
               }`}
             >
-              <span className="flex items-center gap-2">
-                <span className="text-xs">{item.icon}</span>
-                <span>{item.label}</span>
+              <span className="flex items-center gap-3.5">
+                <item.Icon size={20} className={isActive ? 'text-[#c81d25]' : 'text-zinc-500'} />
+                <span className="text-[17px] font-medium">{item.label}</span>
               </span>
-              {item.key === 'dashboard' && requestsCount > 0 ? (
-                <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#c81d25] px-1.5 text-[10px] font-bold text-white">
+              {item.key === 'dashboard' && requestsCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c81d25] px-1.5 text-[10px] font-bold text-white">
                   {requestsCount}
                 </span>
-              ) : null}
+              )}
             </div>
           );
         })}
 
-        {canExportDd ? (
-          <>
-            <div ref={exportTriggerRef}>
-              <div
-                onClick={handleExportToggle}
-                className={`mb-1 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm transition ${
-                  showExportDropdown ? 'bg-[#161616] text-zinc-100' : 'text-zinc-400 hover:bg-[#161616] hover:text-zinc-200'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-xs">⬇</span>
-                  <span>Export DD</span>
-                </span>
-                <span className="text-[10px] text-zinc-500">{showExportDropdown ? '▲' : '▼'}</span>
-              </div>
+        {canExportDd && (
+          <div ref={exportTriggerRef}>
+            <div
+              onClick={handleExportToggle}
+              className={`mb-1 mt-1 flex cursor-pointer items-center justify-between rounded-xl px-3 py-3.5 transition-colors ${
+                showExportDropdown ? 'bg-[#1e1e1e] text-white' : 'text-zinc-400 hover:bg-[#1a1a1a] hover:text-zinc-100'
+              }`}
+            >
+              <span className="flex items-center gap-3.5">
+                <Download size={20} className="text-zinc-500" />
+                <span className="text-[17px] font-medium">Export DD</span>
+              </span>
+              <ChevronDown size={14} className={`text-zinc-600 transition-transform ${showExportDropdown ? 'rotate-180' : ''}`} />
             </div>
-
-            {showExportDropdown && dropdownPos && (
-              <div
-                ref={exportRef}
-                className="fixed z-[9999] min-w-[148px] border border-[#2a2a2a] bg-[#1a1a1a] shadow-[4px_4px_16px_rgba(0,0,0,0.7)]"
-                style={{ top: dropdownPos.top, left: dropdownPos.left }}
-              >
-                <div
-                  onClick={handleExportTxtClick}
-                  className="cursor-pointer border-b border-[#2a2a2a] px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#2a2a2a] hover:text-zinc-100"
-                >
-                  Export TXT
-                </div>
-                <div
-                  onClick={handleExportExcelClick}
-                  className="cursor-pointer px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#2a2a2a] hover:text-zinc-100"
-                >
-                  Export Excel
-                </div>
-              </div>
-            )}
-          </>
-        ) : null}
+          </div>
+        )}
       </nav>
 
-      <div className="flex flex-col gap-3 border-t border-[#202020] p-4">
+      <div className="border-t border-[#1e1e1e] px-4 py-4 space-y-3">
         <button
           onClick={handleAddMemberClick}
-          className="w-full rounded-lg border border-[#c81d25] bg-[#c81d25] px-3 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-[#a8141c]"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#c81d25] px-3 py-3.5 text-[15px] font-semibold text-white transition hover:bg-[#a8141c]"
         >
-          + Adicionar Membro
+          <UserPlus size={18} />
+          Adicionar Membro
         </button>
 
-        <div className="flex items-center gap-3 rounded-lg bg-[#111] p-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-[#c81d25] text-xs font-bold text-white">P</div>
+        <div className="flex items-center gap-3 rounded-xl px-2 py-2.5">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#c81d25] text-sm font-bold text-white">
+            {initials}
+          </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm text-zinc-100">{profileName}</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-[#c81d25]">{roleLabel}</div>
+            <div className="truncate text-[15px] font-semibold text-zinc-100">{profileName}</div>
+            <div className="text-xs text-zinc-500 capitalize">{profileRole}</div>
           </div>
           <button
             onClick={handleLogoutClick}
-            className="rounded-md border border-[#2a2a2a] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-zinc-400 hover:border-zinc-200 hover:text-zinc-100"
+            title="Sair"
+            className="shrink-0 rounded-lg p-2 text-zinc-500 transition hover:bg-[#1e1e1e] hover:text-zinc-200"
           >
-            Sair
+            <LogOut size={18} />
           </button>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ── Mobile top bar ── */}
+      <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-[#1e1e1e] bg-[#111] px-4 lg:hidden">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="rounded-lg p-2 text-zinc-400 transition hover:bg-[#1e1e1e] hover:text-white"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+          <Menu size={22} />
+        </button>
+        <div className="flex items-center gap-2">
+          <GBLogo size={28} />
+          <span className="text-sm font-bold text-white">Gracie Barra</span>
+        </div>
+        <div className="w-10" /> {/* spacer */}
+      </div>
+
+      {/* ── Mobile drawer backdrop ── */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 lg:hidden"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile drawer ── */}
+      <div className={`fixed left-0 top-0 z-50 flex h-full w-[300px] flex-col bg-[#111] transition-transform duration-300 lg:hidden ${drawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Drawer header */}
+        <div className="flex items-center justify-between border-b border-[#1e1e1e] px-4 py-4">
+          <div className="flex items-center gap-3">
+            <GBLogo size={36} />
+            <div>
+              <div className="text-sm font-bold text-white leading-tight">Gracie Barra</div>
+              <div className="text-xs text-zinc-500 leading-tight">Carnaxide & Queijas</div>
+            </div>
+          </div>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="rounded-lg p-1.5 text-zinc-500 hover:bg-[#1e1e1e] hover:text-zinc-200"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <NavContent />
+
+        {showExportDropdown && (
+          <div className="mx-3 mb-2 overflow-hidden rounded-lg border border-[#2a2a2a] bg-[#1a1a1a]">
+            <div onClick={handleExportTxtClick} className="cursor-pointer px-4 py-3 text-sm text-zinc-300 hover:bg-[#252525] hover:text-white">Export TXT</div>
+            <div onClick={handleExportExcelClick} className="cursor-pointer border-t border-[#2a2a2a] px-4 py-3 text-sm text-zinc-300 hover:bg-[#252525] hover:text-white">Export Excel</div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop sidebar ── */}
+      <aside className="sticky top-0 z-10 hidden h-screen w-[240px] min-w-[240px] flex-col bg-[#111] lg:flex">
+        <div className="border-b border-[#1e1e1e] px-5 py-5">
+          <div className="flex items-center gap-3">
+            <GBLogo size={36} />
+            <div>
+              <div className="text-sm font-bold text-white leading-tight">Gracie Barra</div>
+              <div className="text-xs text-zinc-500 leading-tight">Carnaxide & Queijas</div>
+            </div>
+          </div>
+        </div>
+
+        <NavContent />
+
+        {showExportDropdown && dropdownPos && (
+          <div
+            ref={exportRef}
+            className="fixed z-[9999] min-w-[160px] overflow-hidden rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] shadow-xl"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          >
+            <div onClick={handleExportTxtClick} className="cursor-pointer px-4 py-3 text-sm text-zinc-300 hover:bg-[#252525] hover:text-white">Export TXT</div>
+            <div onClick={handleExportExcelClick} className="cursor-pointer border-t border-[#2a2a2a] px-4 py-3 text-sm text-zinc-300 hover:bg-[#252525] hover:text-white">Export Excel</div>
+          </div>
+        )}
+      </aside>
+    </>
   );
 }

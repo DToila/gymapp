@@ -10,9 +10,9 @@ interface PanelProps {
 
 export default function Panel({ title, icon, actionText, onAction, children }: PanelProps) {
   return (
-    <section className="rounded-2xl border border-[#252525] bg-[#121212] shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
-      <div className="flex items-center justify-between border-b border-[#202020] px-5 py-4">
-        <div className="flex items-center gap-2 text-lg font-semibold text-white">
+    <section className="rounded-xl border border-[#1e1e1e] bg-[#161616]">
+      <div className="flex items-center justify-between border-b border-[#1e1e1e] px-5 py-4">
+        <div className="flex items-center gap-2 text-base font-semibold text-white">
           {icon}
           <h3>{title}</h3>
         </div>

@@ -95,6 +95,8 @@ export default function AttendancePage() {
   const todayKey = useMemo(() => getDateKey(new Date()), []);
   const [activeTab, setActiveTab] = useState<AttendanceTab>('adults');
   const [search, setSearch] = useState('');
+  const [draggedPersonId, setDraggedPersonId] = useState<string | null>(null);
+  const [dragOverPanel, setDragOverPanel] = useState<'left' | 'right' | null>(null);
   const [people, setPeople] = useState<AttendancePerson[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(todayKey);
@@ -404,16 +406,26 @@ export default function AttendancePage() {
   };
 
   const renderRow = (person: AttendancePerson, checkedIn: boolean) => {
+    const isDragging = draggedPersonId === person.id;
     return (
       <button
         key={person.id}
         type="button"
+        draggable
+        onDragStart={(e) => {
+          setDraggedPersonId(person.id);
+          e.dataTransfer.effectAllowed = 'move';
+        }}
+        onDragEnd={() => {
+          setDraggedPersonId(null);
+          setDragOverPanel(null);
+        }}
         onClick={() => {
           if (!checkedIn) checkIn(person.id);
         }}
-        className={`flex w-full items-center gap-3 border-b border-white/5 px-3 py-3 text-left transition ${
-          checkedIn ? 'cursor-default' : 'cursor-pointer hover:bg-white/5'
-        }`}
+        className={`flex w-full items-center gap-3 border-b border-white/5 px-3 py-3 text-left transition select-none ${
+          checkedIn ? 'cursor-grab active:cursor-grabbing' : 'cursor-grab active:cursor-grabbing hover:bg-white/5'
+        } ${isDragging ? 'opacity-40' : ''}`}
       >
         <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-[#2a2a2a] bg-[#1a1a1a] text-xs font-semibold text-zinc-200">
           {getInitials(person.name)}
@@ -454,9 +466,29 @@ export default function AttendancePage() {
     <div className="flex min-h-screen bg-[linear-gradient(180deg,#0b0b0b_0%,#101010_100%)] text-zinc-100">
       <TeacherSidebar ativo="attendance" />
 
-      <main className="flex-1 p-6 lg:p-8">
+      <main className="flex-1 p-3 sm:p-5 lg:p-7">
         <div className="mx-auto max-w-[1320px]">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          {/* Hero */}
+          <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-1 text-sm font-medium uppercase tracking-widest text-zinc-500 capitalize sm:text-xs">
+                {new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+              <h1 className="text-4xl font-black leading-tight text-white">
+                Gestão de <span className="text-[#c81d25]">Presenças</span>
+              </h1>
+              <p className="mt-1 text-sm text-zinc-500">Check-ins diários</p>
+            </div>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-xl bg-[#c81d25] px-4 py-3 text-base font-semibold text-white hover:bg-[#a8141c] transition-colors sm:py-2.5 sm:text-sm"
+            >
+              Start Presenças
+            </button>
+          </header>
+
+          {/* Toolbar */}
+          <div className="mb-5 flex flex-wrap items-center gap-3">
             <label className="flex w-full max-w-[500px] items-center gap-2 rounded-full border border-[#222] bg-[#121212] px-4 py-2.5 shadow-[0_6px_22px_rgba(0,0,0,0.28)]">
               <span className="text-zinc-500">⌕</span>
               <input
@@ -544,19 +576,9 @@ export default function AttendancePage() {
                 ) : null}
               </div>
 
-              <button
-                type="button"
-                className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(200,29,37,0.28)] transition hover:bg-[#ab1820]"
-              >
-                Start Presenças
-              </button>
             </div>
           </div>
 
-          <header className="mb-5">
-            <h1 className="text-4xl font-bold text-white">Presenças</h1>
-            <p className="mt-1 text-sm text-zinc-500">Manage daily check-ins</p>
-          </header>
 
           <section className="rounded-2xl border border-[#222] bg-[#111] p-4 shadow-[0_14px_38px_rgba(0,0,0,0.32)]">
             <div className="mb-4 inline-flex rounded-xl border border-[#252525] bg-[#141414] p-1">
@@ -585,30 +607,56 @@ export default function AttendancePage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-[#222] bg-[#121212] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+              <div
+                className={`rounded-2xl border bg-[#121212] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-colors ${
+                  dragOverPanel === 'left' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.04)]' : 'border-[#222]'
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setDragOverPanel('left'); }}
+                onDragLeave={() => setDragOverPanel(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedPersonId) uncheckIn(draggedPersonId);
+                  setDraggedPersonId(null);
+                  setDragOverPanel(null);
+                }}
+              >
                 <div className="mb-2 px-2 text-base font-semibold text-zinc-100">
-                  Not checked in <span className="text-zinc-500">({leftList.length})</span>
+                  Não entrou <span className="text-zinc-500">({leftList.length})</span>
+                  {dragOverPanel === 'left' && <span className="ml-2 text-xs text-[#c81d25] font-normal">Largar para remover check-in</span>}
                 </div>
                 <div className="overflow-hidden rounded-xl border border-[#1f1f1f] bg-[#101010]">
                   {loading ? (
-                    <div className="px-3 py-8 text-center text-sm text-zinc-500">A carregar members...</div>
+                    <div className="px-3 py-8 text-center text-sm text-zinc-500">A carregar...</div>
                   ) : leftList.length === 0 ? (
-                    <div className="px-3 py-8 text-center text-sm text-zinc-500">Não members found in this list.</div>
+                    <div className="px-3 py-8 text-center text-sm text-zinc-500">Todos fizeram check-in.</div>
                   ) : (
                     leftList.map((person) => renderRow(person, false))
                   )}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[#222] bg-[#121212] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+              <div
+                className={`rounded-2xl border bg-[#121212] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-colors ${
+                  dragOverPanel === 'right' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.04)]' : 'border-[#222]'
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setDragOverPanel('right'); }}
+                onDragLeave={() => setDragOverPanel(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedPersonId) checkIn(draggedPersonId);
+                  setDraggedPersonId(null);
+                  setDragOverPanel(null);
+                }}
+              >
                 <div className="mb-2 px-2 text-base font-semibold text-zinc-100">
-                  Entrou today <span className="text-zinc-500">({rightList.length})</span>
+                  Entrou hoje <span className="text-zinc-500">({rightList.length})</span>
+                  {dragOverPanel === 'right' && <span className="ml-2 text-xs text-[#c81d25] font-normal">Largar para fazer check-in</span>}
                 </div>
                 <div className="overflow-hidden rounded-xl border border-[#1f1f1f] bg-[#101010]">
                   {loading ? (
-                    <div className="px-3 py-8 text-center text-sm text-zinc-500">A carregar members...</div>
+                    <div className="px-3 py-8 text-center text-sm text-zinc-500">A carregar...</div>
                   ) : rightList.length === 0 ? (
-                    <div className="px-3 py-8 text-center text-sm text-zinc-500">Nobody checked in yet.</div>
+                    <div className="px-3 py-8 text-center text-sm text-zinc-500">Ninguém entrou ainda.</div>
                   ) : (
                     rightList.map((person) => renderRow(person, true))
                   )}

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import AnnouncementsModal from './AnnouncementsModal';
-import { AnnouncementAudience, AnnouncementItem, AppRole } from './types';
+import { AnnouncementItem } from './types';
 import { useAnnouncements } from '@/lib/useAnnouncements';
 
 const tagChipClass: Record<AnnouncementItem['tag'], string> = {
@@ -12,12 +12,6 @@ const tagChipClass: Record<AnnouncementItem['tag'], string> = {
   PAYMENTS: 'border-[#7c2d12] bg-[rgba(124,45,18,0.3)] text-orange-300',
 };
 
-const audienceLabel: Record<AnnouncementAudience, string> = {
-  ALL: 'Todos',
-  ADULTS: 'Adultos',
-  KIDS: 'Crianças',
-  STAFF: 'Staff',
-};
 
 const formatDateLabel = (dateValue: string): string => {
   const parsed = new Date(`${dateValue}T12:00:00`);
@@ -28,13 +22,11 @@ const formatDateLabel = (dateValue: string): string => {
 export default function AnnouncementsPanel({
   maxVisible = 3,
   canCreate = true,
-  currentUserRole = 'admin',
   currentUserName = 'Professor',
   currentUserId = 'local-user',
 }: {
   maxVisible?: number;
   canCreate?: boolean;
-  currentUserRole?: AppRole;
   currentUserName?: string;
   currentUserId?: string;
 }) {
@@ -44,8 +36,6 @@ export default function AnnouncementsPanel({
     updateAnnouncement,
     deleteAnnouncement,
     togglePin,
-    approveAnnouncement,
-    rejectAnnouncement,
   } = useAnnouncements();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,14 +58,7 @@ export default function AnnouncementsPanel({
     [sortedAnnouncements, today]
   );
 
-  const pendingApprovals = useMemo(
-    () => sortedAnnouncements.filter((item) => item.approvalStatus === 'pending'),
-    [sortedAnnouncements]
-  );
-
   const visible = publishedActiveAnnouncements.slice(0, maxVisible);
-
-  const canApprove = currentUserRole === 'staff' || currentUserRole === 'admin';
 
   const openCreate = () => {
     setModalMode('create');
@@ -89,15 +72,14 @@ export default function AnnouncementsPanel({
 
   const handleCreate = async (announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => {
     try {
-      const isCoach = currentUserRole === 'coach';
       await createAnnouncement({
         ...announcement,
-        approvalStatus: isCoach ? 'pending' : 'approved',
+        approvalStatus: 'approved',
         createdBy: currentUserName,
         createdById: currentUserId,
-        approvedBy: isCoach ? null : currentUserName,
-        approvedById: isCoach ? null : currentUserId,
-        approvedAt: isCoach ? null : new Date().toISOString(),
+        approvedBy: currentUserName,
+        approvedById: currentUserId,
+        approvedAt: new Date().toISOString(),
         rejectionReason: null,
       });
     } catch (error) {
@@ -129,22 +111,6 @@ export default function AnnouncementsPanel({
     }
   };
 
-  const handleApprove = async (id: string) => {
-    try {
-      await approveAnnouncement(id, currentUserName);
-    } catch (error) {
-      console.error('Falhado to approve announcement:', error);
-    }
-  };
-
-  const handleReject = async (id: string, reason?: string) => {
-    try {
-      await rejectAnnouncement(id, reason ?? null, currentUserName);
-    } catch (error) {
-      console.error('Falhado to reject announcement:', error);
-    }
-  };
-
   return (
     <>
       <section className="rounded-2xl border border-[#252525] bg-[#121212] shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
@@ -152,11 +118,6 @@ export default function AnnouncementsPanel({
           <div className="flex items-center gap-2 text-lg font-semibold text-white">
             <span className="text-[#c81d25]">📣</span>
             <h3>Anúncios</h3>
-            {canApprove && pendingApprovals.length > 0 ? (
-              <span className="inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[#c81d25] px-1.5 text-[10px] font-bold text-white">
-                {pendingApprovals.length}
-              </span>
-            ) : null}
           </div>
 
           <div className="flex items-center gap-3">
@@ -181,18 +142,23 @@ export default function AnnouncementsPanel({
             ) : (
               <ul className="space-y-2">
                 {visible.map((item) => (
-                  <li key={item.id} className="rounded-lg border border-[#222] bg-[#101010] px-3 py-2.5">
+                  <li key={item.id} className={`rounded-lg border px-3 py-2.5 ${item.audience === 'STAFF' ? 'border-[#3a2a0a] bg-[#0f0b04]' : 'border-[#222] bg-[#101010]'}`}>
                     <div className="mb-1.5 flex items-center gap-2">
                       <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${tagChipClass[item.tag]}`}>
                         {item.tag}
                       </span>
+                      {item.audience === 'STAFF' && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[#78490a] bg-[rgba(120,73,10,0.25)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-300">
+                          🔒 Só Staff
+                        </span>
+                      )}
                       {item.pinned ? <span className="text-xs text-zinc-300" title="Pinned">📌</span> : null}
                     </div>
 
                     <p className="truncate text-sm font-medium text-zinc-100">{item.title}</p>
 
                     <p className="mt-1 text-xs text-zinc-500">
-                      Audience: {audienceLabel[item.audience]} <span className="mx-1.5">•</span> Expires: {formatDateLabel(item.expiresAt)}
+                      Expires: {formatDateLabel(item.expiresAt)}
                     </p>
                   </li>
                 ))}
@@ -218,10 +184,6 @@ export default function AnnouncementsPanel({
         onUpdate={handleUpdate}
         onDelete={handleDelete}
         onTogglePin={handleTogglePin}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        canApprove={canApprove}
-        currentUserRole={currentUserRole}
       />
     </>
   );

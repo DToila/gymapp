@@ -1,8 +1,21 @@
 import { supabase } from '../../lib/supabase'
 import { calculateMonthlyFee, getAgeFromDateOfBirth, Member } from '../../lib/types'
 
-export type PaymentMethod = 'DD' | 'TPA_CARD' | 'TPA_MBWAY' | 'CASH'
+export type PaymentMethod = 'DD' | 'TPA_CARD' | 'TPA_MBWAY' | 'CASH' | 'TB' | 'MB'
 export type DdItemStatus = 'success' | 'failed'
+
+// Estado mensal de um membro — usado quando o mês não é um pagamento normal
+export type PaymentMonthStatus = 'Skip' | 'Ferias' | 'Oferta' | 'Exit'
+
+export interface PaymentMonthOverride {
+  id: string
+  member_id: string
+  month: string          // formato YYYY-MM
+  status: PaymentMonthStatus
+  note: string | null
+  created_at: string
+  created_by: string | null
+}
 
 export interface PaymentRow {
   id: string
@@ -705,4 +718,82 @@ export const resetPaidCounterForMonth = async (month: string): Promise<void> => 
     local.payments = local.payments.filter((p) => p.payment_month !== month)
     writeLocalState(local)
   }
+}
+
+// ─── Estados mensais (Skip / Férias / Oferta / Exit) ────────────────────────
+
+/**
+ * Obter os overrides de estado mensal de um membro.
+ * Requer a tabela `payment_month_overrides` no Supabase.
+ */
+export const getMonthOverridesForMember = async (memberId: string): Promise<PaymentMonthOverride[]> => {
+  const { data, error } = await supabase
+    .from('payment_month_overrides')
+    .select('*')
+    .eq('member_id', memberId)
+    .order('month', { ascending: false })
+
+  if (error) {
+    if (isPaymentsTableMissingError(error) || error.code === 'PGRST205') return []
+    console.warn('payment_month_overrides table may not exist yet:', error.message)
+    return []
+  }
+  return (data ?? []) as PaymentMonthOverride[]
+}
+
+/**
+ * Obter todos os overrides de um dado mês (para a vista de pagamentos).
+ */
+export const getMonthOverridesForMonth = async (month: string): Promise<PaymentMonthOverride[]> => {
+  const { data, error } = await supabase
+    .from('payment_month_overrides')
+    .select('*')
+    .eq('month', month)
+
+  if (error) {
+    if (isPaymentsTableMissingError(error) || error.code === 'PGRST205') return []
+    console.warn('payment_month_overrides table may not exist yet:', error.message)
+    return []
+  }
+  return (data ?? []) as PaymentMonthOverride[]
+}
+
+/**
+ * Definir o estado de um mês para um membro (upsert).
+ * Se `status` for null, remove o override.
+ */
+export const setMonthOverride = async (params: {
+  memberId: string
+  month: string
+  status: PaymentMonthStatus | null
+  note?: string | null
+  createdBy?: string | null
+}): Promise<void> => {
+  const { memberId, month, status, note, createdBy } = params
+
+  if (status === null) {
+    // Remover override
+    const { error } = await supabase
+      .from('payment_month_overrides')
+      .delete()
+      .eq('member_id', memberId)
+      .eq('month', month)
+    if (error && !isPaymentsTableMissingError(error)) throw error
+    return
+  }
+
+  const { error } = await supabase
+    .from('payment_month_overrides')
+    .upsert(
+      {
+        member_id: memberId,
+        month,
+        status,
+        note: note ?? null,
+        created_by: createdBy ?? null,
+      },
+      { onConflict: 'member_id,month' }
+    )
+
+  if (error && !isPaymentsTableMissingError(error)) throw error
 }

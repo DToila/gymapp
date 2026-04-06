@@ -749,18 +749,35 @@ export default function SchedulePage() {
   const desktopPopoverStyle: React.CSSProperties = useMemo(() => {
     if (!editingSlot) return {};
     const width = 380;
+    const margin = 12;
+
     const left = clamp(
       editingSlot.anchorRect.left + editingSlot.anchorRect.width / 2 - width / 2,
-      12,
-      window.innerWidth - width - 12
+      margin,
+      window.innerWidth - width - margin
     );
-    const top = clamp(editingSlot.anchorRect.bottom + 12, 12, window.innerHeight - 430);
+
+    const spaceBelow = window.innerHeight - editingSlot.anchorRect.bottom - margin;
+    const spaceAbove = editingSlot.anchorRect.top - margin;
+
+    let top: number;
+    let maxHeight: number;
+
+    if (spaceBelow >= spaceAbove) {
+      top = editingSlot.anchorRect.bottom + margin;
+      maxHeight = spaceBelow;
+    } else {
+      maxHeight = spaceAbove;
+      top = Math.max(margin, editingSlot.anchorRect.top - maxHeight - margin);
+    }
 
     return {
       position: 'fixed',
       left,
       top,
       width,
+      maxHeight: Math.min(maxHeight, window.innerHeight - 2 * margin),
+      overflowY: 'auto',
       zIndex: 130,
     };
   }, [editingSlot]);
@@ -769,18 +786,49 @@ export default function SchedulePage() {
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
       <TeacherSidebar ativo="schedule" onLogout={() => router.push('/')} />
 
-      <main className="flex-1 p-6 lg:p-8">
+      <main className="flex-1 p-3 sm:p-5 lg:p-7">
         <div className="mx-auto max-w-[1320px]">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <label className="flex w-full max-w-[500px] items-center gap-2 rounded-full border border-[#222] bg-[#121212] px-4 py-2.5 shadow-[0_6px_22px_rgba(0,0,0,0.28)]">
-              <span className="text-zinc-500">⌕</span>
-              <input
-                placeholder="Pesquisar class..."
-                className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 outline-none"
-              />
-            </label>
-
-            <div className="flex items-center gap-2">
+          {/* Hero */}
+          <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-1 text-sm font-medium uppercase tracking-widest text-zinc-500 capitalize sm:text-xs">
+                {new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+              <h1 className="text-4xl font-black leading-tight text-white">
+                Horário <span className="text-[#c81d25]">Semanal</span>
+              </h1>
+              <p className="mt-1 text-sm text-zinc-500">Gracie Barra Carnaxide &amp; Queijas</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const prevWeek = new Date(selectedMonday || new Date());
+                  prevWeek.setDate(prevWeek.getDate() - 7);
+                  setSelectedMonday(prevWeek);
+                }}
+                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2.5 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
+              >
+                ← Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedMonday(null)}
+                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2.5 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
+              >
+                Hoje
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextWeek = new Date(selectedMonday || new Date());
+                  nextWeek.setDate(nextWeek.getDate() + 7);
+                  setSelectedMonday(nextWeek);
+                }}
+                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2.5 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
+              >
+                Próxima →
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -796,68 +844,27 @@ export default function SchedulePage() {
               <button
                 type="button"
                 onClick={openModal}
-                className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(200,29,37,0.28)] transition hover:bg-[#ab1820]"
+                className="rounded-xl bg-[#c81d25] px-4 py-3 text-base font-semibold text-white hover:bg-[#a8141c] transition-colors sm:py-2.5 sm:text-sm"
               >
-                Abrir full screen
+                Full screen
               </button>
-            </div>
-          </div>
-
-          <header className="mb-6">
-            <h1 className="text-4xl font-bold text-white">Horário</h1>
-            <p className="mt-1 text-lg text-zinc-400">Gracie Barra Carnaxide e Oeiras</p>
-            
-            <div className="mt-4 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const prevWeek = new Date(selectedMonday || new Date());
-                  prevWeek.setDate(prevWeek.getDate() - 7);
-                  setSelectedMonday(prevWeek);
-                }}
-                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
-                title="Semana anterior"
-              >
-                ← Anterior
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setSelectedMonday(null)}
-                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
-                title="Voltar à semana atual"
-              >
-                Hoje
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => {
-                  const nextWeek = new Date(selectedMonday || new Date());
-                  nextWeek.setDate(nextWeek.getDate() + 7);
-                  setSelectedMonday(nextWeek);
-                }}
-                className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-2 text-sm text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition"
-                title="Próxima semana"
-              >
-                Próxima →
-              </button>
-
-              <div className="border-l border-[#2a2a2a] pl-3">
-                <p className="text-sm text-zinc-400">
-                  Semana de{' '}
-                  <span className="font-semibold text-zinc-200">
-                    {(() => {
-                      const monday = selectedMonday || new Date();
-                      const sunday = new Date(monday);
-                      sunday.setDate(monday.getDate() + 6);
-                      return `${monday.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })} a ${sunday.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
-                    })()}
-                  </span>
-                </p>
-              </div>
             </div>
           </header>
+
+          {/* Week range label */}
+          <div className="mb-5">
+            <p className="text-sm text-zinc-400">
+              Semana de{' '}
+              <span className="font-semibold text-zinc-200">
+                {(() => {
+                  const monday = selectedMonday || new Date();
+                  const sunday = new Date(monday);
+                  sunday.setDate(monday.getDate() + 6);
+                  return `${monday.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })} a ${sunday.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })}`;
+                })()}
+              </span>
+            </p>
+          </div>
 
           <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.35)] lg:p-6">
             <div className="mb-4 flex items-center justify-between gap-3">
@@ -987,7 +994,7 @@ export default function SchedulePage() {
           }}
         >
           {isMobile ? (
-            <div className="fixed inset-x-0 bottom-0 z-[130] rounded-t-2xl border border-[#2a2a2a] bg-[#121212] p-4 shadow-[0_-16px_36px_rgba(0,0,0,0.55)]" ref={popoverRef}>
+            <div className="fixed inset-x-0 bottom-0 z-[130] max-h-[85vh] overflow-y-auto rounded-t-2xl border border-[#2a2a2a] bg-[#121212] p-4 shadow-[0_-16px_36px_rgba(0,0,0,0.55)]" ref={popoverRef}>
               {renderClassPlanForm()}
             </div>
           ) : (

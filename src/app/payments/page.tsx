@@ -781,25 +781,38 @@ export default function PaymentsPage() {
     }
   }
 
-  const renderKpiCard = (title: string, count: string, amount: string) => (
-    <article className="rounded-2xl border border-[#252525] bg-[#131313] p-4 shadow-[0_6px_20px_rgba(0,0,0,0.3)]">
-      <p className="text-xs uppercase tracking-wide text-zinc-500">{title}</p>
-      <p className="mt-2 text-2xl font-bold text-white">{count}</p>
-      <p className="mt-1 text-sm text-zinc-300">{amount}</p>
-    </article>
-  )
+  const renderKpiCard = (title: string, count: string, amount: string, accent: 'neutral' | 'warning' | 'danger' | 'success' = 'neutral') => {
+    const barColors = { neutral: 'bg-blue-500', warning: 'bg-amber-500', danger: 'bg-red-500', success: 'bg-green-500' };
+    const valueColors = { neutral: 'text-white', warning: 'text-[#f59e0b]', danger: 'text-[#ef4444]', success: 'text-[#22c55e]' };
+    return (
+      <article className="relative overflow-hidden rounded-xl border border-[#1e1e1e] bg-[#161616] p-5">
+        <div className={`absolute left-0 top-0 h-full w-[3px] ${barColors[accent]}`} />
+        <p className={`text-4xl font-black leading-none ${valueColors[accent]}`}>{count}</p>
+        <p className="mt-1 text-xs text-zinc-500 uppercase tracking-wide">{title}</p>
+        <p className="mt-1 text-sm text-zinc-400">{amount}</p>
+      </article>
+    );
+  }
 
   return (
-    <div className="flex h-screen bg-[#0b0b0b]">
+    <div className="flex min-h-screen bg-[#0b0b0b]">
       <TeacherSidebar ativo="payments" />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="border-b border-[#222] bg-[#0d0d0d] px-8 py-6">
-          <h1 className="text-4xl font-bold text-white">Pagamentos</h1>
-          <p className="mt-1 text-sm text-zinc-500">Por Pagar(Non-DD) and Débito Direto follow-up flow</p>
-        </div>
+      <main className="flex-1 p-3 sm:p-5 lg:p-7 space-y-5">
+        {/* Hero */}
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-1 text-sm font-medium uppercase tracking-widest text-zinc-500 capitalize sm:text-xs">
+              {new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+            <h1 className="text-4xl font-black leading-tight text-white">
+              Gestão de <span className="text-[#c81d25]">Pagamentos</span>
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">Por Pagar e Débito Direto</p>
+          </div>
+        </header>
 
-        <div className="flex-1 overflow-auto p-8 space-y-6">
+        <div className="space-y-4">
           <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {loading
               ? Array.from({ length: 4 }).map((_, index) => (
@@ -807,17 +820,19 @@ export default function PaymentsPage() {
                 ))
               : (
                   <>
-                    {renderKpiCard('Por Pagar (Non-DD)', String(kpi.unpaidCount), `€${kpi.unpaidTotal.toFixed(2)}`)}
-                    {renderKpiCard('Pago (This month)', String(kpi.paidCount), `€${kpi.paidTotal.toFixed(2)}`)}
+                    {renderKpiCard('Por Pagar (Non-DD)', String(kpi.unpaidCount), `€${kpi.unpaidTotal.toFixed(2)}`, 'warning')}
+                    {renderKpiCard('Pago (Este mês)', String(kpi.paidCount), `€${kpi.paidTotal.toFixed(2)}`, 'success')}
                     {renderKpiCard(
-                      'DD Sucesso (This month)',
+                      'DD Sucesso (Este mês)',
                       kpi.ddSuccessCount === null ? '—' : String(kpi.ddSuccessCount),
-                      kpi.ddSuccessTotal === null ? '—' : `€${kpi.ddSuccessTotal.toFixed(2)}`
+                      kpi.ddSuccessTotal === null ? '—' : `€${kpi.ddSuccessTotal.toFixed(2)}`,
+                      'neutral'
                     )}
                     {renderKpiCard(
-                      'DD Falhado (This month)',
+                      'DD Falhado (Este mês)',
                       kpi.ddFailedCount === null ? '—' : String(kpi.ddFailedCount),
-                      kpi.ddFailedTotal === null ? '—' : `€${kpi.ddFailedTotal.toFixed(2)}`
+                      kpi.ddFailedTotal === null ? '—' : `€${kpi.ddFailedTotal.toFixed(2)}`,
+                      'danger'
                     )}
                   </>
                 )}

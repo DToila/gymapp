@@ -119,6 +119,7 @@ function isInactive(lastAttendanceAt?: string): boolean {
 
 export default function MembersPage() {
   const router = useRouter();
+  const formattedDate = new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const [activeTab, setActiveTab] = useState<MembersTab>('adults');
   const [search, setSearch] = useState('');
   const [quickView, setQuickView] = useState<QuickView>('recent');
@@ -144,6 +145,14 @@ export default function MembersPage() {
     ref: '',
     custom_fee: false,
     custom_fee_amount: 0,
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    address: '',
+    postal_code: '',
+    city: '',
+    billing_name: '',
+    billing_nif: '',
+    source: '',
   });
   const [allMembers, setAllMembers] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -374,6 +383,14 @@ export default function MembersPage() {
         ref: newMember.ref || undefined,
         custom_fee: Boolean(newMember.custom_fee),
         custom_fee_amount: Number(newMember.custom_fee_amount || 0),
+        emergency_contact_name: newMember.emergency_contact_name || undefined,
+        emergency_contact_phone: newMember.emergency_contact_phone || undefined,
+        address: newMember.address || undefined,
+        postal_code: newMember.postal_code || undefined,
+        city: newMember.city || undefined,
+        billing_name: newMember.billing_name || undefined,
+        billing_nif: newMember.billing_nif || undefined,
+        source: newMember.source || undefined,
       };
 
       await createMember(payload);
@@ -393,6 +410,14 @@ export default function MembersPage() {
         ref: '',
         custom_fee: false,
         custom_fee_amount: 0,
+        emergency_contact_name: '',
+        emergency_contact_phone: '',
+        address: '',
+        postal_code: '',
+        city: '',
+        billing_name: '',
+        billing_nif: '',
+        source: '',
       });
       await load();
     } catch (error) {
@@ -406,27 +431,20 @@ export default function MembersPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0b0b0b 0%, #101010 100%)', color: '#f0f0f0', display: 'flex' }}>
       <TeacherSidebar ativo="members" requestsCount={filteredRequests.length} onAddMember={() => setShowAddModal(true)} />
-      <div style={{ flex: 1, padding: '26px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '280px', maxWidth: '520px' }}>
-            <SearchBar value={search} onDebouncedChange={setSearch} delay={300} />
-          </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid #252525', background: '#141414', color: '#d4d4d4', cursor: 'pointer' }}>◌</button>
-            <button style={{ width: '38px', height: '38px', borderRadius: '10px', border: '1px solid #252525', background: '#141414', color: '#d4d4d4', cursor: 'pointer' }}>🔔</button>
-            <button style={{ width: '38px', height: '38px', borderRadius: '999px', border: '1px solid #252525', background: '#141414', color: '#fff', cursor: 'pointer' }}>P</button>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px', marginBottom: '14px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div className="flex-1 p-3 sm:p-5 lg:p-7">
+      <div className="mx-auto max-w-[1280px]">
+        {/* Hero */}
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white">Membros</h1>
-            <p className="mt-1 text-sm text-zinc-500">Aluno Management | BJJ/Gym</p>
+            <p className="mb-1 text-sm font-medium uppercase tracking-widest text-zinc-500 capitalize sm:text-xs">{formattedDate}</p>
+            <h1 className="text-4xl font-black leading-tight text-white">
+              Gestão de <span className="text-[#c81d25]">Membros</span>
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">Alunos BJJ/Gym</p>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => setShowAddModal(true)} className="rounded-lg bg-[#c81d25] px-4 py-2 text-xs font-semibold text-white shadow-lg hover:bg-[#b01720] transition">
-              + Adicionar member
+          <div className="flex gap-2">
+            <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 rounded-xl bg-[#c81d25] px-4 py-3 text-base font-semibold text-white hover:bg-[#a8141c] transition-colors sm:py-2.5 sm:text-sm">
+              + Adicionar Membro
             </button>
             <RowActionsMenu
               options={[
@@ -436,6 +454,11 @@ export default function MembersPage() {
               ]}
             />
           </div>
+        </header>
+
+        {/* Search toolbar */}
+        <div className="mb-4 flex w-full max-w-[520px]">
+          <SearchBar value={search} onDebouncedChange={setSearch} delay={300} />
         </div>
 
         <MembersTabs activeTab={activeTab} onChange={setActiveTab} />

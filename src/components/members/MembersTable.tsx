@@ -88,7 +88,54 @@ export default function MembersTable({
 
   return (
     <div style={{ border: '1px solid #222222', borderRadius: '16px', background: '#121212', boxShadow: '0 12px 28px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
-      <div style={{ maxHeight: '560px', overflow: 'auto' }}>
+
+      {/* Mobile card layout */}
+      <div className="sm:hidden">
+        {loading ? (
+          <div className="p-6 text-zinc-500 text-base text-center">A carregar...</div>
+        ) : rows.length === 0 ? (
+          <div className="p-10 text-center">
+            <div className="text-zinc-500 text-base mb-4">Sem membros</div>
+            <button onClick={onClearFilters} className="rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2.5 text-base text-zinc-300">Limpar filtros</button>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#1a1a1a]">
+            {rows.map((member) => (
+              <div key={member.id} onClick={() => onRowClick(member)} className="p-5 hover:bg-[#0f0f0f] active:bg-[#0f0f0f] cursor-pointer transition-colors">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-full bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                      {member.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-lg font-bold text-white truncate leading-tight">{member.name}</p>
+                      <p className="text-sm text-zinc-500 mt-0.5">
+                        {mode === 'adults' ? (member.belt || 'White') : (member.group || 'Crianças')}
+                      </p>
+                    </div>
+                  </div>
+                  <span style={statusStyle(member.status)} className="shrink-0">
+                    {member.status === 'Active' ? '● Ativo' : member.status === 'Paused' ? '● Pausado' : '● Por Pagar'}
+                  </span>
+                </div>
+                {mode === 'adults' && (member.amountDue || 0) > 0 && (
+                  <p className="text-sm text-red-400 font-semibold mt-2 ml-14">
+                    🔒 Em falta: €{(member.amountDue || 0).toFixed(0)}
+                  </p>
+                )}
+                {mode === 'kids' && (
+                  <p className="text-sm text-zinc-400 mt-2 ml-14">
+                    {(member.behaviorState ?? 'neutral') === 'good' ? '😀 Bom comportamento' : (member.behaviorState ?? 'neutral') === 'neutral' ? '😐 Neutro' : '😡 Precisa atenção'}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table layout */}
+      <div className="hidden sm:block" style={{ maxHeight: '560px', overflow: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             {mode === 'adults' ? (
@@ -207,24 +254,23 @@ export default function MembersTable({
         </table>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderTop: '1px solid #1f1f1f', background: '#111111' }}>
-        <div style={{ color: '#888', fontSize: '12px' }}>
-          {totalItems} results
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderTop: '1px solid #1f1f1f', background: '#111111', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ color: '#888', fontSize: '14px' }}>
+          {totalItems} resultados
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ color: '#9a9a9a', fontSize: '12px' }}>Rows per page:</span>
-          <select value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))} style={{ background: '#151515', color: '#f0f0f0', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '6px 8px', fontSize: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <select value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))} className="hidden sm:block" style={{ background: '#151515', color: '#f0f0f0', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '6px 8px', fontSize: '13px' }}>
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
           </select>
-          <span style={{ color: '#a3a3a3', fontSize: '12px' }}>
-            {(totalItems === 0 ? 0 : ((page - 1) * pageSize + 1))}–{Math.min(page * pageSize, totalItems)} of {totalItems}
+          <span style={{ color: '#9a9a9a', fontSize: '13px' }}>
+            {(totalItems === 0 ? 0 : ((page - 1) * pageSize + 1))}–{Math.min(page * pageSize, totalItems)} de {totalItems}
           </span>
-          <button onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1} style={{ background: '#151515', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#f0f0f0', width: '30px', height: '30px', fontSize: '12px', cursor: 'pointer', opacity: page <= 1 ? 0.5 : 1 }}>
+          <button onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1} style={{ background: '#151515', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#f0f0f0', width: '36px', height: '36px', fontSize: '16px', cursor: 'pointer', opacity: page <= 1 ? 0.5 : 1 }}>
             ‹
           </button>
-          <button onClick={() => onPageChange(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ background: '#151515', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#f0f0f0', width: '30px', height: '30px', fontSize: '12px', cursor: 'pointer', opacity: page >= totalPages ? 0.5 : 1 }}>
+          <button onClick={() => onPageChange(Math.min(totalPages, page + 1))} disabled={page >= totalPages} style={{ background: '#151515', border: '1px solid #2a2a2a', borderRadius: '8px', color: '#f0f0f0', width: '36px', height: '36px', fontSize: '16px', cursor: 'pointer', opacity: page >= totalPages ? 0.5 : 1 }}>
             ›
           </button>
         </div>

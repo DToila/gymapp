@@ -31,3 +31,14 @@ body {
 input, button { border-radius: 0; }
 
 *:focus { outline: 2px solid var(--red); outline-offset: 0; }
+
+/* Mobile: top padding for fixed header bar */
+@media (max-width: 1023px) {
+  main { padding-top: calc(56px + 1rem) !important; }
+}
+
+/* Smooth scrolling & momentum on iOS */
+* { -webkit-overflow-scrolling: touch; }
+
+/* Safe area support for notch/home indicator */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }

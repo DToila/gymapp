@@ -37,29 +37,30 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0b0b0b]">
+    <div className="flex min-h-screen bg-[#0b0b0b]">
       <TeacherSidebar ativo="settings" />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="border-b border-[#222] bg-[#0d0d0d] px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-            <h1 className="text-3xl font-bold text-white">Definições</h1>
-            <p className="mt-1 text-sm text-zinc-500">Manage academy config, staff roles, and pricing rules</p>
-            </div>
-            <Link
-              href="/settings/staff"
-              className="rounded-lg border border-[#222] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#111]"
-            >
-              Gestão de Staff
-            </Link>
+      <main className="flex-1 p-3 sm:p-5 lg:p-7">
+        {/* Hero */}
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-1 text-xs font-medium uppercase tracking-widest text-zinc-500 capitalize">
+              {new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+            <h1 className="text-4xl font-black leading-tight text-white">
+              Configurações da <span className="text-[#c81d25]">Academia</span>
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">Configurações, staff e preços</p>
           </div>
-        </div>
+          <Link
+            href="/settings/staff"
+            className="flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#161616] px-4 py-3 text-base font-semibold text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition-colors sm:py-2.5 sm:text-sm"
+          >
+            Gestão de Staff
+          </Link>
+        </header>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-8 space-y-6 max-w-4xl">
+        <div className="space-y-6 max-w-4xl">
             {/* Guardar Message */}
             {saveMessage && (
               <div className="rounded-2xl border border-[#22c55e]/50 bg-[#22c55e]/10 px-4 py-3 text-[#22c55e]">
@@ -306,7 +307,6 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-        </div>
       </main>
     </div>
   );

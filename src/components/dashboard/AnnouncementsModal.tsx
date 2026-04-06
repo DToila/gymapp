@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnnouncementAudience, AnnouncementItem, AnnouncementTag, AppRole, KidsGroup } from './types';
+import { AnnouncementAudience, AnnouncementItem, AnnouncementTag, KidsGroup } from './types';
 
 type ModalMode = 'create' | 'manage';
-type TabKey = 'create' | 'manage' | 'pendente';
+type TabKey = 'create' | 'manage';
 
 interface DraftState {
   title: string;
@@ -69,10 +69,6 @@ export default function AnnouncementsModal({
   onUpdate,
   onDelete,
   onTogglePin,
-  onApprove,
-  onReject,
-  canApprove,
-  currentUserRole,
   titleMaxChars = DEFAULT_TITLE_MAX,
   detailsMaxChars = DEFAULT_DETAILS_MAX,
 }: {
@@ -84,10 +80,6 @@ export default function AnnouncementsModal({
   onUpdate: (id: string, announcement: Omit<AnnouncementItem, 'id' | 'createdAt'>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onTogglePin: (id: string) => Promise<void>;
-  onApprove: (id: string) => Promise<void>;
-  onReject: (id: string, reason?: string) => Promise<void>;
-  canApprove: boolean;
-  currentUserRole: AppRole;
   titleMaxChars?: number;
   detailsMaxChars?: number;
 }) {
@@ -100,8 +92,6 @@ export default function AnnouncementsModal({
   const [filterAudience, setFilterAudience] = useState<'all' | AnnouncementAudience>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'ativo' | 'expired'>('all');
   const [filterPinned, setFilterPinned] = useState<'all' | 'pinned' | 'unpinned'>('all');
-  const [rejectReasonById, setRejectReasonById] = useState<Record<string, string>>({});
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const detailsRef = useRef<HTMLTextAreaElement>(null);
 
@@ -188,10 +178,10 @@ export default function AnnouncementsModal({
       pinned: draft.pinned,
       ackRequired: draft.ackRequired,
       createdBy: 'Administrador',
-      approvalStatus: currentUserRole === 'coach' ? 'pending' : 'approved',
-      approvedBy: currentUserRole === 'coach' ? null : 'Staff',
+      approvalStatus: 'approved',
+      approvedBy: 'Staff',
       approvedById: null,
-      approvedAt: currentUserRole === 'coach' ? null : new Date().toISOString(),
+      approvedAt: new Date().toISOString(),
       rejectionReason: null,
     };
 
@@ -235,14 +225,6 @@ export default function AnnouncementsModal({
         return filterStatus === 'ativo' ? item.expiresAt >= today : item.expiresAt < today;
       });
   }, [announcements, filterAudience, filterPinned, filterStatus, filterTag, search]);
-
-  const pendingRows = useMemo(
-    () =>
-      announcements
-        .filter((item) => item.approvalStatus === 'pending')
-        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()),
-    [announcements]
-  );
 
   const loadIntoComposer = (item: AnnouncementItem) => {
     setDraft({
@@ -291,14 +273,6 @@ export default function AnnouncementsModal({
               >
                 Manage
               </button>
-              {canApprove ? (
-                <button
-                  onClick={() => setActiveTab('pendente')}
-                  className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${activeTab === 'pendente' ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] text-white' : 'border-[#2a2a2a] bg-[#171717] text-zinc-400'}`}
-                >
-                  Pendente approvals
-                </button>
-              ) : null}
             </div>
           </div>
 
@@ -311,7 +285,7 @@ export default function AnnouncementsModal({
               disabled={!canPublish || activeTab !== 'create'}
               className="rounded-md border border-[#c81d25] bg-[#c81d25] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#ac1820] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {currentUserRole === 'coach' ? 'Enviar for approval' : 'Publish'}
+              Publicar
             </button>
             <button onClick={handleCancel} className="grid h-8 w-8 place-items-center rounded-md border border-[#2a2a2a] bg-[#171717] text-zinc-400 hover:text-white">
               ✕
@@ -450,16 +424,21 @@ export default function AnnouncementsModal({
 
               <aside className="rounded-xl border border-[#242424] bg-[#101010] p-3">
                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-500">Live preview</p>
-                <div className="rounded-lg border border-[#222] bg-[#0e0e0e] px-3 py-2.5">
+                <div className={`rounded-lg border px-3 py-2.5 ${draft.audience === 'STAFF' ? 'border-[#3a2a0a] bg-[#0f0b04]' : 'border-[#222] bg-[#0e0e0e]'}`}>
                   <div className="mb-1.5 flex items-center gap-2">
                     <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${tagChipClass[draft.tag]}`}>
                       {draft.tag}
                     </span>
+                    {draft.audience === 'STAFF' && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-[#78490a] bg-[rgba(120,73,10,0.25)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-300">
+                        🔒 Só Staff
+                      </span>
+                    )}
                     {draft.pinned ? <span className="text-xs text-zinc-300">📌</span> : null}
                   </div>
                   <p className="truncate text-sm font-medium text-zinc-100">{draft.title || 'Announcement title preview'}</p>
                   <p className="mt-1 text-xs text-zinc-500">
-                    Audience: {audienceLabel[draft.audience]} <span className="mx-1.5">•</span> Expires: {formatDateLabel(draft.expiresAt)}
+                    {draft.audience === 'STAFF' ? 'Invisível para alunos' : `Audience: ${audienceLabel[draft.audience]}`} <span className="mx-1.5">•</span> Expires: {formatDateLabel(draft.expiresAt)}
                   </p>
                 </div>
               </aside>
@@ -508,16 +487,21 @@ export default function AnnouncementsModal({
                 ) : (
                   <ul>
                     {manageRows.map((item) => (
-                      <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1f1f1f] bg-[#101010] px-3 py-2.5 last:border-b-0">
+                      <li key={item.id} className={`flex flex-wrap items-center justify-between gap-3 border-b border-[#1f1f1f] px-3 py-2.5 last:border-b-0 ${item.audience === 'STAFF' ? 'bg-[#0f0b04]' : 'bg-[#101010]'}`}>
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center gap-2">
                             <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${tagChipClass[item.tag]}`}>
                               {item.tag}
                             </span>
+                            {item.audience === 'STAFF' && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-[#78490a] bg-[rgba(120,73,10,0.25)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-300">
+                                🔒 Só Staff
+                              </span>
+                            )}
                             {item.pinned ? <span className="text-xs text-zinc-300">📌</span> : null}
                           </div>
                           <p className="truncate text-sm text-zinc-100">{item.title}</p>
-                          <p className="text-xs text-zinc-500">Audience: {audienceLabel[item.audience]} • Expires: {formatDateLabel(item.expiresAt)} • Estado: {item.approvalStatus}</p>
+                          <p className="text-xs text-zinc-500">{item.audience === 'STAFF' ? 'Invisível para alunos' : `Audience: ${audienceLabel[item.audience]}`} • Expires: {formatDateLabel(item.expiresAt)} • Estado: {item.approvalStatus}</p>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -537,86 +521,7 @@ export default function AnnouncementsModal({
                 )}
               </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="rounded-xl border border-[#242424] bg-[#101010] px-3 py-2 text-xs text-zinc-400">
-                Pendente announcements are submitted by coaches and require staff/admin approval before publishing.
-              </div>
-
-              <div className="overflow-hidden rounded-xl border border-[#242424]">
-                {pendingRows.length === 0 ? (
-                  <p className="px-3 py-6 text-center text-sm text-zinc-500">Não pendente announcements.</p>
-                ) : (
-                  <ul>
-                    {pendingRows.map((item) => {
-                      const isRejectingThis = rejectingId === item.id;
-                      return (
-                        <li key={item.id} className="border-b border-[#1f1f1f] bg-[#101010] px-3 py-3 last:border-b-0">
-                          <div className="mb-2 flex items-center gap-2">
-                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${tagChipClass[item.tag]}`}>
-                              {item.tag}
-                            </span>
-                            <span className="rounded-full border border-[#6b4f12] bg-[rgba(107,79,18,0.35)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-300">
-                              Pendente
-                            </span>
-                          </div>
-                          <p className="text-sm font-medium text-zinc-100">{item.title}</p>
-                          <p className="mt-1 text-xs text-zinc-500">
-                            Audience: {audienceLabel[item.audience]} • Expires: {formatDateLabel(item.expiresAt)} • Created by: {item.createdBy || 'Unknown'}
-                          </p>
-
-                          {isRejectingThis ? (
-                            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                              <input
-                                value={rejectReasonById[item.id] || ''}
-                                onChange={(event) =>
-                                  setRejectReasonById((prev) => ({ ...prev, [item.id]: event.target.value }))
-                                }
-                                placeholder="Rejection reason (optional)"
-                                className="flex-1 rounded-md border border-[#2a2a2a] bg-[#151515] px-2.5 py-2 text-sm text-zinc-100 outline-none"
-                              />
-                              <button
-                                onClick={() => {
-                                  onReject(item.id, rejectReasonById[item.id]).catch(console.error);
-                                  setRejectingId(null);
-                                }}
-                                className="rounded-md border border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] px-3 py-2 text-xs font-semibold text-rose-300"
-                              >
-                                Confirmar reject
-                              </button>
-                              <button
-                                onClick={() => setRejectingId(null)}
-                                className="rounded-md border border-[#2a2a2a] bg-[#171717] px-3 py-2 text-xs text-zinc-300"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          ) : null}
-
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => { 
-                                onApprove(item.id).catch(console.error); 
-                              }}
-                              className="rounded-md border border-[#14532d] bg-[rgba(20,83,45,0.35)] px-2.5 py-1 text-xs font-semibold text-green-300"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => setRejectingId(item.id)}
-                              className="rounded-md border border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] px-2.5 py-1 text-xs font-semibold text-rose-300"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>,

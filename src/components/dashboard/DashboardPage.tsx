@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { UserPlus, CheckSquare } from 'lucide-react';
 import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getMembersForPayments, getPaymentsForMonth, getCurrentMonthKey } from '@/lib/payments';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
-import Topbar from './Topbar';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
 import UnpaidPaymentsTable from './UnpaidPaymentsTable';
@@ -52,6 +53,8 @@ const isRequestMember = (member: { status?: string | null; request_status?: stri
 };
 
 export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
+  const router = useRouter();
+  const formattedDate = new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const [recentNotes, setRecentNotes] = useState<NoteItem[]>([]);
   const [recentNotesLoading, setRecentNotesLoading] = useState(true);
   const [behaviorMode, setBehaviorMode] = useState<'now' | 'month'>('now');
@@ -454,30 +457,52 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         onLogout={onLogout}
       />
 
-      <main className="flex-1 p-6 lg:p-8">
-        <Topbar />
-
-        <header className="mb-6">
-          <h1 className="text-4xl font-bold text-white">Dashboard</h1>
-          <p className="mt-1 text-sm text-zinc-500">Bem-vindo back, {currentName}</p>
+      <main className="flex-1 p-3 sm:p-5 lg:p-7">
+        {/* Hero */}
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-1 text-sm font-medium uppercase tracking-widest text-zinc-500 capitalize sm:text-xs">
+              {formattedDate}
+            </p>
+            <h1 className="text-4xl font-black leading-tight text-white">
+              Bem-vindo, <span className="text-[#c81d25]">{currentName.split(' ')[0]}</span>
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">Gracie Barra Carnaxide &amp; Queijas</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => router.push('/members?openAddMember=1')}
+              className="flex items-center gap-2 rounded-xl bg-[#c81d25] px-4 py-3 text-base font-semibold text-white hover:bg-[#a8141c] transition-colors sm:py-2.5 sm:text-sm"
+            >
+              <UserPlus size={15} /> Adicionar Membro
+            </button>
+            <button
+              onClick={() => router.push('/attendance')}
+              className="flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#161616] px-4 py-3 text-base font-semibold text-zinc-300 hover:border-[#3a3a3a] hover:text-white transition-colors sm:py-2.5 sm:text-sm"
+            >
+              <CheckSquare size={15} /> Presenças
+            </button>
+          </div>
         </header>
 
+        {/* KPIs */}
         {!isCoach ? (
-          <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
             {kpis.map((item) => (
               <KpiCard key={item.id} item={item} />
             ))}
           </section>
         ) : null}
 
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <div className="space-y-4 lg:col-span-7">
-            <AnnouncementsPanel currentUserRole={currentRole} currentUserName={currentName} />
+        {/* Main content */}
+        <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+          <div className="space-y-3 lg:col-span-7">
+            <AnnouncementsPanel currentUserName={currentName} />
             <RecentNotesList notes={recentNotes} loading={recentNotesLoading} />
             {!isCoach ? <UnpaidPaymentsTable rows={unpaidPayments} /> : null}
           </div>
 
-          <div className="space-y-4 lg:col-span-5">
+          <div className="space-y-3 lg:col-span-5">
             <KidsBehaviorPanel
               needsAttention={kidsMembers}
               greatBehavior={kidsMembers}
