@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from 'react';
+import { FormEvent, Suspense, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import GBLogo from '@/components/GBLogo';
 import { supabase } from '../../../lib/supabase';
@@ -21,6 +21,121 @@ const roleFromMetadata = (metadata: unknown): AppRole | null => {
 
 const roleFromUser = (user: { user_metadata?: unknown; app_metadata?: unknown }): AppRole | null =>
   roleFromMetadata(user.user_metadata) || roleFromMetadata(user.app_metadata);
+
+/* ── Snap positions as % of screen height the sheet occupies ── */
+const SNAP_COLLAPSED = 0.38; // sheet takes 38% → shows more photo
+const SNAP_EXPANDED  = 0.72; // sheet takes 72% → bigger sheet
+
+function RoleSelectSheet({ onSelect }: { onSelect: (m: 'teacher' | 'student') => void }) {
+  // 0 = collapsed (less sheet), 1 = expanded (more sheet)
+  const [expanded, setExpanded] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef<{ y: number; expanded: boolean } | null>(null);
+
+  const snapFrac = expanded ? SNAP_EXPANDED : SNAP_COLLAPSED;
+
+  /* Drag handlers */
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragStart.current = { y: e.clientY, expanded };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragStart.current) return;
+    const dy = dragStart.current.y - e.clientY; // positive = dragged up
+    if (Math.abs(dy) > 30) {
+      setExpanded(dy > 0);
+      dragStart.current = null;
+    }
+  };
+
+  const onPointerUp = () => { dragStart.current = null; };
+
+  return (
+    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-black">
+      {/* Full-screen photo */}
+      <div className="absolute inset-0">
+        <img
+          src="/Gracie%20Barra.jpg"
+          alt="Gracie Barra"
+          className="h-full w-full object-cover object-center"
+        />
+        {/* Light gradient — not too dark */}
+        <div className="absolute inset-0"
+          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.55) 100%)' }}
+        />
+      </div>
+
+      {/* GB logo */}
+      <div className="relative z-10 p-6 select-none">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl bg-black/30 p-2 backdrop-blur-md ring-1 ring-white/20">
+            <GBLogo size={34} />
+          </div>
+          <div>
+            <p className="text-sm font-extrabold tracking-[0.2em] text-white drop-shadow">GRACIE BARRA</p>
+            <p className="text-[10px] tracking-[0.22em] text-white/60 uppercase">Carnaxide &amp; Queijas</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Draggable bottom sheet */}
+      <div
+        ref={sheetRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        className="absolute left-0 right-0 bottom-0 z-20 touch-none select-none"
+        style={{
+          height: `${snapFrac * 100}vh`,
+          transition: 'height 0.35s cubic-bezier(0.32,0.72,0,1)',
+          borderRadius: '2rem 2rem 0 0',
+          background: 'rgba(10,10,10,0.72)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '0 24px 40px',
+        }}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing shrink-0">
+          <div style={{ width: 40, height: 4, borderRadius: 99, background: 'rgba(255,255,255,0.25)' }} />
+        </div>
+
+        {/* Content */}
+        <div className="flex flex-1 flex-col justify-between overflow-hidden pt-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-white leading-tight">Selecionar<br />Acesso</h1>
+              <p className="mt-2 text-sm text-white/50">Entra como professor ou como aluno.</p>
+            </div>
+            <GBLogo size={38} />
+          </div>
+
+          <div className="space-y-3 pb-2">
+            <button
+              type="button"
+              onClick={() => onSelect('teacher')}
+              className="w-full rounded-2xl border-2 border-[#c81d25] bg-transparent px-6 py-5 text-lg font-semibold text-[#c81d25] transition hover:bg-[#c81d25]/15 active:scale-[0.98]"
+            >
+              Professor
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelect('student')}
+              className="w-full rounded-2xl border-2 border-[#c81d25] bg-transparent px-6 py-5 text-lg font-semibold text-[#c81d25] transition hover:bg-[#c81d25]/15 active:scale-[0.98]"
+            >
+              Aluno
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -74,73 +189,7 @@ function LoginForm() {
 
   /* ── Selection screen ── */
   if (mode === null) {
-    return (
-      <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#0b0b0b]">
-        {/* Hero — full screen photo background */}
-        <div className="absolute inset-0">
-          <img
-            src="/Gracie%20Barra.jpg"
-            alt="Gracie Barra"
-            className="h-full w-full object-cover object-top"
-          />
-          {/* Dark gradient overlay — heavier at bottom so sheet blends */}
-          <div
-            className="absolute inset-0"
-            style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.88) 100%)' }}
-          />
-        </div>
-
-        {/* GB logo top-left */}
-        <div className="relative z-10 p-6 select-none">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-white/10 p-2 backdrop-blur-sm ring-1 ring-white/20">
-              <GBLogo size={36} />
-            </div>
-            <div>
-              <p className="text-sm font-extrabold tracking-[0.2em] text-white">GRACIE BARRA</p>
-              <p className="text-[10px] tracking-[0.22em] text-white/50 uppercase">Carnaxide &amp; Queijas</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Spacer */}
-        <div className="relative z-10 flex-1" />
-
-        {/* Bottom sheet — dark, tall on mobile */}
-        <div className="relative z-10 rounded-t-[2rem] bg-[#111] px-6 pb-12 pt-7 shadow-[0_-16px_50px_rgba(0,0,0,0.7)]"
-          style={{ minHeight: '52vh' }}>
-          {/* Handle */}
-          <div className="mx-auto mb-7 h-1 w-10 rounded-full bg-zinc-700" />
-
-          <div className="mb-10 flex items-start justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-white">Selecionar Acesso</h1>
-              <p className="mt-2 text-sm text-zinc-400">
-                Entra como professor ou como aluno.
-              </p>
-            </div>
-            <GBLogo size={40} />
-          </div>
-
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setMode('teacher')}
-              className="w-full rounded-2xl border-2 border-[#c81d25] bg-transparent px-6 py-5 text-lg font-semibold text-[#c81d25] transition hover:bg-[#c81d25]/10 active:scale-[0.98]"
-            >
-              Professor
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('student')}
-              className="w-full rounded-2xl border-2 border-[#c81d25] bg-transparent px-6 py-5 text-lg font-semibold text-[#c81d25] transition hover:bg-[#c81d25]/10 active:scale-[0.98]"
-            >
-              Aluno
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <RoleSelectSheet onSelect={setMode} />;
   }
 
   /* ── Login form screen ── */
