@@ -34,6 +34,14 @@ interface MemberEditForm {
   status: 'Active' | 'Paused' | 'Unpaid';
   iban: string;
   nif: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  address: string;
+  postal_code: string;
+  city: string;
+  billing_name: string;
+  billing_nif: string;
+  source: string;
 }
 
 interface MemberProfileProps {
@@ -70,15 +78,37 @@ const createEditForm = (member: MemberDetail): MemberEditForm => ({
   status: member.status,
   iban: member.iban || '',
   nif: member.nif || '',
+  emergency_contact_name: member.emergency_contact_name || '',
+  emergency_contact_phone: member.emergency_contact_phone || '',
+  address: member.address || '',
+  postal_code: member.postal_code || '',
+  city: member.city || '',
+  billing_name: member.billing_name || '',
+  billing_nif: member.billing_nif || '',
+  source: member.source || '',
 });
 
 function statusBadgeClass(status: string): string {
   switch (status) {
     case 'Ativo': return 'border-green-800 bg-green-900/30 text-green-400';
-    case 'Paused': return 'border-[#444] bg-[#1e1e1e] text-[#888]';
+    case 'Paused': return 'border-zinc-700 bg-zinc-800/50 text-zinc-400';
     case 'Por Pagar': return 'border-red-800 bg-red-900/20 text-red-400';
-    default: return 'border-[#444] bg-[#1e1e1e] text-[#888]';
+    default: return 'border-zinc-700 bg-zinc-800/50 text-zinc-400';
   }
+}
+
+function beltBadgeClass(belt: string): string {
+  const b = belt.toLowerCase();
+  if (b.includes('black'))  return 'border-zinc-500 bg-zinc-900 text-zinc-100';
+  if (b.includes('brown'))  return 'border-amber-700 bg-amber-900/30 text-amber-400';
+  if (b.includes('purple')) return 'border-purple-700 bg-purple-900/30 text-purple-400';
+  if (b.includes('blue'))   return 'border-blue-700 bg-blue-900/30 text-blue-400';
+  if (b.includes('green'))  return 'border-green-700 bg-green-900/30 text-green-400';
+  if (b.includes('orange')) return 'border-orange-600 bg-orange-900/30 text-orange-400';
+  if (b.includes('yellow')) return 'border-yellow-600 bg-yellow-900/30 text-yellow-400';
+  if (b.includes('grey') || b.includes('gray')) return 'border-zinc-600 bg-zinc-800/50 text-zinc-400';
+  // white / default
+  return 'border-zinc-600 bg-zinc-800/40 text-zinc-300';
 }
 
 function mergeAttendanceMapForMember(memberId: string, baseMap: { [date: string]: boolean }, attendanceByDate: Record<string, string[]>): { [date: string]: boolean } {
@@ -163,9 +193,9 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     return nextMap;
   }, [member.id, readLocalBehaviorMap]);
 
-  const loadMemberData = useCallback(async () => {
+  const loadMemberData = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
 
       // Load attendance
       const attendanceData = await getAttendanceForMember(member.id);
@@ -200,7 +230,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     } catch (error) {
       console.error('Erro loading member data:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [isKid, loadKidBehaviorMap, member.id, readLocalBehaviorMap]);
 
@@ -212,8 +242,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     if (typeof window === 'undefined') return;
 
     const handleAttendanceUpdated = () => {
-      // Reload from database to ensure sync with attendance page
-      loadMemberData();
+      loadMemberData(true);
     };
 
     window.addEventListener(ATTENDANCE_UPDATED_EVENT, handleAttendanceUpdated);
@@ -286,11 +315,9 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
         setEmojiPickerDate(date);
       }
 
-      // Reload data in background without loading state
+      // Reload data in background without triggering loading state
       setTimeout(() => {
-        loadMemberData().catch(() => {
-          // Silently fail, keep the optimistic update
-        });
+        loadMemberData(true).catch(() => {});
       }, 200);
     } catch (error) {
       console.error('Erro updating attendance:', error);
@@ -456,6 +483,14 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       status: editForm.status,
       iban: editForm.iban.trim() || undefined,
       nif: editForm.nif.trim() || undefined,
+      emergency_contact_name: editForm.emergency_contact_name.trim() || undefined,
+      emergency_contact_phone: editForm.emergency_contact_phone.trim() || undefined,
+      address: editForm.address.trim() || undefined,
+      postal_code: editForm.postal_code.trim() || undefined,
+      city: editForm.city.trim() || undefined,
+      billing_name: editForm.billing_name.trim() || undefined,
+      billing_nif: editForm.billing_nif.trim() || undefined,
+      source: (editForm.source as Member['source']) || undefined,
     };
 
     setIsSaving(true);
@@ -560,15 +595,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const selectCls = inputCls + " cursor-pointer";
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-white p-6" style={{ fontFamily: '"Barlow", sans-serif' }}>
-      {loading ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-full border-[3px] border-[#c81d25] border-t-transparent animate-spin mx-auto mb-4" />
-            <p className="text-[#555]">A carregar member data...</p>
-          </div>
-        </div>
-      ) : (
+    <div className="min-h-screen bg-[#0b0b0b] text-white p-6">
         <div className="max-w-5xl mx-auto">
 
           {/* Top bar: Voltar + Editar/Guardar/Cancelar */}
@@ -621,18 +648,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                       type="text"
                       value={editForm.name}
                       onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                      className={inputCls + " text-2xl font-black uppercase tracking-widest"}
-                      style={{ fontFamily: '"Barlow Condensed", sans-serif' }}
+                      className={inputCls + " text-xl font-semibold"}
                     />
                   ) : (
-                    <h1 className="text-3xl font-black uppercase tracking-widest mb-2" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
+                    <h1 className="text-2xl font-bold text-white mb-2">
                       {data.name}
                     </h1>
                   )}
                   {!isEditing && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <span className="rounded-full px-3 py-0.5 text-[11px] font-bold border border-[#c81d25]/40 bg-[rgba(200,29,37,0.15)] text-[#ef4444]">
-                        {data.beltLevel || data.belt_level || 'Não Cinto'}
+                      <span className={`rounded-full px-3 py-0.5 text-[11px] font-semibold border ${beltBadgeClass(data.beltLevel || data.belt_level || '')}`}>
+                        {data.beltLevel || data.belt_level || 'Sem Cinto'}
                       </span>
                       <span className={`rounded-full px-3 py-0.5 text-[11px] font-bold border ${statusBadgeClass(data.status)}`}>
                         {data.status}
@@ -644,7 +670,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                 {/* Info grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Email</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Email</div>
                     {isEditing ? (
                       <input type="email" value={editForm.email} onChange={(e) => handleEditFieldChange('email', e.target.value)} className={inputCls} />
                     ) : (
@@ -652,7 +678,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Telemóvel</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Telemóvel</div>
                     {isEditing ? (
                       <input type="tel" value={editForm.phone} onChange={(e) => handleEditFieldChange('phone', e.target.value)} className={inputCls} />
                     ) : (
@@ -660,7 +686,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Data of Birth</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Data of Birth</div>
                     {isEditing ? (
                       <input type="date" value={editForm.date_of_birth} onChange={(e) => handleEditDateOfBirthChange(e.target.value)} className={inputCls} />
                     ) : (
@@ -668,7 +694,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Cinto Level</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Cinto Level</div>
                     {isEditing ? (
                       <select value={editForm.belt_level} onChange={(e) => handleEditFieldChange('belt_level', e.target.value)} className={selectCls}>
                         {editBeltOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -678,7 +704,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Estado</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Estado</div>
                     {isEditing ? (
                       <select value={editForm.status} onChange={(e) => handleEditFieldChange('status', e.target.value as MemberEditForm['status'])} className={selectCls}>
                         <option>Ativo</option>
@@ -690,7 +716,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Tipo de Pagamento</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Tipo de Pagamento</div>
                     {isEditing ? (
                       <select value={editForm.payment_type} onChange={(e) => handleEditPaymentTypeChange(e.target.value as MemberEditForm['payment_type'])} className={selectCls}>
                         <option>Débito Direto</option>
@@ -701,7 +727,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">Taxa Mensal</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Taxa Mensal</div>
                     {isEditing ? (
                       <input type="number" step="0.01" value={editForm.fee} onChange={(e) => handleEditFieldChange('fee', e.target.value)} className={inputCls} />
                     ) : (
@@ -709,7 +735,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">IBAN</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">IBAN</div>
                     {isEditing ? (
                       <input type="text" value={editForm.iban} onChange={(e) => handleEditFieldChange('iban', e.target.value)} className={inputCls} />
                     ) : (
@@ -717,12 +743,104 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     )}
                   </div>
                   <div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-1">NIF</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">NIF</div>
                     {isEditing ? (
                       <input type="text" value={editForm.nif} onChange={(e) => handleEditFieldChange('nif', e.target.value)} className={inputCls} />
                     ) : (
                       <div className="text-sm text-[#f0f0f0]">{data.nif || 'N/A'}</div>
                     )}
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Como Chegou</div>
+                    {isEditing ? (
+                      <select value={editForm.source} onChange={(e) => handleEditFieldChange('source', e.target.value)} className={selectCls}>
+                        <option value="">-- Selecionar --</option>
+                        {['Instagram','GB Referral','Alunos GBCQ','Walk in','Website','WhatsApp','Telefone','Flyer','Outros'].map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="text-sm text-[#f0f0f0]">{data.source || 'N/A'}</div>
+                    )}
+                  </div>
+
+                  {/* Morada */}
+                  <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
+                    <div className="text-xs font-semibold text-zinc-600 mb-2">Morada</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <div className="text-xs font-medium text-zinc-500 mb-1">Rua</div>
+                        {isEditing ? (
+                          <input type="text" value={editForm.address} onChange={(e) => handleEditFieldChange('address', e.target.value)} className={inputCls} placeholder="Rua Exemplo, nº1, 2ºDto" />
+                        ) : (
+                          <div className="text-sm text-[#f0f0f0]">{data.address || 'N/A'}</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-zinc-500 mb-1">Cód. Postal</div>
+                        {isEditing ? (
+                          <input type="text" value={editForm.postal_code} onChange={(e) => handleEditFieldChange('postal_code', e.target.value)} className={inputCls} placeholder="2790-000" />
+                        ) : (
+                          <div className="text-sm text-[#f0f0f0]">{data.postal_code || 'N/A'}</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-zinc-500 mb-1">Localidade</div>
+                        {isEditing ? (
+                          <input type="text" value={editForm.city} onChange={(e) => handleEditFieldChange('city', e.target.value)} className={inputCls} placeholder="Queijas" />
+                        ) : (
+                          <div className="text-sm text-[#f0f0f0]">{data.city || 'N/A'}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contacto de Emergência */}
+                  <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
+                    <div className="text-xs font-semibold text-zinc-600 mb-2">Contacto de Emergência</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-xs font-medium text-zinc-500 mb-1">Nome</div>
+                        {isEditing ? (
+                          <input type="text" value={editForm.emergency_contact_name} onChange={(e) => handleEditFieldChange('emergency_contact_name', e.target.value)} className={inputCls} />
+                        ) : (
+                          <div className="text-sm text-[#f0f0f0]">{data.emergency_contact_name || 'N/A'}</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-zinc-500 mb-1">Telemóvel</div>
+                        {isEditing ? (
+                          <input type="tel" value={editForm.emergency_contact_phone} onChange={(e) => handleEditFieldChange('emergency_contact_phone', e.target.value)} className={inputCls} />
+                        ) : (
+                          <div className="text-sm text-[#f0f0f0]">{data.emergency_contact_phone || 'N/A'}</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Faturação */}
+                  <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#444] mb-1">Faturação</div>
+                    <div className="text-[9px] text-[#444] mb-2">Preencher se diferente do membro</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-xs font-medium text-zinc-500 mb-1">Nome Faturação</div>
+                        {isEditing ? (
+                          <input type="text" value={editForm.billing_name} onChange={(e) => handleEditFieldChange('billing_name', e.target.value)} className={inputCls} />
+                        ) : (
+                          <div className="text-sm text-[#f0f0f0]">{data.billing_name || 'N/A'}</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-zinc-500 mb-1">NIF Faturação</div>
+                        {isEditing ? (
+                          <input type="text" value={editForm.billing_nif} onChange={(e) => handleEditFieldChange('billing_nif', e.target.value)} className={inputCls} />
+                        ) : (
+                          <div className="text-sm text-[#f0f0f0]">{data.billing_nif || 'N/A'}</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -737,7 +855,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           )}
 
           {/* Month selector + Days/% toggle */}
-          <div className="flex items-center gap-4 mb-4">
+          <div className={`flex items-center gap-4 mb-4 transition-opacity duration-300 ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
             <div className="flex gap-2 overflow-x-auto flex-1 pb-1" style={{ scrollbarWidth: 'none' }}>
               {months.map((m) => {
                 const percent = getMonthAttendance(year, m);
@@ -782,16 +900,16 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           </div>
 
           {/* Two-column: Calendar + Notas */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 transition-opacity duration-300 ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
 
             {/* Calendar card */}
             <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 relative">
-              <h2 className="text-sm font-black uppercase tracking-widest text-[#f0f0f0] mb-4" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
-                {new Date(year, selectedMonth).toLocaleString("default", { month: "long", year: 'numeric' })}
+              <h2 className="text-sm font-semibold text-zinc-200 mb-4 capitalize">
+                {new Date(year, selectedMonth).toLocaleString("pt-PT", { month: "long", year: 'numeric' })}
               </h2>
               <div className="grid grid-cols-7 gap-1 relative">
-                {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
-                  <div key={d} className="text-[10px] font-bold text-[#444] text-center py-1 uppercase">{d}</div>
+                {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((d) => (
+                  <div key={d} className="text-[10px] font-medium text-zinc-600 text-center py-1">{d}</div>
                 ))}
                 {Array.from({ length: getFirstDay(year, selectedMonth) }).map((_, i) => (
                   <div key={`empty-${i}`} />
@@ -881,8 +999,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
             {/* Notas card */}
             <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 flex flex-col" style={{ minHeight: '400px' }}>
-              <h3 className="text-sm font-black uppercase tracking-widest text-[#f0f0f0] mb-4 shrink-0" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
-                Notas &amp; Comments
+              <h3 className="text-sm font-semibold text-zinc-200 mb-4 shrink-0">
+                Notas
               </h3>
               <div className="flex-1 overflow-y-auto mb-4" style={{ maxHeight: '320px' }}>
                 {comments.length === 0 ? (
@@ -913,7 +1031,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   onKeyPress={(e) => e.key === 'Enter' && handleSendComment()}
                   placeholder="Adicionar a note or comment..."
                   className="flex-1 px-3 py-2 rounded-xl border border-[#2a2a2a] bg-[#161616] text-sm text-[#f0f0f0] placeholder-[#444] focus:outline-none focus:border-[#c81d25]/50 transition-colors"
-                  style={{ fontFamily: '"Barlow", sans-serif' }}
                 />
                 <button
                   onClick={handleSendComment}
@@ -927,15 +1044,15 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           </div>
 
           {/* Graduation Report Section */}
-          <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 mt-6">
-            <h3 className="text-sm font-black uppercase tracking-widest text-[#f0f0f0] mb-5" style={{ fontFamily: '"Barlow Condensed", sans-serif' }}>
-              Graduation Report
+          <div className={`rounded-2xl border border-[#222] bg-[#121212] p-5 mt-6 transition-opacity duration-300 ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+            <h3 className="text-sm font-semibold text-zinc-200 mb-5">
+              Relatório de Graduação
             </h3>
 
             {/* Data Range Filter */}
             <div className="mb-6 p-4 rounded-xl border border-[#252525] bg-[#141414]">
               <div className="mb-3">
-                <label className="text-[9px] font-bold uppercase tracking-widest text-[#555] block mb-2">Custom Data Range (Optional)</label>
+                <label className="text-xs font-medium text-zinc-500 block mb-2">Custom Data Range (Optional)</label>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1">
                     <input
@@ -977,7 +1094,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Total attendance */}
                   <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Total Presenças</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-3">Total Presenças</div>
                     <div className="text-3xl font-black text-[#f0f0f0] mb-1">
                       {stats.totalAttendance}
                     </div>
@@ -988,7 +1105,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
                   {/* 30 days attendance */}
                   <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Last 30 Days</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-3">Last 30 Days</div>
                     <div className="text-3xl font-black text-[#f0f0f0] mb-1">
                       {stats.last30DaysAttendance}
                     </div>
@@ -997,7 +1114,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
                   {/* 90 days attendance */}
                   <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Last 90 Days</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-3">Last 90 Days</div>
                     <div className="text-3xl font-black text-[#f0f0f0] mb-1">
                       {stats.last90DaysAttendance}
                     </div>
@@ -1006,7 +1123,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
                   {/* Presenças percentage */}
                   <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] mb-3">Total Percentage</div>
+                    <div className="text-xs font-medium text-zinc-500 mb-3">Total Percentage</div>
                     <div className="flex items-baseline gap-2">
                       <div className="text-3xl font-black text-[#c81d25]">
                         {stats.totalPercentage}%
@@ -1027,7 +1144,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
               const toDisplay = reportToDate ? new Date(reportToDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
               return (
                 <div className="mt-6 p-4 rounded-xl border border-[#c81d25]/20 bg-[#c81d25]/5">
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-[#c81d25] mb-3">Custom Range Results ({fromDisplay} to {toDisplay})</div>
+                  <div className="text-xs font-semibold text-[#c81d25] mb-3">Custom Range Results ({fromDisplay} to {toDisplay})</div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div>
                       <div className="text-2xl font-black text-[#f0f0f0]">{stats.customRangeAttendance}</div>
@@ -1048,7 +1165,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           </div>
 
         </div>
-      )}
     </div>
   );
 }

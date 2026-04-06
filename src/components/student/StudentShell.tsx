@@ -3,7 +3,6 @@
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import StudentSidebar, { StudentNavKey } from './StudentSidebar';
-import { clearStudentSessionId } from './studentSession';
 import { useStudentMember } from './useStudentMember';
 
 export default function StudentShell({
@@ -15,7 +14,7 @@ export default function StudentShell({
 }: {
   ativo: StudentNavKey;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   rightActions?: ReactNode;
   children: ReactNode;
 }) {
@@ -31,63 +30,24 @@ export default function StudentShell({
   if (loading || !member) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0b0b0b] text-zinc-300">
-        A carregar student area...
+        A carregar...
       </div>
     );
   }
 
-  const initials = member.name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
-      <StudentSidebar ativo={ativo} />
+      <StudentSidebar ativo={ativo} memberName={member.name} />
 
-      <main className="flex-1 p-6 lg:p-8">
-        <div className="mx-auto max-w-[1320px]">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <label className="flex w-full max-w-[500px] items-center gap-2 rounded-full border border-[#222] bg-[#121212] px-4 py-2.5 shadow-[0_6px_22px_rgba(0,0,0,0.28)]">
-              <span className="text-zinc-500">⌕</span>
-              <input
-                placeholder="Pesquisar..."
-                className="w-full bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 outline-none"
-              />
-            </label>
-
-            <div className="flex items-center gap-2">
-              {rightActions}
-              <button className="grid h-10 w-10 place-items-center rounded-xl border border-[#252525] bg-[#141414] text-zinc-200">🔔</button>
-              <button
-                className="rounded-xl border border-[#252525] bg-[#141414] px-3 py-2 text-xs text-zinc-200"
-                onClick={() => {
-                  clearStudentSessionId();
-                  router.push('/');
-                }}
-              >
-                Sair
-              </button>
-            </div>
+      <main className="flex-1 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
+        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-4xl font-black leading-tight text-white">{title}</h1>
+            {subtitle && <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>}
           </div>
-
-          <header className="mb-6 rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
-            <div className="flex items-center gap-4">
-              <div className="grid h-14 w-14 place-items-center rounded-full border border-[#2a2a2a] bg-[#1a1a1a] text-lg font-bold text-zinc-200">
-                {initials}
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold text-white">{title}</h1>
-                <p className="mt-1 text-lg text-zinc-400">{subtitle}</p>
-              </div>
-            </div>
-          </header>
-
-          {children}
-        </div>
+          {rightActions && <div className="flex gap-2">{rightActions}</div>}
+        </header>
+        {children}
       </main>
     </div>
   );
