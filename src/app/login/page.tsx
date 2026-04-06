@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import GBLogo from '@/components/GBLogo';
 import { supabase } from '../../../lib/supabase';
@@ -22,63 +22,36 @@ const roleFromMetadata = (metadata: unknown): AppRole | null => {
 const roleFromUser = (user: { user_metadata?: unknown; app_metadata?: unknown }): AppRole | null =>
   roleFromMetadata(user.user_metadata) || roleFromMetadata(user.app_metadata);
 
-function RoleSelectSheet({ onSelect }: { onSelect: (m: 'teacher' | 'student') => void }) {
-  return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-black">
-      {/* Full-screen photo */}
-      <div className="absolute inset-0">
-        <img
-          src="/Gracie%20Barra.jpg"
-          alt="Gracie Barra"
-          className="h-full w-full object-cover object-center"
-        />
-        {/* Gradient só na base para os botões se lerem bem */}
-        <div className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.7) 100%)' }}
-        />
-      </div>
-
-      {/* Botões no fundo */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 px-6 pb-12 space-y-3">
-        <button
-          type="button"
-          onClick={() => onSelect('teacher')}
-          className="w-full rounded-2xl border-2 border-white/90 bg-transparent px-6 py-5 text-lg font-semibold text-white backdrop-blur-sm transition hover:bg-white/10 active:scale-[0.98]"
-        >
-          Professor
-        </button>
-        <button
-          type="button"
-          onClick={() => onSelect('student')}
-          className="w-full rounded-2xl border-2 border-white/90 bg-transparent px-6 py-5 text-lg font-semibold text-white backdrop-blur-sm transition hover:bg-white/10 active:scale-[0.98]"
-        >
-          Aluno
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<LoginMode>(null);
+  const [formVisible, setFormVisible] = useState(false); // delayed for animation
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const hasMode = mode !== null;
+
+  // Small delay so panel expands before form appears
+  useEffect(() => {
+    if (mode !== null) {
+      const t = setTimeout(() => setFormVisible(true), 120);
+      return () => clearTimeout(t);
+    }
+    setFormVisible(false);
+    return undefined;
+  }, [mode]);
+
   const handleBack = () => {
-    setMode(null);
-    setEmail('');
-    setPassword('');
-    setError('');
+    setFormVisible(false);
+    setTimeout(() => { setMode(null); setEmail(''); setPassword(''); setError(''); }, 200);
   };
 
   const handleTeacherLogin = async (event: FormEvent) => {
     event.preventDefault();
-    setError('');
-    setIsLoading(true);
+    setError(''); setIsLoading(true);
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) { setError(signInError.message || 'Credenciais inválidas.'); return; }
@@ -96,8 +69,7 @@ function LoginForm() {
 
   const handleStudentLogin = async (event: FormEvent) => {
     event.preventDefault();
-    setError('');
-    setIsLoading(true);
+    setError(''); setIsLoading(true);
     try {
       const student = await getMemberByEmail(email);
       if (!student) { setError('Perfil não encontrado. Verifica o teu email.'); return; }
@@ -109,100 +81,149 @@ function LoginForm() {
     finally { setIsLoading(false); }
   };
 
-  /* ── Selection screen ── */
-  if (mode === null) {
-    return <RoleSelectSheet onSelect={setMode} />;
-  }
-
-  /* ── Login form screen ── */
   const isTeacher = mode === 'teacher';
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#0b0b0b]">
-      {/* Hero — compressed photo */}
+    <div className="relative min-h-[100dvh] overflow-hidden bg-black">
+
+      {/* ── Full-screen photo ── */}
       <div className="absolute inset-0">
-        <img src="/Gracie%20Barra.jpg" alt="Gracie Barra" className="h-full w-full object-cover object-top" />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.95) 100%)' }} />
+        <img
+          src="/Gracie%20Barra.jpg"
+          alt="Gracie Barra"
+          className="h-full w-full object-cover object-center"
+        />
       </div>
 
-      {/* GB logo top */}
-      <div className="relative z-10 p-6 select-none">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-white/10 p-2 backdrop-blur-sm ring-1 ring-white/20">
-            <GBLogo size={36} />
+      {/* ── GB logo top-left ── */}
+      <div className="absolute left-0 top-0 z-20 p-6">
+        <GBLogo size={48} />
+      </div>
+
+      {/* ── Bottom panel — always present, animates height ── */}
+      <div
+        className="absolute bottom-0 left-0 right-0 z-10"
+        style={{
+          height: hasMode ? '72vh' : '28vh',
+          transition: 'height 0.45s cubic-bezier(0.32,0.72,0,1)',
+          /* Gradient: fully transparent at top, dark at bottom */
+          background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.6) 30%, rgba(0,0,0,0.88) 60%, rgba(0,0,0,0.96) 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          padding: '0 24px 48px',
+        }}
+      >
+        {/* ── Role buttons (hide when mode selected) ── */}
+        <div
+          style={{
+            opacity: hasMode ? 0 : 1,
+            transform: hasMode ? 'translateY(12px)' : 'translateY(0)',
+            transition: 'opacity 0.2s ease, transform 0.2s ease',
+            pointerEvents: hasMode ? 'none' : 'auto',
+            position: hasMode ? 'absolute' : 'relative',
+            width: '100%',
+          }}
+        >
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setMode('teacher')}
+              style={{
+                width: '100%', borderRadius: '16px',
+                border: '2px solid rgba(0,0,0,0.75)',
+                background: 'rgba(255,255,255,0.82)',
+                backdropFilter: 'blur(8px)',
+                padding: '18px 24px',
+                fontSize: '17px', fontWeight: 600,
+                color: '#0a0a0a',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+            >
+              Professor
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('student')}
+              style={{
+                width: '100%', borderRadius: '16px',
+                border: '2px solid rgba(0,0,0,0.75)',
+                background: 'rgba(255,255,255,0.82)',
+                backdropFilter: 'blur(8px)',
+                padding: '18px 24px',
+                fontSize: '17px', fontWeight: 600,
+                color: '#0a0a0a',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+            >
+              Aluno
+            </button>
           </div>
-          <p className="text-xs font-bold tracking-[0.2em] text-white/70 uppercase">
-            {isTeacher ? 'Área de Professores' : 'Área de Alunos'}
-          </p>
         </div>
-      </div>
 
-      <div className="relative z-10 flex-1" />
+        {/* ── Form (fade in after mode selected) ── */}
+        <div
+          style={{
+            opacity: formVisible ? 1 : 0,
+            transform: formVisible ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'opacity 0.3s ease, transform 0.3s ease',
+            pointerEvents: formVisible ? 'auto' : 'none',
+          }}
+        >
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-white/40">
+            {isTeacher ? 'Professor' : 'Aluno'}
+          </p>
+          <h2 className="mb-6 text-3xl font-bold text-white">
+            Entrar
+          </h2>
 
-      {/* Bottom sheet — dark form */}
-      <div className="relative z-10 rounded-t-[2rem] bg-[#111] px-6 pb-12 pt-7 shadow-[0_-16px_50px_rgba(0,0,0,0.7)]"
-        style={{ minHeight: '58vh' }}>
-        <div className="mx-auto mb-6 h-1 w-10 rounded-full bg-zinc-700" />
-
-        <h2 className="mb-1 text-3xl font-bold text-white">
-          {isTeacher ? 'Entrar como Professor' : 'Entrar como Aluno'}
-        </h2>
-        <p className="mb-7 text-sm text-zinc-400">
-          {isTeacher ? 'Usa as tuas credenciais de staff.' : 'Usa o teu email de aluno.'}
-        </p>
-
-        <form className="space-y-4" onSubmit={isTeacher ? handleTeacherLogin : handleStudentLogin}>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-zinc-500">Email</label>
+          <form className="space-y-3" onSubmit={isTeacher ? handleTeacherLogin : handleStudentLogin}>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              placeholder="email@exemplo.com"
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-4 py-3.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[#c81d25] transition"
+              placeholder="Email"
+              className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-base text-white outline-none placeholder:text-white/30 focus:border-white/30 focus:bg-white/15 transition backdrop-blur-sm"
             />
-          </div>
 
-          {isTeacher && (
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-zinc-500">Palavra-passe</label>
+            {isTeacher && (
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-800/80 px-4 py-3.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[#c81d25] transition"
+                placeholder="Palavra-passe"
+                className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-base text-white outline-none placeholder:text-white/30 focus:border-white/30 focus:bg-white/15 transition backdrop-blur-sm"
               />
-            </div>
-          )}
+            )}
 
-          {error && (
-            <div className="rounded-xl border border-red-900/50 bg-red-900/20 px-4 py-3 text-sm text-red-400">
-              {error}
-            </div>
-          )}
+            {error && (
+              <p className="rounded-xl bg-red-900/40 px-4 py-2.5 text-sm text-red-300">{error}</p>
+            )}
 
-          <div className="space-y-3 pt-2">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full rounded-2xl bg-[#c81d25] px-6 py-5 text-lg font-semibold text-white transition hover:bg-[#a8141c] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isLoading ? 'A entrar...' : 'Entrar'}
-            </button>
-            <button
-              type="button"
-              onClick={handleBack}
-              className="w-full rounded-2xl border-2 border-zinc-700 bg-transparent px-6 py-5 text-lg font-semibold text-zinc-400 transition hover:border-zinc-500 active:scale-[0.98]"
-            >
-              Voltar
-            </button>
-          </div>
-        </form>
+            <div className="space-y-2 pt-1">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-2xl bg-[#c81d25] px-6 py-4 text-base font-semibold text-white transition hover:bg-[#a8141c] active:scale-[0.98] disabled:opacity-60"
+              >
+                {isLoading ? 'A entrar...' : 'Entrar'}
+              </button>
+              <button
+                type="button"
+                onClick={handleBack}
+                className="w-full rounded-2xl border border-white/15 bg-white/8 px-6 py-4 text-base font-semibold text-white/60 transition hover:bg-white/10 active:scale-[0.98]"
+              >
+                Voltar
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -212,8 +233,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[100dvh] items-center justify-center bg-[#0b0b0b]">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#c81d25] border-t-transparent" />
+        <div className="flex min-h-[100dvh] items-center justify-center bg-black">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
         </div>
       }
     >
