@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { beltBadgeClass } from '@/lib/beltColors';
+import { beltStyle } from '@/lib/beltColors';
 
 interface MemberDrawerProps {
   member: any | null;
@@ -51,7 +51,7 @@ export default function MemberDrawer({ member, onClose }: MemberDrawerProps) {
             <div style={{ fontSize: '22px', color: '#f0f0f0', fontWeight: 800 }}>{member.name}</div>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               {(member as any).belt_level ? (
-                <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${beltBadgeClass((member as any).belt_level)}`}>
+                <span style={{ ...beltStyle((member as any).belt_level), border: '1px solid', borderRadius: '999px', padding: '2px 10px', fontSize: '11px', fontWeight: 500, display: 'inline-flex' }}>
                   {(member as any).belt_level}
                 </span>
               ) : (member as any).group ? (

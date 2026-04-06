@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { deleteKidBehaviorForDate, getKidBehaviorEvents, getMembers, upsertKidBehavior, getAttendanceForDate, setAttendance } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
-import { beltBadgeClass } from '@/lib/beltColors';
+import { beltStyle } from '@/lib/beltColors';
 import {
   ATTENDANCE_UPDATED_EVENT,
   BEHAVIOR_UPDATED_EVENT,
@@ -438,7 +438,7 @@ export default function AttendancePage() {
             {person.type === 'kid' ? (
               <span className="text-xs text-zinc-500">{person.group || 'Crianças'}</span>
             ) : (
-              <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${beltBadgeClass(person.belt || '')}`}>
+              <span style={{ ...beltStyle(person.belt || ''), border: '1px solid', borderRadius: '999px', padding: '1px 8px', fontSize: '11px', fontWeight: 500, display: 'inline-flex' }}>
                 {person.belt || 'White Belt'}
               </span>
             )}

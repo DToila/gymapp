@@ -2,7 +2,7 @@
 
 import { Member } from './types';
 import RowActionsMenu from './RowActionsMenu';
-import { beltBadgeClass } from '@/lib/beltColors';
+import { beltStyle } from '@/lib/beltColors';
 
 interface MembersTableProps {
   mode: 'adults' | 'kids';
@@ -111,8 +111,8 @@ export default function MembersTable({
                     <div className="min-w-0">
                       <p className="text-lg font-bold text-white truncate leading-tight">{member.name}</p>
                       {mode === 'adults' ? (
-                        <span className={`mt-0.5 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${beltBadgeClass(member.belt || 'White')}`}>
-                          {member.belt || 'White'}
+                        <span style={{ ...beltStyle(member.belt || 'White'), border: '1px solid', borderRadius: '999px', padding: '1px 8px', fontSize: '11px', fontWeight: 500, display: 'inline-flex', marginTop: '2px' }}>
+                          {member.belt || 'White Belt'}
                         </span>
                       ) : (
                         <p className="text-sm text-zinc-500 mt-0.5">{member.group || 'Crianças'}</p>
@@ -200,7 +200,7 @@ export default function MembersTable({
                   {mode === 'adults' ? (
                     <>
                       <td style={{ padding: '11px 12px' }}>
-                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${beltBadgeClass(member.belt || 'White')}`}>{member.belt || 'White'}</span>
+                        <span style={{ ...beltStyle(member.belt || 'White'), border: '1px solid', borderRadius: '999px', padding: '2px 10px', fontSize: '12px', fontWeight: 500, display: 'inline-flex' }}>{member.belt || 'White Belt'}</span>
                       </td>
                       <td style={{ padding: '11px 12px' }}>
                         <span style={statusStyle(member.status)}>

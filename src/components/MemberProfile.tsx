@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Member, calculateMonthlyFee, getBeltOptions, getAgeFromDateOfBirth } from "../../lib/types";
-import { beltBadgeClass } from "@/lib/beltColors";
+import { beltStyle } from "@/lib/beltColors";
 import { getAttendanceForMember, getNotesForMember, createNote, setAttendance, getKidBehaviorEvents, upsertKidBehavior, deleteKidBehaviorForDate } from "../../lib/database";
 import {
   ATTENDANCE_UPDATED_EVENT,
@@ -645,7 +645,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   )}
                   {!isEditing && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <span className={`rounded-full px-3 py-0.5 text-[11px] font-semibold border ${beltBadgeClass(data.beltLevel || data.belt_level || '')}`}>
+                      <span style={{ ...beltStyle(data.beltLevel || data.belt_level || ''), border: '1px solid', borderRadius: '999px', padding: '2px 10px', fontSize: '11px', fontWeight: 600, display: 'inline-flex' }}>
                         {data.beltLevel || data.belt_level || 'Sem Cinto'}
                       </span>
                       <span className={`rounded-full px-3 py-0.5 text-[11px] font-bold border ${statusBadgeClass(data.status)}`}>
