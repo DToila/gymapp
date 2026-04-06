@@ -79,7 +79,7 @@ function LoginForm() {
         {/* Hero — full screen photo background */}
         <div className="absolute inset-0">
           <img
-            src="/JBC_0190.jpg"
+            src="/Gracie%20Barra.jpg"
             alt="Gracie Barra"
             className="h-full w-full object-cover object-top"
           />
@@ -150,7 +150,7 @@ function LoginForm() {
     <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#0b0b0b]">
       {/* Hero — compressed photo */}
       <div className="absolute inset-0">
-        <img src="/JBC_0190.jpg" alt="Gracie Barra" className="h-full w-full object-cover object-top" />
+        <img src="/Gracie%20Barra.jpg" alt="Gracie Barra" className="h-full w-full object-cover object-top" />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.95) 100%)' }} />
       </div>
 
