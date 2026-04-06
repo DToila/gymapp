@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { deleteKidBehaviorForDate, getKidBehaviorEvents, getMembers, upsertKidBehavior, getAttendanceForDate, setAttendance } from '../../../lib/database';
 import { getAgeFromDateOfBirth } from '../../../lib/types';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
+import { beltBadgeClass } from '@/lib/beltColors';
 import {
   ATTENDANCE_UPDATED_EVENT,
   BEHAVIOR_UPDATED_EVENT,
@@ -433,8 +434,14 @@ export default function AttendancePage() {
 
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-zinc-100">{person.name}</div>
-          <div className="truncate text-xs text-zinc-500">
-            {person.type === 'kid' ? person.group || 'Crianças' : person.belt || 'Adult'}
+          <div className="mt-0.5">
+            {person.type === 'kid' ? (
+              <span className="text-xs text-zinc-500">{person.group || 'Crianças'}</span>
+            ) : (
+              <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${beltBadgeClass(person.belt || '')}`}>
+                {person.belt || 'White Belt'}
+              </span>
+            )}
           </div>
         </div>
 
