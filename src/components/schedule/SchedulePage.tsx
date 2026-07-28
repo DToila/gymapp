@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { officialSchedule, studentSchedule } from '@/components/student/studentData';
+import ClassLogPanel from './ClassLogPanel';
 import {
   CoachProfile,
   ClassLogRow,
@@ -14,6 +15,9 @@ import {
   getCoachProfiles,
   upsertClassLog,
 } from '../../../lib/database';
+import { supabase } from '../../../lib/supabase';
+
+type AppRole = 'admin' | 'staff' | 'coach';
 
 const DAY_ORDER = [
   { key: 'SEG', label: 'Seg' },
@@ -33,6 +37,7 @@ interface LocalClassPlanDraft {
   topic: string;
   content: string;
   teacher_id: string | null;
+  teacher_name: string | null;
   attendees: string[] | null;
   updated_at: string;
 }
@@ -79,14 +84,15 @@ export default function SchedulePage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [coaches, setCoaches] = useState<CoachProfile[]>([]);
+  const [currentRole, setCurrentRole] = useState<AppRole>('coach');
   const [slotIdByCode, setSlotIdByCode] = useState<Record<string, string>>({});
   const [planExistsMap, setPlanExistsMap] = useState<Record<string, boolean>>({});
   const [planMode, setPlanMode] = useState<PlanMode>('remote');
-  const [openSlotId, setOpenSlotId] = useState<string | null>(null);
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
   const [plan, setPlan] = useState<ClassLogRow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editingSlot, setEditingSlot] = useState<EditingSlot | null>(null);
+  const [editorMode, setEditorMode] = useState<'view' | 'edit'>('edit');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [topic, setTopic] = useState('');
   const [techniques, setTechniques] = useState('');
@@ -176,6 +182,7 @@ export default function SchedulePage() {
       topic: draft.topic,
       content: draft.content,
       teacher_id: draft.teacher_id,
+      teacher_name: draft.teacher_name,
       attendees: draft.attendees,
       created_at: draft.updated_at,
       updated_at: draft.updated_at,
@@ -185,13 +192,14 @@ export default function SchedulePage() {
   const saveLocalClassPlan = (
     slotCode: string,
     dateKey: string,
-    payload: { topic: string; content: string; teacher_id: string | null; attendees: string[] | null }
+    payload: { topic: string; content: string; teacher_id: string | null; teacher_name: string | null; attendees: string[] | null }
   ) => {
     const all = readLocalClassPlans();
     all[`${slotCode}|${dateKey}`] = {
       topic: payload.topic,
       content: payload.content,
       teacher_id: payload.teacher_id,
+      teacher_name: payload.teacher_name,
       attendees: payload.attendees,
       updated_at: new Date().toISOString(),
     };
@@ -224,6 +232,29 @@ export default function SchedulePage() {
 
   useEffect(() => {
     getCoachProfiles().then(setCoaches).catch(() => setCoaches([]));
+  }, []);
+
+  useEffect(() => {
+    const loadProfileRole = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      const role = data?.role === 'admin' || data?.role === 'staff' || data?.role === 'coach' ? data.role : null;
+      const metadataRole = [user.user_metadata, user.app_metadata]
+        .map((metadata) => (metadata && typeof metadata === 'object' ? (metadata as { role?: unknown }).role : null))
+        .find((value) => value === 'admin' || value === 'staff' || value === 'coach');
+
+      setCurrentRole((role || metadataRole || 'coach') as AppRole);
+    };
+
+    loadProfileRole();
   }, []);
 
   useEffect(() => {
@@ -316,7 +347,7 @@ export default function SchedulePage() {
       }
 
       setEditingSlot(null);
-      setOpenSlotId(null);
+      setEditorMode('edit');
       setIsLoadingPlan(false);
       setPlan(null);
       setError(null);
@@ -377,7 +408,7 @@ export default function SchedulePage() {
     }
 
     setEditingSlot(null);
-    setOpenSlotId(null);
+    setEditorMode('edit');
     setIsLoadingPlan(false);
     setPlan(null);
     setError(null);
@@ -416,6 +447,7 @@ export default function SchedulePage() {
         if (!prev || prev.slotCode !== slotCode || prev.dateKey !== dateKey) return prev;
         return { ...prev, slotDbId: slotCode };
       });
+      setEditorMode(local ? 'view' : 'edit');
       setIsLoadingPlan(false);
       return;
     }
@@ -482,6 +514,7 @@ export default function SchedulePage() {
           attendeesText: nextAttendees,
         })
       );
+      setEditorMode(existing ? 'view' : 'edit');
 
       setEditingSlot((prev) => {
         if (!prev || prev.slotCode !== slotCode || prev.dateKey !== dateKey) return prev;
@@ -517,6 +550,7 @@ export default function SchedulePage() {
         });
         setError(null);
         setToast({ type: 'error', message: 'Horário DB tables missing. Editing in local mode.' });
+        setEditorMode(local ? 'view' : 'edit');
       } else {
         setPlan(null);
         setTopic('');
@@ -527,6 +561,7 @@ export default function SchedulePage() {
           JSON.stringify({ topic: '', techniques: '', teacherId: '', attendeesText: '' })
         );
         setError(message);
+        setEditorMode('edit');
       }
     } finally {
       setIsLoadingPlan(false);
@@ -551,7 +586,6 @@ export default function SchedulePage() {
       console.log('SLOT_CLICK_SLOT_ID_UNDEFINED', { slotCode: item.id, slotId: slotIdByCode[item.id] });
     }
 
-    setOpenSlotId(item.id);
     setIsLoadingPlan(true);
     setError(null);
     setPlan(null);
@@ -585,6 +619,7 @@ export default function SchedulePage() {
         topic,
         content,
         teacher_id: teacherId || null,
+        teacher_name: teacherId ? coaches.find((coach) => coach.id === teacherId)?.full_name || null : null,
         attendees,
       });
 
@@ -603,10 +638,12 @@ export default function SchedulePage() {
         topic,
         content,
         teacher_id: teacherId || null,
+        teacher_name: teacherId ? coaches.find((coach) => coach.id === teacherId)?.full_name || null : null,
         attendees,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
+      setEditorMode('view');
       setInitialPlanSnapshot(
         JSON.stringify({
           topic,
@@ -629,6 +666,7 @@ export default function SchedulePage() {
         topic,
         content,
         teacher_id: teacherId || null,
+        teacher_name: teacherId ? coaches.find((coach) => coach.id === teacherId)?.full_name || null : null,
         attendees,
       });
 
@@ -641,6 +679,7 @@ export default function SchedulePage() {
       setIsLoadingPlan(false);
       setPlan(saved);
       setError(null);
+      setEditorMode('view');
       setInitialPlanSnapshot(
         JSON.stringify({
           topic,
@@ -661,19 +700,10 @@ export default function SchedulePage() {
     if (!editingSlot) return null;
 
     const dateLabel = weekDatesByDay[editingSlot.dayKey].dateLabel;
+    const canEditLogs = currentRole === 'admin' || currentRole === 'staff' || currentRole === 'coach';
 
     return (
       <div className="space-y-3">
-        <div>
-          <p className="text-base font-semibold text-zinc-100">Class Plan</p>
-          <p className="mt-0.5 text-xs text-zinc-400">
-            {dateLabel} • {editingSlot.timeRange} • {editingSlot.className}
-          </p>
-          {planMode === 'local' ? (
-            <p className="mt-1 text-xs text-amber-300">Local mode ativo (database table missing).</p>
-          ) : null}
-        </div>
-
         {isLoadingPlan ? (
           <div className="rounded-xl border border-[#242424] bg-[#151515] px-3 py-4 text-sm text-zinc-300">
             <div className="flex items-center gap-2">
@@ -696,79 +726,40 @@ export default function SchedulePage() {
             </button>
           </div>
         ) : (
-          <>
-            <div className="rounded-xl border border-[#242424] bg-[#151515] px-3 py-2 text-xs text-zinc-400">
-              {plan ? 'Saved log found for this class/date.' : 'No saved log yet for this class/date.'}
-            </div>
+          <div className="space-y-3 rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.34)]">
+            {planMode === 'local' ? (
+              <p className="text-xs text-amber-300">Local mode ativo (database table missing).</p>
+            ) : null}
 
-            <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">Topic</label>
-              <input
-                value={topic}
-                onChange={(event) => setTopic(event.target.value)}
-                placeholder="Weekly topic / class focus…"
-                className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">Conteúdo da aula</label>
-              <textarea
-                value={techniques}
-                onChange={(event) => setTechniques(event.target.value)}
-                placeholder="What was covered in this class…"
-                rows={4}
-                className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-400">Teacher (optional)</label>
-                <select
-                  value={teacherId}
-                  onChange={(event) => setTeacherId(event.target.value)}
-                  className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
-                >
-                  <option value="">No teacher selected</option>
-                  {coaches.map((coach) => (
-                    <option key={coach.id} value={coach.id}>
-                      {coach.full_name || 'Unnamed Professor'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-400">Attendees (optional)</label>
-                <textarea
-                  value={attendeesText}
-                  onChange={(event) => setAttendeesText(event.target.value)}
-                  placeholder="Comma-separated names or member IDs"
-                  rows={3}
-                  className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <button
-                type="button"
-                onClick={attemptCloseEditor}
-                className="rounded-xl border border-[#2b2b2b] bg-[#151515] px-3 py-2 text-sm text-zinc-300"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={saveClassPlan}
-                disabled={isSavingPlan || !(topic.trim() || techniques.trim()) || !openSlotId}
-                className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {isSavingPlan ? 'Saving...' : 'Guardar'}
-              </button>
-            </div>
-          </>
+            <ClassLogPanel
+              title="Class Log"
+              subtitle={`${dateLabel} • ${editingSlot.timeRange} • ${editingSlot.className}`}
+              log={plan}
+              mode={editorMode}
+              canEdit={canEditLogs}
+              showAttendees
+              coaches={coaches}
+              topic={topic}
+              content={techniques}
+              teacherId={teacherId}
+              attendeesText={attendeesText}
+              isSaving={isSavingPlan}
+              onChangeTopic={setTopic}
+              onChangeContent={setTechniques}
+              onChangeTeacher={setTeacherId}
+              onChangeAttendees={setAttendeesText}
+              onEdit={() => {
+                if (!plan) return;
+                setTopic(plan.topic || '');
+                setTechniques(plan.content || '');
+                setTeacherId(plan.teacher_id || '');
+                setAttendeesText(plan.attendees?.join(', ') || '');
+                setEditorMode('edit');
+              }}
+              onSave={saveClassPlan}
+              onCancel={attemptCloseEditor}
+            />
+          </div>
         )}
       </div>
     );

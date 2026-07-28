@@ -7,6 +7,7 @@ create table if not exists public.class_logs (
   topic text null,
   content text not null,
   teacher_id uuid null references public.profiles(id),
+  teacher_name text null,
   attendees text[] null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -76,7 +77,7 @@ using (true)
 with check (true);
 
 insert into public.class_logs (
-  schedule_id, date, topic, content, teacher_id, attendees, created_at, updated_at
+  schedule_id, date, topic, content, teacher_id, teacher_name, attendees, created_at, updated_at
 )
 select
   slot_id,
@@ -84,6 +85,7 @@ select
   topic,
   coalesce(nullif(trim(techniques), ''), nullif(trim(topic), '')) as content,
   coach_primary_id,
+  null,
   null,
   updated_at,
   updated_at

@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import StudentShell from './StudentShell';
 import { studentSchedule } from './studentData';
+import ClassLogPanel from '../schedule/ClassLogPanel';
+import { ClassLogRow, getClassLogsForSlotsAndDates, getScheduleSlotsByCodes } from '../../../lib/database';
 
 const dayOrder = [
   { key: 'SEG', label: 'Seg' },
@@ -60,10 +62,74 @@ function parseStartMinutes(timeRange: string): number {
   return safeHour * 60 + safeMinute;
 }
 
+function getWeekMonday(date: Date): Date {
+  const d = new Date(date);
+  const currentDay = d.getDay();
+  const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + mondayOffset);
+  return d;
+}
+
 export default function StudentSchedulePage() {
   const [view, setView] = useState<'today' | 'week'>('today');
+  const [slotIdByCode, setSlotIdByCode] = useState<Record<string, string>>({});
+  const [classLogsByKey, setClassLogsByKey] = useState<Record<string, ClassLogRow>>({});
+  const [selectedClassLog, setSelectedClassLog] = useState<{
+    dayKey: DayKey;
+    dateKey: string;
+    timeRange: string;
+    className: string;
+    log: ClassLogRow | null;
+  } | null>(null);
 
   const scheduleItems = useMemo(() => studentSchedule as ScheduleViewItem[], []);
+
+  const weekDatesByDay = useMemo(() => {
+    const monday = getWeekMonday(new Date());
+    const result: Record<DayKey, { dateKey: string; dateLabel: string }> = {
+      SEG: { dateKey: '', dateLabel: '' },
+      TER: { dateKey: '', dateLabel: '' },
+      QUA: { dateKey: '', dateLabel: '' },
+      QUI: { dateKey: '', dateLabel: '' },
+      SEX: { dateKey: '', dateLabel: '' },
+      SAB: { dateKey: '', dateLabel: '' },
+      DOM: { dateKey: '', dateLabel: '' },
+    };
+
+    dayOrder.forEach((day, index) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + index);
+      result[day.key] = {
+        dateKey: date.toISOString().split('T')[0],
+        dateLabel: date.toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: '2-digit' }),
+      };
+    });
+
+    return result;
+  }, []);
+
+  useEffect(() => {
+    const loadLogs = async () => {
+      const slots = await getScheduleSlotsByCodes(scheduleItems.map((item) => item.id));
+      const nextSlotIdByCode: Record<string, string> = {};
+      slots.forEach((slot) => {
+        nextSlotIdByCode[slot.code] = slot.id;
+      });
+      setSlotIdByCode(nextSlotIdByCode);
+
+      const slotIds = Object.values(nextSlotIdByCode);
+      const dateKeys = dayOrder.map((day) => weekDatesByDay[day.key].dateKey);
+      const logs = await getClassLogsForSlotsAndDates(slotIds, dateKeys);
+      const nextLogsByKey: Record<string, ClassLogRow> = {};
+      logs.forEach((log) => {
+        nextLogsByKey[`${log.schedule_id}|${log.date}`] = log;
+      });
+      setClassLogsByKey(nextLogsByKey);
+    };
+
+    loadLogs().catch((error) => console.error('Erro loading student schedule logs:', error));
+  }, [scheduleItems, weekDatesByDay]);
 
   const classesByDay = useMemo(() => {
     const byDay: Record<DayKey, ScheduleViewItem[]> = {
@@ -111,10 +177,17 @@ export default function StudentSchedulePage() {
           {rows.length === 0 ? (
             <p className="rounded-xl border border-[#262626] bg-[#161616] px-3 py-2 text-sm text-zinc-500">Sem aulas</p>
           ) : (
-            rows.map((item) => (
-              <div
+            rows.map((item) => {
+              const dateKey = weekDatesByDay[dayKey].dateKey;
+              const slotId = slotIdByCode[item.id];
+              const log = classLogsByKey[slotId ? `${slotId}|${dateKey}` : ''] || null;
+
+              return (
+              <button
                 key={item.id}
-                className="rounded-xl border border-[#262626] bg-[#161616] px-3 py-2 transition hover:bg-white/5"
+                type="button"
+                onClick={() => setSelectedClassLog({ dayKey, dateKey, timeRange: item.time, className: `${item.room} • ${item.level}`, log })}
+                className="w-full rounded-xl border border-[#262626] bg-[#161616] px-3 py-2 text-left transition hover:bg-white/5"
                 title={`${item.level} • ${item.type}${item.notes ? ` • ${item.notes}` : ''}`}
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
@@ -132,8 +205,13 @@ export default function StudentSchedulePage() {
                     </span>
                   ) : null}
                 </p>
-              </div>
-            ))
+                <div className="mt-2 flex items-center justify-between gap-2 text-xs">
+                  <span className="rounded-full border border-[#2a2a2a] bg-[#111] px-2 py-0.5 text-zinc-400">Log</span>
+                  <span className="text-zinc-300">{log?.content ? `${log.content.slice(0, 72)}${log.content.length > 72 ? '…' : ''}` : 'Sem log ainda'}</span>
+                </div>
+              </button>
+              );
+            })
           )}
         </div>
       </article>
@@ -170,6 +248,42 @@ export default function StudentSchedulePage() {
           </div>
         )}
       </section>
+
+      {selectedClassLog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-xl">
+            <ClassLogPanel
+              title="Class Log"
+              subtitle={`${dayOrder.find((day) => day.key === selectedClassLog.dayKey)?.label || ''} • ${selectedClassLog.dateKey} • ${selectedClassLog.timeRange} • ${selectedClassLog.className}`}
+              log={selectedClassLog.log}
+              mode="view"
+              canEdit={false}
+              showAttendees={false}
+              coaches={[]}
+              topic=""
+              content=""
+              teacherId=""
+              attendeesText=""
+              onChangeTopic={() => {}}
+              onChangeContent={() => {}}
+              onChangeTeacher={() => {}}
+              onChangeAttendees={() => {}}
+              onEdit={() => {}}
+              onSave={() => {}}
+              onCancel={() => setSelectedClassLog(null)}
+            />
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedClassLog(null)}
+                className="rounded-xl border border-[#2b2b2b] bg-[#151515] px-4 py-2 text-sm text-zinc-300"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </StudentShell>
   );
 }

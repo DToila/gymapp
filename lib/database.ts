@@ -52,6 +52,7 @@ export interface ClassLogRow {
   topic?: string | null
   content?: string | null
   teacher_id?: string | null
+  teacher_name?: string | null
   attendees?: string[] | null
   created_at?: string
   updated_at?: string
@@ -341,6 +342,18 @@ export const ensureScheduleSlots = async (
   return (data || []) as ScheduleSlotRow[]
 }
 
+export const getScheduleSlotsByCodes = async (codes: string[]): Promise<ScheduleSlotRow[]> => {
+  if (codes.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('schedule_slots')
+    .select('id, code, day_of_week, start_time, end_time, program, kids_group, gi_type, tags, default_coach_id')
+    .in('code', codes)
+
+  if (error) throw error
+  return (data || []) as ScheduleSlotRow[]
+}
+
 export const getClassPlan = async (slotId: string, dateKey: string): Promise<ClassPlanRow | null> => {
   const { data, error } = await supabase
     .from('class_plans')
@@ -437,6 +450,7 @@ export const upsertClassLog = async (
     topic?: string
     content: string
     teacher_id?: string | null
+    teacher_name?: string | null
     attendees?: string[] | null
   }
 ): Promise<ClassLogRow> => {
@@ -449,6 +463,7 @@ export const upsertClassLog = async (
         topic: payload.topic || null,
         content: payload.content,
         teacher_id: payload.teacher_id || null,
+        teacher_name: payload.teacher_name || null,
         attendees: payload.attendees || null,
         updated_at: new Date().toISOString(),
       },
