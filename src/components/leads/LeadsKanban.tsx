@@ -44,6 +44,14 @@ const COLUMNS: {
     highlightBorder: 'border-purple-500',
   },
   {
+    status: 'Aguarda decisao',
+    label: 'Aguarda Decisão',
+    textColor: 'text-orange-300',
+    badgeBg: 'bg-orange-500/20',
+    avatarBg: 'bg-orange-900',
+    highlightBorder: 'border-orange-500',
+  },
+  {
     status: 'Inscrito',
     label: 'Inscrito',
     textColor: 'text-emerald-300',
@@ -115,7 +123,7 @@ export default function LeadsKanban({ leads, onCardClick, onStatusChange }: Lead
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" style={{ minHeight: '420px' }}>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2" style={{ minHeight: '420px' }}>
       {COLUMNS.map(({ status, label, textColor, badgeBg, avatarBg, highlightBorder }) => {
         const columnLeads = leads.filter((l) => l.status === status);
         const isOver = dragOverStatus === status;

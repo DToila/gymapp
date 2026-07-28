@@ -3,6 +3,7 @@ export type LeadStatus =
   | 'Contactado'
   | 'Aula agendada'
   | 'Aula realizada'
+  | 'Aguarda decisao'
   | 'Inscrito'
   | 'Nao inscrito';
 
@@ -41,6 +42,11 @@ export interface Lead {
   enrolled: boolean;
   not_enrolled_reason?: NotEnrolledReasonCode;
   not_enrolled_reason_text?: string;
+  age?: number | null;
+  trial_schedule_id?: string | null;
+  trial_feedback?: string | null;
+  trial_feedback_at?: string | null;
+  trial_feedback_by?: string | null;
 }
 
 export const LEAD_SOURCES: LeadContactSource[] = [
@@ -60,9 +66,12 @@ export const LEAD_STATUSES: LeadStatus[] = [
   'Contactado',
   'Aula agendada',
   'Aula realizada',
+  'Aguarda decisao',
   'Inscrito',
   'Nao inscrito',
 ];
+
+export const DECISION_WAIT_DAYS_DEFAULT = 3;
 
 export const NOT_ENROLLED_REASONS: NotEnrolledReasonCode[] = [
   'Sem tempo',

@@ -13,7 +13,10 @@ import KidsBehaviorPanel from './KidsBehaviorPanel';
 import AttendancePanel from './AttendancePanel';
 import PendingRequestsList from './PendingRequestsList';
 import AnnouncementsPanel from './AnnouncementsPanel';
+import LeadsToContactTodayPanel from './LeadsToContactTodayPanel';
+import LeadsFunnelPanel from './LeadsFunnelPanel';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
+import { getLeadsToContactToday, LeadAwaitingDecision } from '@/components/leads/leadAutomation';
 import { AppRole, AttendanceRecentItem, KidBehaviorItem, KpiItem, NoteItem, RequestItem, UnpaidPayment } from './types';
 import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
@@ -70,6 +73,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const [unpaidPayments, setUnpaidPayments] = useState<UnpaidPayment[]>([]);
   const [totalUnpaidCount, setTotalUnpaidCount] = useState(0);
   const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0);
+  const [leadsToContactToday, setLeadsToContactToday] = useState<LeadAwaitingDecision[]>([]);
 
   const isCoach = currentRole === 'coach';
 
@@ -336,6 +340,16 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   }, [fetchTodayAttendance, loadDashboardData]);
 
   useEffect(() => {
+    if (isCoach) return;
+    getLeadsToContactToday()
+      .then(setLeadsToContactToday)
+      .catch((error) => {
+        console.error('Erro loading leads to contact today:', error);
+        setLeadsToContactToday([]);
+      });
+  }, [isCoach]);
+
+  useEffect(() => {
     fetchKidsBehavior(behaviorMode);
   }, [behaviorMode, fetchKidsBehavior]);
 
@@ -500,6 +514,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
             <AnnouncementsPanel currentUserName={currentName} />
             <RecentNotesList notes={recentNotes} loading={recentNotesLoading} />
             {!isCoach ? <UnpaidPaymentsTable rows={unpaidPayments} /> : null}
+            {!isCoach ? <LeadsFunnelPanel /> : null}
           </div>
 
           <div className="space-y-3 lg:col-span-5">
@@ -512,6 +527,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
             />
             <AttendancePanel checkedIn={todayCheckedIn} total={todayTotalMembers} recent={todayRecentAttendance} />
             {!isCoach ? <PendingRequestsList requests={pendingRequests} /> : null}
+            {!isCoach ? <LeadsToContactTodayPanel leads={leadsToContactToday} /> : null}
           </div>
         </section>
       </main>

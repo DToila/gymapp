@@ -3,7 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { supabase } from '../../../lib/supabase';
+import { logLeadStatusChange, ReminderLogRow, getRemindersForDate } from '../../../lib/database';
 import LeadsKanban from '@/components/leads/LeadsKanban';
+import TrialBookingPicker from '@/components/leads/TrialBookingPicker';
+import { saveTrialFeedback, toLocalDateKey } from '@/components/leads/leadAutomation';
 import {
   Lead,
   LEAD_CLASS_TYPES,
@@ -69,6 +72,13 @@ export default function LeadsPage() {
   const [importData, setImportData] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [isBookingTrial, setIsBookingTrial] = useState(false);
+  const [feedbackDraft, setFeedbackDraft] = useState('');
+  const [savingFeedback, setSavingFeedback] = useState(false);
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [todaysReminders, setTodaysReminders] = useState<ReminderLogRow[]>([]);
+  const [isRunningAutomation, setIsRunningAutomation] = useState(false);
+  const [automationResult, setAutomationResult] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch leads on component mount
@@ -98,6 +108,40 @@ export default function LeadsPage() {
     fetchLeads();
   }, []);
 
+  const loadTodaysReminders = async () => {
+    try {
+      const reminders = await getRemindersForDate(toLocalDateKey(new Date()));
+      setTodaysReminders(reminders);
+    } catch (err) {
+      console.error('Erro loading today reminders:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadTodaysReminders();
+  }, []);
+
+  const runAutomationNow = async () => {
+    setIsRunningAutomation(true);
+    setAutomationResult(null);
+    try {
+      const response = await fetch('/api/leads/run-automation', { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'Falhado ao executar automação.');
+      }
+      setAutomationResult(
+        `${data.movedToDecision} lead(s) movido(s) para Aguarda Decisão · ${data.remindersCreated} lembrete(s) preparado(s).`
+      );
+      await loadTodaysReminders();
+    } catch (err) {
+      console.error('Erro running lead automation:', err);
+      setAutomationResult(err instanceof Error ? err.message : 'Erro ao executar automação.');
+    } finally {
+      setIsRunningAutomation(false);
+    }
+  };
+
   const isOverdueFollowup = (lead: Lead) =>
     Boolean(lead.next_contact_date && lead.next_contact_date < todayKey());
 
@@ -120,6 +164,9 @@ export default function LeadsPage() {
     setSelectedLead(emptyLead());
     setIsLeadDrawerOpen(true);
     setIsDropdownOpen(false);
+    setIsBookingTrial(false);
+    setFeedbackDraft('');
+    setFeedbackSaved(false);
   };
 
   const openScanModal = () => {
@@ -224,6 +271,7 @@ export default function LeadsPage() {
   const handleStatusChange = async (lead: Lead, newStatus: Lead['status']) => {
     setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, status: newStatus } : l)));
     await supabase.from('leads').update({ status: newStatus }).eq('id', lead.id);
+    await logLeadStatusChange(lead.id, newStatus).catch((err) => console.error('Erro logging status history:', err));
   };
 
   const openEditLead = (lead: Lead) => {
@@ -232,9 +280,13 @@ export default function LeadsPage() {
     setIsCreatingLead(false);
     setSelectedLead({ ...lead });
     setIsLeadDrawerOpen(true);
+    setIsBookingTrial(false);
+    setFeedbackDraft(lead.trial_feedback || '');
+    setFeedbackSaved(false);
   };
 
   const closeLeadDrawer = () => {
+    setIsBookingTrial(false);
     setIsLeadDrawerOpen(false);
     setSelectedLead(null);
     setIsCreatingLead(false);
@@ -292,6 +344,7 @@ export default function LeadsPage() {
     });
 
     checkDedupeWarning(normalized);
+    const previousStatus = isCreatingLead ? null : leads.find((item) => item.id === normalized.id)?.status || null;
 
     try {
       setSaving(true);
@@ -308,6 +361,7 @@ export default function LeadsPage() {
         if (insertError) throw insertError;
 
         setLeads((prev) => [data, ...prev]);
+        await logLeadStatusChange(data.id, data.status).catch((err) => console.error('Erro logging status history:', err));
       } else {
         // Atualizar existing lead
         const { error: updateError } = await supabase
@@ -318,6 +372,12 @@ export default function LeadsPage() {
         if (updateError) throw updateError;
 
         setLeads((prev) => prev.map((item) => (item.id === normalized.id ? normalized : item)));
+
+        if (previousStatus && previousStatus !== normalized.status) {
+          await logLeadStatusChange(normalized.id, normalized.status).catch((err) =>
+            console.error('Erro logging status history:', err)
+          );
+        }
       }
 
       closeLeadDrawer();
@@ -454,6 +514,48 @@ export default function LeadsPage() {
             </div>
           </header>
 
+          <details className="mb-5 rounded-2xl border border-[#222] bg-[#121212] p-4">
+            <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-300">
+              Lembretes de Hoje
+              {todaysReminders.length > 0 ? (
+                <span className="ml-2 rounded-full border border-[#2a2a2a] bg-[#161616] px-2 py-0.5 text-[11px] font-semibold text-zinc-400">
+                  {todaysReminders.length}
+                </span>
+              ) : null}
+            </summary>
+            <div className="mt-3 space-y-3">
+              <p className="text-xs text-zinc-500">
+                Lembretes do dia anterior à aula experimental. O envio real (WhatsApp/SMS) ainda não está integrado —
+                esta lista mostra o que seria enviado assim que a automação diária corre.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={runAutomationNow}
+                  disabled={isRunningAutomation}
+                  className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-[#3a3a3a] hover:text-white disabled:opacity-60"
+                >
+                  {isRunningAutomation ? 'A executar...' : 'Executar automação agora'}
+                </button>
+                {automationResult ? <span className="text-xs text-zinc-400">{automationResult}</span> : null}
+              </div>
+              {todaysReminders.length === 0 ? (
+                <p className="text-xs text-zinc-600">Sem lembretes pendentes para hoje.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {todaysReminders.map((reminder) => (
+                    <li key={reminder.id} className="rounded-xl border border-[#242424] bg-[#161616] px-3 py-2 text-xs text-zinc-300">
+                      <span className="mr-2 rounded-full border border-[#2a2a2a] bg-[#111] px-1.5 py-0.5 text-[10px] uppercase text-zinc-500">
+                        {reminder.channel}
+                      </span>
+                      {reminder.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </details>
+
           <div className="mb-5 flex gap-3">
               <div className="flex-1">
                 <input
@@ -561,6 +663,18 @@ export default function LeadsPage() {
                       className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
                     />
                   </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Idade</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={selectedLead.age ?? ''}
+                      onChange={(e) => updateLeadField('age', e.target.value ? Number(e.target.value) : null)}
+                      placeholder="Usada para sugerir o tipo de aula"
+                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -602,7 +716,19 @@ export default function LeadsPage() {
               </div>
 
               <div className="rounded-2xl border border-[#222] bg-[#0f0f0f] p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">Aula Experimental</p>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Aula Experimental</p>
+                  {!isCreatingLead ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsBookingTrial((prev) => !prev)}
+                      className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-1.5 text-xs text-zinc-300 hover:border-[#3a3a3a] hover:text-white"
+                    >
+                      {isBookingTrial ? 'Fechar agendamento' : 'Agendar sessão'}
+                    </button>
+                  ) : null}
+                </div>
+
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-zinc-400">Aula (idade)</label>
@@ -624,6 +750,9 @@ export default function LeadsPage() {
                       onChange={(e) => updateLeadField('trial_date', e.target.value)}
                       className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
                     />
+                    {selectedLead.trial_schedule_id ? (
+                      <p className="mt-1 text-[11px] text-emerald-400">Sessão específica agendada via calendário.</p>
+                    ) : null}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="mb-1 block text-xs font-medium text-zinc-400">Observacoes</label>
@@ -633,6 +762,75 @@ export default function LeadsPage() {
                       onChange={(e) => updateLeadField('notes', e.target.value)}
                       className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
                     />
+                  </div>
+                </div>
+
+                {isCreatingLead ? (
+                  <p className="mt-3 text-xs text-zinc-500">Guarde o lead primeiro para poder agendar uma sessão específica no calendário.</p>
+                ) : null}
+
+                {isBookingTrial && !isCreatingLead ? (
+                  <div className="mt-3">
+                    <TrialBookingPicker
+                      lead={selectedLead}
+                      onCancel={() => setIsBookingTrial(false)}
+                      onBooked={(updated) => {
+                        setSelectedLead(updated);
+                        setLeads((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+                        setIsBookingTrial(false);
+                      }}
+                    />
+                  </div>
+                ) : null}
+
+                <div className="mt-4 border-t border-[#1f1f1f] pt-4">
+                  <label className="mb-1 block text-xs font-medium text-zinc-400">Feedback pós-aula</label>
+                  <textarea
+                    rows={3}
+                    value={feedbackDraft}
+                    onChange={(e) => {
+                      setFeedbackDraft(e.target.value);
+                      setFeedbackSaved(false);
+                    }}
+                    placeholder="Como correu a aula experimental? (visível apenas internamente)"
+                    disabled={isCreatingLead}
+                    className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none disabled:opacity-60"
+                  />
+                  {selectedLead.trial_feedback_at ? (
+                    <p className="mt-1 text-[11px] text-zinc-500">
+                      Último registo: {new Date(selectedLead.trial_feedback_at).toLocaleString('pt-PT')}
+                    </p>
+                  ) : null}
+                  <div className="mt-2 flex items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={isCreatingLead || savingFeedback || !feedbackDraft.trim()}
+                      onClick={async () => {
+                        if (!selectedLead) return;
+                        setSavingFeedback(true);
+                        try {
+                          await saveTrialFeedback(selectedLead.id, feedbackDraft.trim());
+                          const feedbackAt = new Date().toISOString();
+                          setSelectedLead((prev) => (prev ? { ...prev, trial_feedback: feedbackDraft.trim(), trial_feedback_at: feedbackAt } : prev));
+                          setLeads((prev) =>
+                            prev.map((item) =>
+                              item.id === selectedLead.id
+                                ? { ...item, trial_feedback: feedbackDraft.trim(), trial_feedback_at: feedbackAt }
+                                : item
+                            )
+                          );
+                          setFeedbackSaved(true);
+                        } catch (err) {
+                          console.error('Erro saving trial feedback:', err);
+                        } finally {
+                          setSavingFeedback(false);
+                        }
+                      }}
+                      className="rounded-lg border border-[#2a2a2a] bg-[#161616] px-3 py-1.5 text-xs text-zinc-300 hover:border-[#3a3a3a] hover:text-white disabled:opacity-50"
+                    >
+                      {savingFeedback ? 'A guardar...' : 'Guardar feedback'}
+                    </button>
+                    {feedbackSaved ? <span className="text-xs text-emerald-400">Guardado</span> : null}
                   </div>
                 </div>
               </div>

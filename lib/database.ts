@@ -31,6 +31,8 @@ export interface ScheduleSlotRow {
   gi_type: string
   tags?: string[] | null
   default_coach_id?: string | null
+  trial_capacity_kids?: number | null
+  trial_capacity_adults?: number | null
 }
 
 export interface ClassPlanRow {
@@ -335,7 +337,7 @@ export const ensureScheduleSlots = async (
   const codes = slots.map((slot) => slot.code)
   const { data, error: readError } = await supabase
     .from('schedule_slots')
-    .select('id, code, day_of_week, start_time, end_time, program, kids_group, gi_type, tags, default_coach_id')
+    .select('id, code, day_of_week, start_time, end_time, program, kids_group, gi_type, tags, default_coach_id, trial_capacity_kids, trial_capacity_adults')
     .in('code', codes)
 
   if (readError) throw readError
@@ -347,7 +349,7 @@ export const getScheduleSlotsByCodes = async (codes: string[]): Promise<Schedule
 
   const { data, error } = await supabase
     .from('schedule_slots')
-    .select('id, code, day_of_week, start_time, end_time, program, kids_group, gi_type, tags, default_coach_id')
+    .select('id, code, day_of_week, start_time, end_time, program, kids_group, gi_type, tags, default_coach_id, trial_capacity_kids, trial_capacity_adults')
     .in('code', codes)
 
   if (error) throw error
@@ -474,6 +476,98 @@ export const upsertClassLog = async (
 
   if (error) throw error
   return data as ClassLogRow
+}
+
+// ─── Leads automation support ────────────────────────────────────────────────
+
+export interface LeadStatusHistoryRow {
+  id: string
+  lead_id: string
+  status: string
+  changed_at: string
+  changed_by?: string | null
+}
+
+export interface ReminderLogRow {
+  id: string
+  lead_id: string
+  scheduled_for: string
+  message: string
+  sent: boolean
+  channel: string
+  created_at: string
+}
+
+export const logLeadStatusChange = async (
+  leadId: string,
+  status: string,
+  changedBy?: string | null
+): Promise<void> => {
+  const { error } = await supabase.from('lead_status_history').insert({
+    lead_id: leadId,
+    status,
+    changed_by: changedBy || null,
+  })
+
+  if (error) {
+    console.error('Supabase logLeadStatusChange failed', { message: error.message, leadId, status })
+    throw error
+  }
+}
+
+export const getLeadStatusHistory = async (leadId: string): Promise<LeadStatusHistoryRow[]> => {
+  const { data, error } = await supabase
+    .from('lead_status_history')
+    .select('*')
+    .eq('lead_id', leadId)
+    .order('changed_at', { ascending: true })
+
+  if (error) throw error
+  return (data || []) as LeadStatusHistoryRow[]
+}
+
+export const getTrialBookingsCount = async (scheduleId: string, dateKey: string): Promise<number> => {
+  const { count, error } = await supabase
+    .from('leads')
+    .select('id', { count: 'exact', head: true })
+    .eq('trial_schedule_id', scheduleId)
+    .eq('trial_date', dateKey)
+
+  if (error) throw error
+  return count || 0
+}
+
+export const getRemindersForDate = async (dateKey: string): Promise<ReminderLogRow[]> => {
+  const { data, error } = await supabase
+    .from('reminders_log')
+    .select('*')
+    .eq('scheduled_for', dateKey)
+    .order('created_at', { ascending: true })
+
+  if (error) throw error
+  return (data || []) as ReminderLogRow[]
+}
+
+export const insertReminderLog = async (payload: {
+  lead_id: string
+  scheduled_for: string
+  message: string
+  channel?: string
+}): Promise<ReminderLogRow> => {
+  const { data, error } = await supabase
+    .from('reminders_log')
+    .insert({
+      lead_id: payload.lead_id,
+      scheduled_for: payload.scheduled_for,
+      message: payload.message,
+      channel: payload.channel || 'whatsapp',
+      sent: false,
+    })
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data as ReminderLogRow
 }
 
 export interface UnpaidPaymentRecord {

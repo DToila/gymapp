@@ -14,6 +14,7 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
       Contactado: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
       'Aula agendada': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
       'Aula realizada': 'bg-green-500/20 text-green-300 border-green-500/30',
+      'Aguarda decisao': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
       Inscrito: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
       'Nao inscrito': 'bg-red-500/20 text-red-300 border-red-500/30',
     };
