@@ -71,8 +71,17 @@ function getWeekMonday(date: Date): Date {
   return d;
 }
 
+// toISOString() converts to UTC, which shifts the calendar date backwards for
+// timezones ahead of UTC (e.g. WEST) when the Date represents local midnight.
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function StudentSchedulePage() {
-  const [view, setView] = useState<'today' | 'week'>('today');
+  const [view, setView] = useState<'today' | 'week'>('week');
   const [slotIdByCode, setSlotIdByCode] = useState<Record<string, string>>({});
   const [classLogsByKey, setClassLogsByKey] = useState<Record<string, ClassLogRow>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -102,7 +111,7 @@ export default function StudentSchedulePage() {
       const date = new Date(monday);
       date.setDate(monday.getDate() + index);
       result[day.key] = {
-        dateKey: date.toISOString().split('T')[0],
+        dateKey: toLocalDateKey(date),
         dateLabel: date.toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: '2-digit' }),
       };
     });

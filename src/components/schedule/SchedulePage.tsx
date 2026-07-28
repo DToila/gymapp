@@ -53,6 +53,15 @@ function parseStartMinutes(t: string): number {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+// toISOString() converts to UTC, which shifts the calendar date backwards for
+// timezones ahead of UTC (e.g. WEST) when the Date represents local midnight.
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 const parseAttendees = (value: string): string[] | null => {
   const attendees = value
     .split(',')
@@ -115,7 +124,7 @@ export default function SchedulePage() {
     DAY_ORDER.forEach((day, index) => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + index);
-      const dateKey = date.toISOString().split('T')[0];
+      const dateKey = toLocalDateKey(date);
       const dateLabel = date.toLocaleDateString('pt-PT', {
         weekday: 'short',
         day: '2-digit',
