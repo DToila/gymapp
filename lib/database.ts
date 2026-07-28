@@ -45,6 +45,18 @@ export interface ClassPlanRow {
   updated_by?: string | null
 }
 
+export interface ClassLogRow {
+  id: string
+  schedule_id: string
+  date: string
+  topic?: string | null
+  content?: string | null
+  teacher_id?: string | null
+  attendees?: string[] | null
+  created_at?: string
+  updated_at?: string
+}
+
 // Members
 export const getMembers = async (): Promise<Member[]> => {
   const { data, error } = await supabase
@@ -388,6 +400,65 @@ export const upsertClassPlan = async (
 
   if (error) throw error
   return data as ClassPlanRow
+}
+
+export const getClassLog = async (scheduleId: string, dateKey: string): Promise<ClassLogRow | null> => {
+  const { data, error } = await supabase
+    .from('class_logs')
+    .select('*')
+    .eq('schedule_id', scheduleId)
+    .eq('date', dateKey)
+    .maybeSingle()
+
+  if (error) throw error
+  return (data as ClassLogRow | null) || null
+}
+
+export const getClassLogsForSlotsAndDates = async (
+  scheduleIds: string[],
+  dateKeys: string[]
+): Promise<ClassLogRow[]> => {
+  if (scheduleIds.length === 0 || dateKeys.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('class_logs')
+    .select('*')
+    .in('schedule_id', scheduleIds)
+    .in('date', dateKeys)
+
+  if (error) throw error
+  return (data || []) as ClassLogRow[]
+}
+
+export const upsertClassLog = async (
+  scheduleId: string,
+  dateKey: string,
+  payload: {
+    topic?: string
+    content: string
+    teacher_id?: string | null
+    attendees?: string[] | null
+  }
+): Promise<ClassLogRow> => {
+  const { data, error } = await supabase
+    .from('class_logs')
+    .upsert(
+      {
+        schedule_id: scheduleId,
+        date: dateKey,
+        topic: payload.topic || null,
+        content: payload.content,
+        teacher_id: payload.teacher_id || null,
+        attendees: payload.attendees || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'schedule_id,date' }
+    )
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data as ClassLogRow
 }
 
 export interface UnpaidPaymentRecord {

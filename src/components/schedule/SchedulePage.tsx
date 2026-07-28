@@ -7,12 +7,12 @@ import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { officialSchedule, studentSchedule } from '@/components/student/studentData';
 import {
   CoachProfile,
-  ClassPlanRow,
+  ClassLogRow,
   ensureScheduleSlots,
-  getClassPlan,
-  getClassPlansForSlotsAndDates,
+  getClassLog,
+  getClassLogsForSlotsAndDates,
   getCoachProfiles,
-  upsertClassPlan,
+  upsertClassLog,
 } from '../../../lib/database';
 
 const DAY_ORDER = [
@@ -31,9 +31,9 @@ type PlanMode = 'remote' | 'local';
 
 interface LocalClassPlanDraft {
   topic: string;
-  techniques: string;
-  coach_primary_id: string;
-  coach_secondary_id: string | null;
+  content: string;
+  teacher_id: string | null;
+  attendees: string[] | null;
   updated_at: string;
 }
 
@@ -58,7 +58,16 @@ function parseStartMinutes(t: string): number {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const LOCAL_CLASS_PLAN_STORAGE_KEY = 'gymapp_schedule_class_plans_local_v1';
+const LOCAL_CLASS_PLAN_STORAGE_KEY = 'gymapp_schedule_class_logs_local_v1';
+
+const parseAttendees = (value: string): string[] | null => {
+  const attendees = value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  return attendees.length > 0 ? attendees : null
+}
 
 export default function SchedulePage() {
   const router = useRouter();
@@ -75,14 +84,14 @@ export default function SchedulePage() {
   const [planMode, setPlanMode] = useState<PlanMode>('remote');
   const [openSlotId, setOpenSlotId] = useState<string | null>(null);
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
-  const [plan, setPlan] = useState<ClassPlanRow | null>(null);
+  const [plan, setPlan] = useState<ClassLogRow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editingSlot, setEditingSlot] = useState<EditingSlot | null>(null);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [topic, setTopic] = useState('');
   const [techniques, setTechniques] = useState('');
-  const [coachPrimaryId, setCoachPrimaryId] = useState('');
-  const [coachSecondaryId, setCoachSecondaryId] = useState('');
+  const [teacherId, setTeacherId] = useState('');
+  const [attendeesText, setAttendeesText] = useState('');
   const [initialPlanSnapshot, setInitialPlanSnapshot] = useState('');
   const [toast, setToast] = useState<ToastState>(null);
   const [selectedMonday, setSelectedMonday] = useState<Date | null>(null);
@@ -130,8 +139,8 @@ export default function SchedulePage() {
   const planSnapshot = JSON.stringify({
     topic: topic || '',
     techniques: techniques || '',
-    coachPrimaryId: coachPrimaryId || '',
-    coachSecondaryId: coachSecondaryId || '',
+    teacherId: teacherId || '',
+    attendeesText: attendeesText || '',
   });
 
   const hasUnsavedChanges = initialPlanSnapshot !== '' && planSnapshot !== initialPlanSnapshot;
@@ -155,35 +164,35 @@ export default function SchedulePage() {
     window.localStorage.setItem(LOCAL_CLASS_PLAN_STORAGE_KEY, JSON.stringify(data));
   };
 
-  const loadLocalClassPlan = (slotCode: string, dateKey: string): ClassPlanRow | null => {
+  const loadLocalClassPlan = (slotCode: string, dateKey: string): ClassLogRow | null => {
     const all = readLocalClassPlans();
     const key = `${slotCode}|${dateKey}`;
     const draft = all[key];
     if (!draft) return null;
     return {
       id: key,
-      slot_id: slotCode,
+      schedule_id: slotCode,
       date: dateKey,
       topic: draft.topic,
-      techniques: draft.techniques,
-      coach_primary_id: draft.coach_primary_id,
-      coach_secondary_id: draft.coach_secondary_id,
+      content: draft.content,
+      teacher_id: draft.teacher_id,
+      attendees: draft.attendees,
+      created_at: draft.updated_at,
       updated_at: draft.updated_at,
-      updated_by: null,
     };
   };
 
   const saveLocalClassPlan = (
     slotCode: string,
     dateKey: string,
-    payload: { topic: string; techniques: string; coach_primary_id: string; coach_secondary_id: string | null }
+    payload: { topic: string; content: string; teacher_id: string | null; attendees: string[] | null }
   ) => {
     const all = readLocalClassPlans();
     all[`${slotCode}|${dateKey}`] = {
       topic: payload.topic,
-      techniques: payload.techniques,
-      coach_primary_id: payload.coach_primary_id,
-      coach_secondary_id: payload.coach_secondary_id,
+      content: payload.content,
+      teacher_id: payload.teacher_id,
+      attendees: payload.attendees,
       updated_at: new Date().toISOString(),
     };
     writeLocalClassPlans(all);
@@ -260,7 +269,7 @@ export default function SchedulePage() {
       .catch((error) => {
         console.error('Erro ensuring schedule slots:', error);
         const message = String(error?.message || error || '');
-        if (/schema cache|schedule_slots|class_plans/i.test(message)) {
+        if (/schema cache|schedule_slots|class_logs/i.test(message)) {
           setPlanMode('local');
           setToast({ type: 'error', message: 'Horário DB tables missing. Using local class-plan mode.' });
           return;
@@ -276,11 +285,11 @@ export default function SchedulePage() {
     const slotIds = Object.values(slotIdByCode);
     const dateKeys = DAY_ORDER.map((day) => weekDatesByDay[day.key].dateKey);
 
-    getClassPlansForSlotsAndDates(slotIds, dateKeys)
+    getClassLogsForSlotsAndDates(slotIds, dateKeys)
       .then((rows) => {
         const next: Record<string, boolean> = {};
         rows.forEach((row) => {
-          next[planExistsKey(row.slot_id, row.date)] = true;
+          next[planExistsKey(row.schedule_id, row.date)] = true;
         });
         setPlanExistsMap(next);
       })
@@ -386,21 +395,21 @@ export default function SchedulePage() {
       console.log('FETCH_SLOT_OK', { slotId: slotCode, slotCode, mode: 'local' });
       console.log('FETCH_PLAN_OK', local);
       const nextTopic = local?.topic || '';
-      const nextTechniques = local?.techniques || '';
-      const nextPrimary = local?.coach_primary_id || '';
-      const nextSecondary = local?.coach_secondary_id || '';
+      const nextTechniques = local?.content || '';
+      const nextTeacher = local?.teacher_id || '';
+      const nextAttendees = local?.attendees?.join(', ') || '';
 
       setPlan(local);
       setTopic(nextTopic);
       setTechniques(nextTechniques);
-      setCoachPrimaryId(nextPrimary);
-      setCoachSecondaryId(nextSecondary);
+      setTeacherId(nextTeacher);
+      setAttendeesText(nextAttendees);
       setInitialPlanSnapshot(
         JSON.stringify({
           topic: nextTopic,
           techniques: nextTechniques,
-          coachPrimaryId: nextPrimary,
-          coachSecondaryId: nextSecondary,
+          teacherId: nextTeacher,
+          attendeesText: nextAttendees,
         })
       );
       setEditingSlot((prev) => {
@@ -451,26 +460,26 @@ export default function SchedulePage() {
       const resolvedSlotId = slotDbId;
 
       console.log('FETCH_SLOT_OK', { slotId: resolvedSlotId, slotCode });
-      const existing = await getClassPlan(resolvedSlotId, dateKey);
+      const existing = await getClassLog(resolvedSlotId, dateKey);
       console.log('FETCH_PLAN_OK', existing);
 
       setPlan(existing);
 
       const nextTopic = existing?.topic || '';
-      const nextTechniques = existing?.techniques || '';
-      const nextPrimary = existing?.coach_primary_id || '';
-      const nextSecondary = existing?.coach_secondary_id || '';
+      const nextTechniques = existing?.content || '';
+      const nextTeacher = existing?.teacher_id || '';
+      const nextAttendees = existing?.attendees?.join(', ') || '';
 
       setTopic(nextTopic);
       setTechniques(nextTechniques);
-      setCoachPrimaryId(nextPrimary);
-      setCoachSecondaryId(nextSecondary);
+      setTeacherId(nextTeacher);
+      setAttendeesText(nextAttendees);
       setInitialPlanSnapshot(
         JSON.stringify({
           topic: nextTopic,
           techniques: nextTechniques,
-          coachPrimaryId: nextPrimary,
-          coachSecondaryId: nextSecondary,
+          teacherId: nextTeacher,
+          attendeesText: nextAttendees,
         })
       );
 
@@ -481,25 +490,25 @@ export default function SchedulePage() {
     } catch (err: any) {
       console.error('FETCH_SLOT_ERR', err);
       const message = String(err?.message || 'Could not load class plan.');
-      if (/schema cache|schedule_slots|class_plans/i.test(message)) {
+      if (/schema cache|schedule_slots|class_logs/i.test(message)) {
         setPlanMode('local');
         const local = loadLocalClassPlan(slotCode, dateKey);
         const nextTopic = local?.topic || '';
-        const nextTechniques = local?.techniques || '';
-        const nextPrimary = local?.coach_primary_id || '';
-        const nextSecondary = local?.coach_secondary_id || '';
+        const nextTechniques = local?.content || '';
+        const nextTeacher = local?.teacher_id || '';
+        const nextAttendees = local?.attendees?.join(', ') || '';
 
         setPlan(local);
         setTopic(nextTopic);
         setTechniques(nextTechniques);
-        setCoachPrimaryId(nextPrimary);
-        setCoachSecondaryId(nextSecondary);
+        setTeacherId(nextTeacher);
+        setAttendeesText(nextAttendees);
         setInitialPlanSnapshot(
           JSON.stringify({
             topic: nextTopic,
             techniques: nextTechniques,
-            coachPrimaryId: nextPrimary,
-            coachSecondaryId: nextSecondary,
+            teacherId: nextTeacher,
+            attendeesText: nextAttendees,
           })
         );
         setEditingSlot((prev) => {
@@ -512,10 +521,10 @@ export default function SchedulePage() {
         setPlan(null);
         setTopic('');
         setTechniques('');
-        setCoachPrimaryId('');
-        setCoachSecondaryId('');
+        setTeacherId('');
+        setAttendeesText('');
         setInitialPlanSnapshot(
-          JSON.stringify({ topic: '', techniques: '', coachPrimaryId: '', coachSecondaryId: '' })
+          JSON.stringify({ topic: '', techniques: '', teacherId: '', attendeesText: '' })
         );
         setError(message);
       }
@@ -563,17 +572,20 @@ export default function SchedulePage() {
 
   const saveClassPlan = async () => {
     if (!editingSlot) return;
-    if (!coachPrimaryId) {
-      setToast({ type: 'error', message: 'Primary coach is required.' });
+    const content = techniques.trim() || topic.trim();
+    const attendees = parseAttendees(attendeesText);
+
+    if (!content) {
+      setToast({ type: 'error', message: 'Class content is required.' });
       return;
     }
 
     if (planMode === 'local') {
       saveLocalClassPlan(editingSlot.slotCode, editingSlot.dateKey, {
         topic,
-        techniques,
-        coach_primary_id: coachPrimaryId,
-        coach_secondary_id: coachSecondaryId || null,
+        content,
+        teacher_id: teacherId || null,
+        attendees,
       });
 
       setPlanExistsMap((prev) => ({
@@ -582,11 +594,27 @@ export default function SchedulePage() {
       }));
 
       setToast({ type: 'success', message: 'Saved locally' });
-      setEditingSlot(null);
-      setOpenSlotId(null);
       setIsLoadingPlan(false);
       setError(null);
-      setInitialPlanSnapshot('');
+      setPlan({
+        id: `${editingSlot.slotCode}|${editingSlot.dateKey}`,
+        schedule_id: editingSlot.slotCode,
+        date: editingSlot.dateKey,
+        topic,
+        content,
+        teacher_id: teacherId || null,
+        attendees,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      setInitialPlanSnapshot(
+        JSON.stringify({
+          topic,
+          techniques: content,
+          teacherId: teacherId || '',
+          attendeesText,
+        })
+      );
       return;
     }
 
@@ -597,25 +625,30 @@ export default function SchedulePage() {
 
     setIsSavingPlan(true);
     try {
-      const saved = await upsertClassPlan(editingSlot.slotDbId, editingSlot.dateKey, {
+      const saved = await upsertClassLog(editingSlot.slotDbId, editingSlot.dateKey, {
         topic,
-        techniques,
-        coach_primary_id: coachPrimaryId,
-        coach_secondary_id: coachSecondaryId || null,
+        content,
+        teacher_id: teacherId || null,
+        attendees,
       });
 
       setPlanExistsMap((prev) => ({
         ...prev,
-        [planExistsKey(saved.slot_id, saved.date)]: true,
+        [planExistsKey(saved.schedule_id, saved.date)]: true,
       }));
 
       setToast({ type: 'success', message: 'Saved' });
-      setEditingSlot(null);
-      setOpenSlotId(null);
       setIsLoadingPlan(false);
       setPlan(saved);
       setError(null);
-      setInitialPlanSnapshot('');
+      setInitialPlanSnapshot(
+        JSON.stringify({
+          topic,
+          techniques: content,
+          teacherId: teacherId || '',
+          attendeesText,
+        })
+      );
     } catch (error) {
       console.error('Erro saving class plan:', error);
       setToast({ type: 'error', message: 'Could not save class plan.' });
@@ -665,7 +698,7 @@ export default function SchedulePage() {
         ) : (
           <>
             <div className="rounded-xl border border-[#242424] bg-[#151515] px-3 py-2 text-xs text-zinc-400">
-              {plan ? 'Saved plan found for this class/date.' : 'Não saved plan yet for this class/date.'}
+              {plan ? 'Saved log found for this class/date.' : 'No saved log yet for this class/date.'}
             </div>
 
             <div>
@@ -679,11 +712,11 @@ export default function SchedulePage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">Techniques / Plan</label>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Conteúdo da aula</label>
               <textarea
                 value={techniques}
                 onChange={(event) => setTechniques(event.target.value)}
-                placeholder="Techniques to cover (e.g. knee cut pass > crossface > finish)…"
+                placeholder="What was covered in this class…"
                 rows={4}
                 className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
               />
@@ -691,13 +724,13 @@ export default function SchedulePage() {
 
             <div className="grid grid-cols-1 gap-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-400">Professor (Primary)</label>
+                <label className="mb-1 block text-xs font-medium text-zinc-400">Teacher (optional)</label>
                 <select
-                  value={coachPrimaryId}
-                  onChange={(event) => setCoachPrimaryId(event.target.value)}
+                  value={teacherId}
+                  onChange={(event) => setTeacherId(event.target.value)}
                   className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
                 >
-                  <option value="">Select coach</option>
+                  <option value="">No teacher selected</option>
                   {coaches.map((coach) => (
                     <option key={coach.id} value={coach.id}>
                       {coach.full_name || 'Unnamed Professor'}
@@ -707,19 +740,14 @@ export default function SchedulePage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-400">Professor (Secondary)</label>
-                <select
-                  value={coachSecondaryId}
-                  onChange={(event) => setCoachSecondaryId(event.target.value)}
+                <label className="mb-1 block text-xs font-medium text-zinc-400">Attendees (optional)</label>
+                <textarea
+                  value={attendeesText}
+                  onChange={(event) => setAttendeesText(event.target.value)}
+                  placeholder="Comma-separated names or member IDs"
+                  rows={3}
                   className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
-                >
-                  <option value="">None</option>
-                  {coaches.map((coach) => (
-                    <option key={coach.id} value={coach.id}>
-                      {coach.full_name || 'Unnamed Professor'}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 
@@ -734,7 +762,7 @@ export default function SchedulePage() {
               <button
                 type="button"
                 onClick={saveClassPlan}
-                disabled={isSavingPlan || !coachPrimaryId || !openSlotId}
+                disabled={isSavingPlan || !(topic.trim() || techniques.trim()) || !openSlotId}
                 className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {isSavingPlan ? 'Saving...' : 'Guardar'}
