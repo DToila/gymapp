@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from 'lucide-react';
 import { ClassLogRow, CoachProfile } from '../../../lib/database';
 
 type LogMode = 'view' | 'edit';
@@ -24,11 +25,58 @@ interface ClassLogPanelProps {
   onEdit: () => void;
   onSave: () => void;
   onCancel: () => void;
+  onClose?: () => void;
 }
+
+type ContentSection = {
+  title: string;
+  details: string[];
+};
 
 const badgeBase = 'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide';
 
 const splitAttendees = (value?: string[] | null): string[] => (value || []).map((item) => item.trim()).filter(Boolean);
+
+const toReadableText = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  const letters = trimmed.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, '');
+  const isMostlyUppercase = letters.length > 4 && letters === letters.toUpperCase();
+  if (!isMostlyUppercase) return trimmed;
+
+  return trimmed
+    .toLowerCase()
+    .replace(/\b(gb1|gb2|gbk|mc|pc1|pc2|gi|no-gi|nogi)\b/gi, (match) => match.toUpperCase())
+    .replace(/(^|[.!?]\s+)([a-zà-öø-ÿ])/g, (match) => match.toUpperCase());
+};
+
+const parseContentSections = (value: string): ContentSection[] => {
+  const normalized = value.replace(/\r\n/g, '\n').trim();
+  if (!normalized) return [];
+
+  return normalized
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .flatMap((block) => {
+      const lines = block.split('\n').map((line) => line.trim()).filter(Boolean);
+      if (lines.length === 0) return [];
+
+      if (lines.length === 1) {
+        const [maybeTitle, ...rest] = lines[0].split(/:\s+/);
+        if (rest.length > 0) {
+          return [{ title: toReadableText(maybeTitle), details: [toReadableText(rest.join(': '))] }];
+        }
+        return [{ title: toReadableText(lines[0]), details: [] }];
+      }
+
+      return [{
+        title: toReadableText(lines[0].replace(/:$/, '')),
+        details: lines.slice(1).map(toReadableText),
+      }];
+    });
+};
 
 export default function ClassLogPanel({
   title,
@@ -50,6 +98,7 @@ export default function ClassLogPanel({
   onEdit,
   onSave,
   onCancel,
+  onClose,
 }: ClassLogPanelProps) {
   const teacherName =
     coaches.find((coach) => coach.id === (mode === 'edit' ? teacherId : log?.teacher_id || ''))?.full_name ||
@@ -58,34 +107,76 @@ export default function ClassLogPanel({
 
   const attendees = splitAttendees(mode === 'edit' ? attendeesText.split(',') : log?.attendees || []);
   const canSave = Boolean((content.trim() || topic.trim()) && !isSaving);
+  const contentSections = parseContentSections(log?.content || '');
+  const statusLabel = log?.content ? 'Registado' : 'Sem registo';
+  const closePanel = onClose || onCancel;
 
   return (
-    <div className="space-y-3">
-      <div>
-        <p className="text-base font-semibold text-zinc-100">{title}</p>
-        <p className="mt-0.5 text-xs text-zinc-400">{subtitle}</p>
+    <div className="relative">
+      <button
+        type="button"
+        onClick={closePanel}
+        aria-label="Fechar"
+        title="Fechar"
+        className="sticky right-0 top-0 z-30 ml-auto flex h-10 w-10 items-center justify-center rounded-full border border-[#343434] bg-[#171717] text-zinc-300 shadow-[0_10px_24px_rgba(0,0,0,0.35)] transition hover:border-[#4a4a4a] hover:text-white"
+      >
+        <X size={18} />
+      </button>
+
+      <div className="sticky top-0 z-20 -mx-5 -mt-10 border-b border-[#242424] bg-[#121212]/95 px-5 pb-5 pt-5 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="pr-12">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#c81d25]">{title}</p>
+          <h2 className="mt-1 text-2xl font-black leading-tight text-white">{mode === 'edit' ? topic || 'Novo log de aula' : log?.topic || 'Aula sem tópico'}</h2>
+          <p className="mt-2 text-sm leading-5 text-zinc-400">{subtitle}</p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className={`${badgeBase} border-[#5b1f24] bg-[rgba(200,29,37,0.14)] text-rose-200`}>{teacherName}</span>
+          <span className={`${badgeBase} ${log?.content ? 'border-[#1f4d33] bg-[#112117] text-green-300' : 'border-[#3a3a3a] bg-[#161616] text-zinc-400'}`}>
+            {statusLabel}
+          </span>
+          {log?.updated_at ? (
+            <span className={`${badgeBase} border-[#2a2a2a] bg-[#151515] text-zinc-400`}>
+              Atualizado {new Date(log.updated_at).toLocaleDateString('pt-PT')}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {mode === 'view' ? (
-        <div className="space-y-3 rounded-2xl border border-[#242424] bg-[#111111] p-4 shadow-[0_12px_24px_rgba(0,0,0,0.28)]">
-          <div className="flex flex-wrap gap-2">
-            <span className={`${badgeBase} border-[#3a3a3a] bg-[#161616] text-zinc-300`}>{log?.topic || 'Sem tópico'}</span>
-            <span className={`${badgeBase} border-[#5b1f24] bg-[rgba(200,29,37,0.14)] text-rose-200`}>{teacherName}</span>
-            {log?.updated_at ? (
-              <span className={`${badgeBase} border-[#2a2a2a] bg-[#151515] text-zinc-400`}>
-                Atualizado {new Date(log.updated_at).toLocaleDateString('pt-PT')}
-              </span>
-            ) : null}
-          </div>
-
-          <div className="rounded-xl border border-[#232323] bg-[#151515] p-4 text-sm leading-6 text-zinc-200 whitespace-pre-wrap">
-            {log?.content || 'Sem conteúdo registado para esta aula.'}
-          </div>
+        <div className="space-y-4 pt-5">
+          <section>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">Conteúdo da aula</p>
+            {contentSections.length > 0 ? (
+              <div className="space-y-3">
+                {contentSections.map((section, index) => (
+                  <article key={`${section.title}-${index}`} className="rounded-xl border border-[#242424] bg-[#151515] p-4">
+                    <h3 className="text-sm font-bold leading-5 text-zinc-100">{section.title}</h3>
+                    {section.details.length > 0 ? (
+                      <ul className="mt-3 space-y-2 border-l border-[#333] pl-4 text-sm leading-6 text-zinc-300">
+                        {section.details.map((detail, detailIndex) => (
+                          <li key={`${detail}-${detailIndex}`}>{detail}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-[#232323] bg-[#151515] p-4 text-sm leading-6 text-zinc-400">
+                Sem conteúdo registado para esta aula.
+              </div>
+            )}
+          </section>
 
           {showAttendees ? (
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-zinc-500">Attendees</p>
-              <div className="flex flex-wrap gap-2">
+            <details className="rounded-xl border border-[#242424] bg-[#101010] p-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                <span>Presenças</span>
+                <span className="rounded-full border border-[#2a2a2a] bg-[#151515] px-2 py-0.5 text-[11px] normal-case tracking-normal text-zinc-300">
+                  {attendees.length}
+                </span>
+              </summary>
+              <div className="mt-3 flex flex-wrap gap-2">
                 {attendees.length > 0 ? (
                   attendees.map((attendee) => (
                     <span key={attendee} className="rounded-full border border-[#2a2a2a] bg-[#151515] px-3 py-1 text-xs text-zinc-200">
@@ -93,14 +184,14 @@ export default function ClassLogPanel({
                     </span>
                   ))
                 ) : (
-                  <span className="text-sm text-zinc-500">No attendees logged.</span>
+                  <span className="text-sm text-zinc-500">Sem presenças registadas.</span>
                 )}
               </div>
-            </div>
+            </details>
           ) : null}
 
           {canEdit ? (
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-1">
               <button
                 type="button"
                 onClick={onEdit}
@@ -110,26 +201,16 @@ export default function ClassLogPanel({
               </button>
             </div>
           ) : null}
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-xl border border-[#2b2b2b] bg-[#151515] px-4 py-2 text-sm text-zinc-300"
-            >
-              Fechar
-            </button>
-          </div>
         </div>
       ) : (
-        <div className="space-y-3 rounded-2xl border border-[#242424] bg-[#111111] p-4 shadow-[0_12px_24px_rgba(0,0,0,0.28)]">
+        <div className="space-y-4 pt-5">
           <div>
             <label className="mb-1 block text-xs font-medium text-zinc-400">Tópico</label>
             <input
               value={topic}
               onChange={(event) => onChangeTopic(event.target.value)}
-              placeholder="Weekly topic / focus…"
-              className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
+              placeholder="Foco da semana"
+              className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none focus:border-[#c81d25]"
             />
           </div>
 
@@ -138,19 +219,19 @@ export default function ClassLogPanel({
             <textarea
               value={content}
               onChange={(event) => onChangeContent(event.target.value)}
-              placeholder="What was covered in this class…"
-              rows={4}
-              className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
+              placeholder="O que foi trabalhado nesta aula"
+              rows={8}
+              className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none focus:border-[#c81d25]"
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">Teacher (optional)</label>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Professor</label>
               <select
                 value={teacherId}
                 onChange={(event) => onChangeTeacher(event.target.value)}
-                className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
+                className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none focus:border-[#c81d25]"
               >
                 <option value="">No teacher selected</option>
                 {coaches.map((coach) => (
@@ -162,16 +243,21 @@ export default function ClassLogPanel({
             </div>
 
             {showAttendees ? (
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-400">Attendees (optional)</label>
-                <textarea
-                  value={attendeesText}
-                  onChange={(event) => onChangeAttendees(event.target.value)}
-                  placeholder="Comma-separated names or member IDs"
-                  rows={3}
-                  className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none"
-                />
-              </div>
+              <details className="rounded-xl border border-[#242424] bg-[#101010] p-4">
+                <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                  Presenças
+                </summary>
+                <div className="mt-3">
+                  <label className="mb-1 block text-xs font-medium text-zinc-400">Alunos presentes</label>
+                  <textarea
+                    value={attendeesText}
+                    onChange={(event) => onChangeAttendees(event.target.value)}
+                    placeholder="Nomes ou IDs separados por vírgulas"
+                    rows={3}
+                    className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2 text-sm text-zinc-100 outline-none focus:border-[#c81d25]"
+                  />
+                </div>
+              </details>
             ) : null}
           </div>
 
@@ -179,7 +265,7 @@ export default function ClassLogPanel({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-xl border border-[#2b2b2b] bg-[#151515] px-3 py-2 text-sm text-zinc-300"
+              className="rounded-xl border border-[#2b2b2b] bg-[#151515] px-3 py-2 text-sm text-zinc-300 transition hover:border-[#3a3a3a] hover:text-white"
             >
               Cancelar
             </button>
@@ -187,9 +273,9 @@ export default function ClassLogPanel({
               type="button"
               onClick={onSave}
               disabled={!canSave}
-              className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-xl border border-[#c81d25] bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#a8141c] disabled:opacity-50"
             >
-              {isSaving ? 'Saving...' : 'Guardar'}
+              {isSaving ? 'A guardar...' : 'Guardar'}
             </button>
           </div>
         </div>

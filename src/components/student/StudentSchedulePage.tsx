@@ -75,6 +75,7 @@ export default function StudentSchedulePage() {
   const [view, setView] = useState<'today' | 'week'>('today');
   const [slotIdByCode, setSlotIdByCode] = useState<Record<string, string>>({});
   const [classLogsByKey, setClassLogsByKey] = useState<Record<string, ClassLogRow>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedClassLog, setSelectedClassLog] = useState<{
     dayKey: DayKey;
     dateKey: string;
@@ -126,9 +127,13 @@ export default function StudentSchedulePage() {
         nextLogsByKey[`${log.schedule_id}|${log.date}`] = log;
       });
       setClassLogsByKey(nextLogsByKey);
+      setLoadError(null);
     };
 
-    loadLogs().catch((error) => console.error('Erro loading student schedule logs:', error));
+    loadLogs().catch((error) => {
+      console.error('Erro loading student schedule logs:', error);
+      setLoadError('Could not load class logs from the database. Please refresh or try again later.');
+    });
   }, [scheduleItems, weekDatesByDay]);
 
   const classesByDay = useMemo(() => {
@@ -230,6 +235,11 @@ export default function StudentSchedulePage() {
       }
     >
       <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
+        {loadError ? (
+          <div className="mb-3 rounded-xl border border-[#5b1f24] bg-[#2a1214] px-3 py-2 text-sm text-rose-300">
+            {loadError}
+          </div>
+        ) : null}
         <div className="mb-3 flex items-center justify-between">
           <p className="text-2xl font-semibold text-zinc-100">Horário</p>
           <div className="flex gap-2">
@@ -250,8 +260,15 @@ export default function StudentSchedulePage() {
       </section>
 
       {selectedClassLog ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-6"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedClassLog(null);
+            }
+          }}
+        >
+          <div className="max-h-[80vh] w-full max-w-[700px] overflow-y-auto rounded-2xl border border-[#2a2a2a] bg-[#121212] p-5 shadow-[0_22px_56px_rgba(0,0,0,0.65)] sm:p-6">
             <ClassLogPanel
               title="Class Log"
               subtitle={`${dayOrder.find((day) => day.key === selectedClassLog.dayKey)?.label || ''} • ${selectedClassLog.dateKey} • ${selectedClassLog.timeRange} • ${selectedClassLog.className}`}
@@ -271,16 +288,8 @@ export default function StudentSchedulePage() {
               onEdit={() => {}}
               onSave={() => {}}
               onCancel={() => setSelectedClassLog(null)}
+              onClose={() => setSelectedClassLog(null)}
             />
-            <div className="mt-3 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSelectedClassLog(null)}
-                className="rounded-xl border border-[#2b2b2b] bg-[#151515] px-4 py-2 text-sm text-zinc-300"
-              >
-                Fechar
-              </button>
-            </div>
           </div>
         </div>
       ) : null}

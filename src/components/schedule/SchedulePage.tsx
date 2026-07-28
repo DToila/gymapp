@@ -31,16 +31,6 @@ const DAY_ORDER = [
 
 type DayKey = (typeof DAY_ORDER)[number]['key'];
 type ToastState = { type: 'success' | 'error'; message: string } | null;
-type PlanMode = 'remote' | 'local';
-
-interface LocalClassPlanDraft {
-  topic: string;
-  content: string;
-  teacher_id: string | null;
-  teacher_name: string | null;
-  attendees: string[] | null;
-  updated_at: string;
-}
 
 interface EditingSlot {
   slotCode: string;
@@ -50,7 +40,6 @@ interface EditingSlot {
   dateKey: string;
   timeRange: string;
   className: string;
-  anchorRect: DOMRect;
 }
 
 function dayNumberToKey(n: number): DayKey | null {
@@ -63,7 +52,6 @@ function parseStartMinutes(t: string): number {
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const LOCAL_CLASS_PLAN_STORAGE_KEY = 'gymapp_schedule_class_logs_local_v1';
 
 const parseAttendees = (value: string): string[] | null => {
   const attendees = value
@@ -82,12 +70,10 @@ export default function SchedulePage() {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [coaches, setCoaches] = useState<CoachProfile[]>([]);
   const [currentRole, setCurrentRole] = useState<AppRole>('coach');
   const [slotIdByCode, setSlotIdByCode] = useState<Record<string, string>>({});
   const [planExistsMap, setPlanExistsMap] = useState<Record<string, boolean>>({});
-  const [planMode, setPlanMode] = useState<PlanMode>('remote');
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
   const [plan, setPlan] = useState<ClassLogRow | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +88,6 @@ export default function SchedulePage() {
   const [toast, setToast] = useState<ToastState>(null);
   const [selectedMonday, setSelectedMonday] = useState<Date | null>(null);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
-  const popoverRef = useRef<HTMLDivElement | null>(null);
 
   const getWeekMonday = (date: Date): Date => {
     const d = new Date(date);
@@ -153,59 +138,6 @@ export default function SchedulePage() {
 
   const planExistsKey = (slotId: string, dateKey: string) => `${slotId}|${dateKey}`;
 
-  const readLocalClassPlans = (): Record<string, LocalClassPlanDraft> => {
-    if (typeof window === 'undefined') return {};
-    try {
-      const raw = window.localStorage.getItem(LOCAL_CLASS_PLAN_STORAGE_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch {
-      return {};
-    }
-  };
-
-  const writeLocalClassPlans = (data: Record<string, LocalClassPlanDraft>) => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(LOCAL_CLASS_PLAN_STORAGE_KEY, JSON.stringify(data));
-  };
-
-  const loadLocalClassPlan = (slotCode: string, dateKey: string): ClassLogRow | null => {
-    const all = readLocalClassPlans();
-    const key = `${slotCode}|${dateKey}`;
-    const draft = all[key];
-    if (!draft) return null;
-    return {
-      id: key,
-      schedule_id: slotCode,
-      date: dateKey,
-      topic: draft.topic,
-      content: draft.content,
-      teacher_id: draft.teacher_id,
-      teacher_name: draft.teacher_name,
-      attendees: draft.attendees,
-      created_at: draft.updated_at,
-      updated_at: draft.updated_at,
-    };
-  };
-
-  const saveLocalClassPlan = (
-    slotCode: string,
-    dateKey: string,
-    payload: { topic: string; content: string; teacher_id: string | null; teacher_name: string | null; attendees: string[] | null }
-  ) => {
-    const all = readLocalClassPlans();
-    all[`${slotCode}|${dateKey}`] = {
-      topic: payload.topic,
-      content: payload.content,
-      teacher_id: payload.teacher_id,
-      teacher_name: payload.teacher_name,
-      attendees: payload.attendees,
-      updated_at: new Date().toISOString(),
-    };
-    writeLocalClassPlans(all);
-  };
-
   useEffect(() => {
     if (!isModalOpen) return;
     const handleEscape = (event: KeyboardEvent) => {
@@ -222,13 +154,6 @@ export default function SchedulePage() {
       document.body.style.overflow = '';
     };
   }, [isModalOpen]);
-
-  useEffect(() => {
-    const updateDeviceMode = () => setIsMobile(window.innerWidth < 768);
-    updateDeviceMode();
-    window.addEventListener('resize', updateDeviceMode);
-    return () => window.removeEventListener('resize', updateDeviceMode);
-  }, []);
 
   useEffect(() => {
     getCoachProfiles().then(setCoaches).catch(() => setCoaches([]));
@@ -258,23 +183,6 @@ export default function SchedulePage() {
   }, []);
 
   useEffect(() => {
-    if (planMode !== 'local') return;
-
-    const localPlans = readLocalClassPlans();
-    const next: Record<string, boolean> = {};
-
-    officialSchedule.forEach((slot) => {
-      const dayDate = weekDatesByDay[slot.dayOfWeek].dateKey;
-      if (!dayDate) return;
-      if (localPlans[`${slot.id}|${dayDate}`]) {
-        next[planExistsKey(slot.id, dayDate)] = true;
-      }
-    });
-
-    setPlanExistsMap(next);
-  }, [planMode, weekDatesByDay]);
-
-  useEffect(() => {
     const slotRows = officialSchedule.map((slot) => ({
       code: slot.id,
       day_of_week: slot.dayOfWeek,
@@ -287,8 +195,6 @@ export default function SchedulePage() {
       default_coach_id: null,
     }));
 
-    if (planMode === 'local') return;
-
     ensureScheduleSlots(slotRows)
       .then((rows) => {
         const nextMap: Record<string, string> = {};
@@ -299,18 +205,12 @@ export default function SchedulePage() {
       })
       .catch((error) => {
         console.error('Erro ensuring schedule slots:', error);
-        const message = String(error?.message || error || '');
-        if (/schema cache|schedule_slots|class_logs/i.test(message)) {
-          setPlanMode('local');
-          setToast({ type: 'error', message: 'Horário DB tables missing. Using local class-plan mode.' });
-          return;
-        }
-        setToast({ type: 'error', message: 'Could not load schedule slots.' });
+        const message = String(error?.message || error || 'Erro desconhecido.');
+        setToast({ type: 'error', message: `Could not load schedule from the database: ${message}` });
       });
-  }, [planMode]);
+  }, []);
 
   useEffect(() => {
-    if (planMode !== 'remote') return;
     if (Object.keys(slotIdByCode).length === 0) return;
 
     const slotIds = Object.values(slotIdByCode);
@@ -327,7 +227,7 @@ export default function SchedulePage() {
       .catch((error) => {
         console.error('Erro loading plan indicators:', error);
       });
-  }, [planMode, slotIdByCode, weekDatesByDay]);
+  }, [slotIdByCode, weekDatesByDay]);
 
   useEffect(() => {
     if (!toast) return;
@@ -420,40 +320,7 @@ export default function SchedulePage() {
     setError(null);
     setPlan(null);
 
-    if (planMode === 'local') {
-      const local = loadLocalClassPlan(slotCode, dateKey);
-      console.log('FETCH_SLOT_START', slotCode);
-      console.log('FETCH_SLOT_OK', { slotId: slotCode, slotCode, mode: 'local' });
-      console.log('FETCH_PLAN_OK', local);
-      const nextTopic = local?.topic || '';
-      const nextTechniques = local?.content || '';
-      const nextTeacher = local?.teacher_id || '';
-      const nextAttendees = local?.attendees?.join(', ') || '';
-
-      setPlan(local);
-      setTopic(nextTopic);
-      setTechniques(nextTechniques);
-      setTeacherId(nextTeacher);
-      setAttendeesText(nextAttendees);
-      setInitialPlanSnapshot(
-        JSON.stringify({
-          topic: nextTopic,
-          techniques: nextTechniques,
-          teacherId: nextTeacher,
-          attendeesText: nextAttendees,
-        })
-      );
-      setEditingSlot((prev) => {
-        if (!prev || prev.slotCode !== slotCode || prev.dateKey !== dateKey) return prev;
-        return { ...prev, slotDbId: slotCode };
-      });
-      setEditorMode(local ? 'view' : 'edit');
-      setIsLoadingPlan(false);
-      return;
-    }
-
     let slotDbId: string | undefined = slotIdByCode[slotCode];
-    console.log('FETCH_SLOT_START', slotCode);
 
     try {
       if (!slotDbId) {
@@ -490,10 +357,7 @@ export default function SchedulePage() {
       }
 
       const resolvedSlotId = slotDbId;
-
-      console.log('FETCH_SLOT_OK', { slotId: resolvedSlotId, slotCode });
       const existing = await getClassLog(resolvedSlotId, dateKey);
-      console.log('FETCH_PLAN_OK', existing);
 
       setPlan(existing);
 
@@ -522,47 +386,17 @@ export default function SchedulePage() {
       });
     } catch (err: any) {
       console.error('FETCH_SLOT_ERR', err);
-      const message = String(err?.message || 'Could not load class plan.');
-      if (/schema cache|schedule_slots|class_logs/i.test(message)) {
-        setPlanMode('local');
-        const local = loadLocalClassPlan(slotCode, dateKey);
-        const nextTopic = local?.topic || '';
-        const nextTechniques = local?.content || '';
-        const nextTeacher = local?.teacher_id || '';
-        const nextAttendees = local?.attendees?.join(', ') || '';
-
-        setPlan(local);
-        setTopic(nextTopic);
-        setTechniques(nextTechniques);
-        setTeacherId(nextTeacher);
-        setAttendeesText(nextAttendees);
-        setInitialPlanSnapshot(
-          JSON.stringify({
-            topic: nextTopic,
-            techniques: nextTechniques,
-            teacherId: nextTeacher,
-            attendeesText: nextAttendees,
-          })
-        );
-        setEditingSlot((prev) => {
-          if (!prev || prev.slotCode !== slotCode || prev.dateKey !== dateKey) return prev;
-          return { ...prev, slotDbId: slotCode };
-        });
-        setError(null);
-        setToast({ type: 'error', message: 'Horário DB tables missing. Editing in local mode.' });
-        setEditorMode(local ? 'view' : 'edit');
-      } else {
-        setPlan(null);
-        setTopic('');
-        setTechniques('');
-        setTeacherId('');
-        setAttendeesText('');
-        setInitialPlanSnapshot(
-          JSON.stringify({ topic: '', techniques: '', teacherId: '', attendeesText: '' })
-        );
-        setError(message);
-        setEditorMode('edit');
-      }
+      const message = String(err?.message || 'Could not load class log from the database.');
+      setPlan(null);
+      setTopic('');
+      setTechniques('');
+      setTeacherId('');
+      setAttendeesText('');
+      setInitialPlanSnapshot(
+        JSON.stringify({ topic: '', techniques: '', teacherId: '', attendeesText: '' })
+      );
+      setError(message);
+      setEditorMode('edit');
     } finally {
       setIsLoadingPlan(false);
     }
@@ -571,20 +405,9 @@ export default function SchedulePage() {
   const openClassPlanEditor = async (
     item: (typeof studentSchedule)[number],
     dayKey: DayKey,
-    dayLabel: string,
-    anchorRect: DOMRect
+    dayLabel: string
   ) => {
     const dateKey = weekDatesByDay[dayKey].dateKey;
-
-    console.log('SLOT_CLICK', {
-      slotId: slotIdByCode[item.id] ?? null,
-      slot: item,
-      dateKey,
-    });
-
-    if (!slotIdByCode[item.id]) {
-      console.log('SLOT_CLICK_SLOT_ID_UNDEFINED', { slotCode: item.id, slotId: slotIdByCode[item.id] });
-    }
 
     setIsLoadingPlan(true);
     setError(null);
@@ -598,7 +421,6 @@ export default function SchedulePage() {
       dateKey,
       timeRange: item.time.replace('-', '–'),
       className: `${item.room} • ${item.level}`,
-      anchorRect,
     });
 
     await fetchSlotAndPlan(item.id, dateKey);
@@ -614,49 +436,8 @@ export default function SchedulePage() {
       return;
     }
 
-    if (planMode === 'local') {
-      saveLocalClassPlan(editingSlot.slotCode, editingSlot.dateKey, {
-        topic,
-        content,
-        teacher_id: teacherId || null,
-        teacher_name: teacherId ? coaches.find((coach) => coach.id === teacherId)?.full_name || null : null,
-        attendees,
-      });
-
-      setPlanExistsMap((prev) => ({
-        ...prev,
-        [planExistsKey(editingSlot.slotCode, editingSlot.dateKey)]: true,
-      }));
-
-      setToast({ type: 'success', message: 'Saved locally' });
-      setIsLoadingPlan(false);
-      setError(null);
-      setPlan({
-        id: `${editingSlot.slotCode}|${editingSlot.dateKey}`,
-        schedule_id: editingSlot.slotCode,
-        date: editingSlot.dateKey,
-        topic,
-        content,
-        teacher_id: teacherId || null,
-        teacher_name: teacherId ? coaches.find((coach) => coach.id === teacherId)?.full_name || null : null,
-        attendees,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      setEditorMode('view');
-      setInitialPlanSnapshot(
-        JSON.stringify({
-          topic,
-          techniques: content,
-          teacherId: teacherId || '',
-          attendeesText,
-        })
-      );
-      return;
-    }
-
     if (!editingSlot.slotDbId) {
-      setError('Slot id is not ready yet. Please retry.');
+      setToast({ type: 'error', message: 'Slot id is not ready yet. Please retry.' });
       return;
     }
 
@@ -688,9 +469,10 @@ export default function SchedulePage() {
           attendeesText,
         })
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro saving class plan:', error);
-      setToast({ type: 'error', message: 'Could not save class plan.' });
+      const message = String(error?.message || 'Unknown error.');
+      setToast({ type: 'error', message: `Could not save to the database: ${message}` });
     } finally {
       setIsSavingPlan(false);
     }
@@ -726,11 +508,7 @@ export default function SchedulePage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-3 rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.34)]">
-            {planMode === 'local' ? (
-              <p className="text-xs text-amber-300">Local mode ativo (database table missing).</p>
-            ) : null}
-
+          <div className="space-y-3">
             <ClassLogPanel
               title="Class Log"
               subtitle={`${dateLabel} • ${editingSlot.timeRange} • ${editingSlot.className}`}
@@ -758,48 +536,13 @@ export default function SchedulePage() {
               }}
               onSave={saveClassPlan}
               onCancel={attemptCloseEditor}
+              onClose={attemptCloseEditor}
             />
           </div>
         )}
       </div>
     );
   };
-
-  const desktopPopoverStyle: React.CSSProperties = useMemo(() => {
-    if (!editingSlot) return {};
-    const width = 380;
-    const margin = 12;
-
-    const left = clamp(
-      editingSlot.anchorRect.left + editingSlot.anchorRect.width / 2 - width / 2,
-      margin,
-      window.innerWidth - width - margin
-    );
-
-    const spaceBelow = window.innerHeight - editingSlot.anchorRect.bottom - margin;
-    const spaceAbove = editingSlot.anchorRect.top - margin;
-
-    let top: number;
-    let maxHeight: number;
-
-    if (spaceBelow >= spaceAbove) {
-      top = editingSlot.anchorRect.bottom + margin;
-      maxHeight = spaceBelow;
-    } else {
-      maxHeight = spaceAbove;
-      top = Math.max(margin, editingSlot.anchorRect.top - maxHeight - margin);
-    }
-
-    return {
-      position: 'fixed',
-      left,
-      top,
-      width,
-      maxHeight: Math.min(maxHeight, window.innerHeight - 2 * margin),
-      overflowY: 'auto',
-      zIndex: 130,
-    };
-  }, [editingSlot]);
 
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
@@ -925,9 +668,8 @@ export default function SchedulePage() {
                               key={item.id}
                               className="relative w-full rounded-xl border border-[#262626] bg-[#121212] px-3 py-2 text-left transition hover:bg-white/5"
                               title={`${item.level} • ${item.type}${item.notes ? ` • ${item.notes}` : ''}`}
-                              onClick={(event) => {
-                                const rect = (event.currentTarget as HTMLButtonElement).getBoundingClientRect();
-                                openClassPlanEditor(item, key, label, rect);
+                              onClick={() => {
+                                openClassPlanEditor(item, key, label);
                               }}
                             >
                               {planExistsMap[
@@ -1003,30 +745,16 @@ export default function SchedulePage() {
 
       {editingSlot ? (
         <div
-          className="fixed inset-0 z-[120]"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 px-4 py-6"
           onMouseDown={(event) => {
-            if (!popoverRef.current) return;
-            const target = event.target as Node;
-            if (!popoverRef.current.contains(target)) {
+            if (event.target === event.currentTarget) {
               attemptCloseEditor();
             }
           }}
         >
-          {isMobile ? (
-            <div className="fixed inset-x-0 bottom-0 z-[130] max-h-[85vh] overflow-y-auto rounded-t-2xl border border-[#2a2a2a] bg-[#121212] p-4 shadow-[0_-16px_36px_rgba(0,0,0,0.55)]" ref={popoverRef}>
-              {renderClassPlanForm()}
-            </div>
-          ) : (
-            <div style={desktopPopoverStyle} ref={popoverRef}>
-              <div className="relative rounded-2xl border border-[#2a2a2a] bg-[#121212] p-4 shadow-[0_20px_44px_rgba(0,0,0,0.58)]">
-                <span
-                  className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-[#2a2a2a] bg-[#121212]"
-                  aria-hidden
-                />
-                {renderClassPlanForm()}
-              </div>
-            </div>
-          )}
+          <div className="max-h-[80vh] w-full max-w-[700px] overflow-y-auto rounded-2xl border border-[#2a2a2a] bg-[#121212] p-5 shadow-[0_22px_56px_rgba(0,0,0,0.65)] sm:p-6">
+            {renderClassPlanForm()}
+          </div>
         </div>
       ) : null}
 
