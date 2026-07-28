@@ -88,10 +88,10 @@ export async function middleware(request: NextRequest) {
 
   const profileRole = profile?.role && isRole(profile.role) ? profile.role : null
   const metadataRole = roleFromUser(user)
-  const role = profileRole || metadataRole || 'coach'
+  const role = profileRole || metadataRole
   const allowed = allowedRolesForPath(pathname)
 
-  if (allowed && !allowed.includes(role)) {
+  if (!role || (allowed && !allowed.includes(role))) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

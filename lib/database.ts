@@ -103,12 +103,15 @@ export const deleteMember = async (id: string): Promise<void> => {
   if (error) throw error
 }
 
+const normalizeEmail = (email: string): string => email.trim().toLowerCase()
+
 export const getMemberByEmail = async (email: string): Promise<Member | null> => {
+  const normalizedEmail = normalizeEmail(email)
   const { data, error } = await supabase
     .from('members')
     .select('*')
-    .eq('email', email)
-    .single()
+    .ilike('email', normalizedEmail)
+    .maybeSingle()
 
   if (error && error.code !== 'PGRST116') throw error
   return data || null

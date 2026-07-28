@@ -4,6 +4,14 @@ import { createSupabaseServerClient } from '../../../../../lib/supabaseServer'
 
 type AppRole = 'admin' | 'staff' | 'coach'
 
+type AdminUser = {
+  id: string
+  email: string | null
+  full_name: string | null
+  role: AppRole
+  created_at: string
+}
+
 const isRole = (value: string): value is AppRole => {
   return value === 'admin' || value === 'staff' || value === 'coach'
 }
@@ -91,6 +99,38 @@ const ensureAdmin = async () => {
   return { user }
 }
 
+const findUserByEmail = async (adminClient: any, email: string) => {
+  const listed = await adminClient.auth.admin.listUsers()
+  if (listed.error) {
+    return { error: listed.error.message }
+  }
+
+  const existingUser = listed.data.users.find((user: { email?: string | null }) => user.email?.toLowerCase() === email)
+  return { existingUser }
+}
+
+const upsertProfile = async (
+  adminClient: any,
+  params: { id: string; email: string; fullName: string; role: AppRole }
+) => {
+  const profilePayload = {
+    id: params.id,
+    email: params.email,
+    full_name: params.fullName || null,
+    role: params.role,
+  }
+
+  const { error } = await (adminClient.from('profiles') as any).upsert(profilePayload, { onConflict: 'id' })
+
+  if (error && !isProfilesTableMissingError(error)) {
+    return { error: error.message }
+  }
+
+  return {}
+}
+
+const normalizeEmail = (value: string) => value.trim().toLowerCase()
+
 export async function GET() {
   const env = getEnv()
   if ('error' in env) {
@@ -116,7 +156,7 @@ export async function GET() {
       return NextResponse.json({ error: listed.error.message }, { status: 500 })
     }
 
-    const fallbackItems = (listed.data.users || []).map((user) => ({
+    const fallbackItems: AdminUser[] = (listed.data.users || []).map((user) => ({
       id: user.id,
       email: user.email || null,
       full_name: fullNameFromUser(user),
@@ -140,7 +180,7 @@ export async function POST(request: Request) {
   if ('error' in access) return access.error
 
   const body = await request.json().catch(() => null)
-  const email = String(body?.email || '').trim().toLowerCase()
+  const email = normalizeEmail(String(body?.email || ''))
   const roleValue = String(body?.role || '').trim()
   const fullName = String(body?.fullName || '').trim()
   const password = String(body?.password || '').trim()
@@ -156,44 +196,34 @@ export async function POST(request: Request) {
   const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)
 
   if (password) {
-    const listed = await adminClient.auth.admin.listUsers()
-    if (listed.error) {
-      return NextResponse.json({ error: listed.error.message }, { status: 500 })
+    const lookup = await findUserByEmail(adminClient, email)
+    if ('error' in lookup) {
+      return NextResponse.json({ error: lookup.error }, { status: 500 })
     }
 
-    const existingUser = listed.data.users.find((user) => user.email?.toLowerCase() === email)
+    const existingUser = lookup.existingUser
 
     if (existingUser) {
       const updateResult = await adminClient.auth.admin.updateUserById(existingUser.id, {
         password,
         email_confirm: true,
-        app_metadata: {
-          role: roleValue,
-        },
-        user_metadata: {
-          role: roleValue,
-          full_name: fullName || null,
-        },
+        app_metadata: { role: roleValue },
+        user_metadata: { role: roleValue, full_name: fullName || null },
       })
 
       if (updateResult.error) {
         return NextResponse.json({ error: updateResult.error.message }, { status: 500 })
       }
 
-      const { error: profileUpsertError } = await adminClient
-        .from('profiles')
-        .upsert(
-          {
-            id: existingUser.id,
-            email,
-            full_name: fullName || null,
-            role: roleValue,
-          },
-          { onConflict: 'id' }
-        )
+      const profileUpsert = await upsertProfile(adminClient, {
+        id: existingUser.id,
+        email,
+        fullName,
+        role: roleValue as AppRole,
+      })
 
-      if (profileUpsertError && !isProfilesTableMissingError(profileUpsertError)) {
-        return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
+      if ('error' in profileUpsert) {
+        return NextResponse.json({ error: profileUpsert.error }, { status: 500 })
       }
 
       return NextResponse.json({ success: true, mode: 'password_updated' })
@@ -203,13 +233,8 @@ export async function POST(request: Request) {
       email,
       password,
       email_confirm: true,
-      app_metadata: {
-        role: roleValue,
-      },
-      user_metadata: {
-        role: roleValue,
-        full_name: fullName || null,
-      },
+      app_metadata: { role: roleValue },
+      user_metadata: { role: roleValue, full_name: fullName || null },
     })
 
     if (createResult.error) {
@@ -221,20 +246,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User created but no user id returned.' }, { status: 500 })
     }
 
-    const { error: profileUpsertError } = await adminClient
-      .from('profiles')
-      .upsert(
-        {
-          id: createdId,
-          email,
-          full_name: fullName || null,
-          role: roleValue,
-        },
-        { onConflict: 'id' }
-      )
+    const profileUpsert = await upsertProfile(adminClient, {
+      id: createdId,
+      email,
+      fullName,
+      role: roleValue as AppRole,
+    })
 
-    if (profileUpsertError && !isProfilesTableMissingError(profileUpsertError)) {
-      return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
+    if ('error' in profileUpsert) {
+      return NextResponse.json({ error: profileUpsert.error }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, mode: 'created_with_password' })
@@ -253,26 +273,156 @@ export async function POST(request: Request) {
   }
 
   const invitedUserId = invite.data.user?.id
-
   if (!invitedUserId) {
     return NextResponse.json({ error: 'Invite sent but no user id returned.' }, { status: 500 })
   }
 
-  const { error: profileUpsertError } = await adminClient
-    .from('profiles')
-    .upsert(
-      {
-        id: invitedUserId,
-        email,
-        full_name: fullName || null,
-        role: roleValue,
-      },
-      { onConflict: 'id' }
-    )
+  const profileUpsert = await upsertProfile(adminClient, {
+    id: invitedUserId,
+    email,
+    fullName,
+    role: roleValue as AppRole,
+  })
 
-  if (profileUpsertError && !isProfilesTableMissingError(profileUpsertError)) {
-    return NextResponse.json({ error: profileUpsertError.message }, { status: 500 })
+  if ('error' in profileUpsert) {
+    return NextResponse.json({ error: profileUpsert.error }, { status: 500 })
   }
 
   return NextResponse.json({ success: true, mode: 'invite_sent' })
+}
+
+export async function PUT(request: Request) {
+  const env = getEnv()
+  if ('error' in env) {
+    return NextResponse.json({ error: env.error }, { status: 500 })
+  }
+
+  const access = await ensureAdmin()
+  if ('error' in access) return access.error
+
+  const body = await request.json().catch(() => null)
+  const email = normalizeEmail(String(body?.email || ''))
+  const roleValue = String(body?.role || '').trim()
+  const fullName = String(body?.fullName || '').trim()
+  const password = String(body?.password || '').trim()
+  const targetId = String(body?.id || '').trim()
+
+  if (!email || !isRole(roleValue)) {
+    return NextResponse.json({ error: 'Valid email and role are required.' }, { status: 400 })
+  }
+
+  if (password && password.length < 8) {
+    return NextResponse.json({ error: 'Temporary password must be at least 8 characters.' }, { status: 400 })
+  }
+
+  const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)
+  const lookup = await findUserByEmail(adminClient, email)
+  if ('error' in lookup) {
+    return NextResponse.json({ error: lookup.error }, { status: 500 })
+  }
+
+  const existingUser = lookup.existingUser
+
+  if (existingUser) {
+    const updates: Parameters<typeof adminClient.auth.admin.updateUserById>[1] = {
+      app_metadata: { role: roleValue },
+      user_metadata: { role: roleValue, full_name: fullName || null },
+    }
+
+    if (password) {
+      updates.password = password
+      updates.email_confirm = true
+    }
+
+    const updateResult = await adminClient.auth.admin.updateUserById(existingUser.id, updates)
+
+    if (updateResult.error) {
+      return NextResponse.json({ error: updateResult.error.message }, { status: 500 })
+    }
+
+    const profileUpsert = await upsertProfile(adminClient, {
+      id: existingUser.id,
+      email,
+      fullName,
+      role: roleValue as AppRole,
+    })
+
+    if ('error' in profileUpsert) {
+      return NextResponse.json({ error: profileUpsert.error }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, mode: 'updated' })
+  }
+
+  if (targetId) {
+    const profileUpsert = await upsertProfile(adminClient, {
+      id: targetId,
+      email,
+      fullName,
+      role: roleValue as AppRole,
+    })
+
+    if ('error' in profileUpsert) {
+      return NextResponse.json({ error: profileUpsert.error }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, mode: 'updated' })
+  }
+
+  return NextResponse.json({ error: 'No matching user found to update.' }, { status: 404 })
+}
+
+export async function DELETE(request: Request) {
+  const env = getEnv()
+  if ('error' in env) {
+    return NextResponse.json({ error: env.error }, { status: 500 })
+  }
+
+  const access = await ensureAdmin()
+  if ('error' in access) return access.error
+
+  const body = await request.json().catch(() => null)
+  const email = normalizeEmail(String(body?.email || ''))
+  const targetId = String(body?.id || '').trim()
+
+  if (!email && !targetId) {
+    return NextResponse.json({ error: 'An email or id is required.' }, { status: 400 })
+  }
+
+  const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)
+  const lookup = await findUserByEmail(adminClient, email)
+  if ('error' in lookup) {
+    return NextResponse.json({ error: lookup.error }, { status: 500 })
+  }
+
+  const existingUser = lookup.existingUser
+  const resolvedId = existingUser?.id || targetId
+
+  if (resolvedId && resolvedId === access.user.id) {
+    return NextResponse.json({ error: 'You cannot remove your own access.' }, { status: 403 })
+  }
+
+  if (resolvedId) {
+    try {
+      await adminClient.auth.admin.deleteUser(resolvedId)
+    } catch {
+      // Ignore delete errors and just remove the profile row if it exists.
+    }
+  }
+
+  if (resolvedId) {
+    const { error: profileDeleteError } = await adminClient.from('profiles').delete().eq('id', resolvedId)
+    if (profileDeleteError && !isProfilesTableMissingError(profileDeleteError)) {
+      return NextResponse.json({ error: profileDeleteError.message }, { status: 500 })
+    }
+  }
+
+  if (email && !resolvedId) {
+    const { error: profileDeleteError } = await adminClient.from('profiles').delete().eq('email', email)
+    if (profileDeleteError && !isProfilesTableMissingError(profileDeleteError)) {
+      return NextResponse.json({ error: profileDeleteError.message }, { status: 500 })
+    }
+  }
+
+  return NextResponse.json({ success: true })
 }

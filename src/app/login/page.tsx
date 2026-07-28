@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
@@ -22,6 +23,17 @@ const roleFromUser = (user: { user_metadata?: unknown; app_metadata?: unknown })
   roleFromMetadata(user.user_metadata) || roleFromMetadata(user.app_metadata);
 
 const EASE = '0.5s cubic-bezier(0.32,0.72,0,1)';
+
+const normalizeEmail = (email: string): string => email.trim().toLowerCase();
+
+const getSafeNextPath = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('//')) {
+    return null;
+  }
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+};
 
 function LoginForm() {
   const router = useRouter();
@@ -53,7 +65,8 @@ function LoginForm() {
   const handleTeacherLogin = async (e: FormEvent) => {
     e.preventDefault(); setError(''); setIsLoading(true);
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const normalizedEmail = normalizeEmail(email);
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (signInError) { setError(signInError.message || 'Credenciais inválidas.'); return; }
       const user = data.user;
       if (!user) { setError('Nenhum utilizador retornado.'); return; }
@@ -61,8 +74,8 @@ function LoginForm() {
       const role = (profile?.role && isRole(profile.role) ? profile.role : null) || roleFromUser(user);
       if (!role) { setError('Função não encontrada. Contacta o administrador.'); await supabase.auth.signOut(); return; }
       if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', role);
-      const nextPath = searchParams.get('next');
-      router.replace(nextPath?.startsWith('/') ? nextPath : '/dashboard');
+      const nextPath = getSafeNextPath(searchParams.get('next'));
+      router.replace(nextPath || '/dashboard');
     } catch { setError('Falha no login. Tenta novamente.'); }
     finally { setIsLoading(false); }
   };
@@ -70,7 +83,8 @@ function LoginForm() {
   const handleStudentLogin = async (e: FormEvent) => {
     e.preventDefault(); setError(''); setIsLoading(true);
     try {
-      const student = await getMemberByEmail(email);
+      const normalizedEmail = normalizeEmail(email);
+      const student = await getMemberByEmail(normalizedEmail);
       if (!student) { setError('Perfil não encontrado. Verifica o teu email.'); return; }
       const status = String((student as { status?: unknown }).status || '').trim().toLowerCase();
       if (status === 'pendente' || status === 'pedido') { setError('Este aluno ainda não tem acesso.'); return; }
@@ -85,10 +99,12 @@ function LoginForm() {
 
       {/* ── Full-screen photo ── */}
       <div className="absolute inset-0">
-        <img
+        <Image
           src="/Gracie%20Barra.jpg"
           alt="Gracie Barra"
-          className="h-full w-full object-cover object-center"
+          fill
+          priority
+          className="object-cover object-center"
         />
         {/* Overlay darkens gradually from nothing to dark at bottom */}
         <div className="absolute inset-0"
@@ -116,7 +132,7 @@ function LoginForm() {
             height: hasMode ? '36px' : '56px',
             flexShrink: 0,
           }}>
-            <img src="/gb-logo.png" alt="GB" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <Image src="/gb-logo.png" alt="GB" width={56} height={56} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           {/* Name — shrinks */}
           <div style={{ overflow: 'hidden' }}>
