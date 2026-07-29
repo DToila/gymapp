@@ -60,9 +60,13 @@ export async function GET(request: Request) {
   }
 
   const slotRowByCode = new Map((slotRows || []).map((row) => [row.code, row]))
-  const today = toLocalDateKey(new Date())
 
-  const upcoming = slots.flatMap((slot) => getUpcomingSessionDatesForSlot(slot, SESSIONS_PER_SLOT))
+  // Trial classes can only be booked from tomorrow onward — not same-day.
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const today = toLocalDateKey(tomorrow)
+
+  const upcoming = slots.flatMap((slot) => getUpcomingSessionDatesForSlot(slot, SESSIONS_PER_SLOT, tomorrow))
   upcoming.sort((a, b) => {
     if (a.dateKey !== b.dateKey) return a.dateKey.localeCompare(b.dateKey)
     return a.slot.startTime.localeCompare(b.slot.startTime)

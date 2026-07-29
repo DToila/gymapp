@@ -80,8 +80,10 @@ export default function PublicTrialPicker({ leadId, age, onBooked, onSkip }: Pub
     <div>
       <div className="mb-4">
         <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">Aluno Novo</p>
-        <h2 className="text-2xl font-black leading-tight text-white sm:text-3xl">Marca a Aula Experimental</h2>
-        <p className="mt-1 text-sm text-zinc-400">Escolhe o dia e hora que preferes — só aparecem sessões com vaga.</p>
+        <h2 className="text-2xl font-black leading-tight text-white sm:text-3xl">Marca a Aula Experimental Grátis</h2>
+        <p className="mt-1 text-sm text-zinc-400">
+          É grátis e emprestamos o kimono e a rashguard. Escolhe o dia e hora que preferes — só aparecem sessões com vaga.
+        </p>
       </div>
 
       {error ? (

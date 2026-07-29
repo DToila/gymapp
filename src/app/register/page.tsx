@@ -76,6 +76,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState<"form" | "booking" | "done">("form");
   const [bookingLeadId, setBookingLeadId] = useState<string | null>(null);
   const [bookingAge, setBookingAge] = useState<number | null>(null);
+  const [showArrivalReminder, setShowArrivalReminder] = useState(false);
 
   const isUnder18 = useMemo(() => {
     const age = getAge(formData.dataNascimento);
@@ -147,12 +148,14 @@ export default function RegisterPage() {
     setSuccessMessage(
       `Pedido enviado e aula experimental marcada para ${dateLabel} às ${session.startTime}! Entraremos em contacto para confirmar.`
     );
+    setShowArrivalReminder(true);
     setStep("done");
     setFormData(initialForm);
   };
 
   const handleSkipBooking = () => {
     setSuccessMessage("Pedido enviado! Entraremos em contacto em breve para marcar a aula experimental.");
+    setShowArrivalReminder(false);
     setStep("done");
     setFormData(initialForm);
   };
@@ -211,6 +214,13 @@ export default function RegisterPage() {
             <div className="mb-4 max-w-xl rounded-xl border border-[#1f4d33] bg-[#112117] px-4 py-3 text-sm text-green-300">
               {successMessage}
             </div>
+            {showArrivalReminder ? (
+              <div className="mb-4 max-w-xl rounded-xl border-2 border-[#c81d25] bg-[rgba(200,29,37,0.12)] px-5 py-4">
+                <p className="text-lg font-black leading-snug text-white sm:text-xl">
+                  Chega 10 minutos mais cedo e traz chinelos e uma garrafa de água.
+                </p>
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={() => router.push('/login')}

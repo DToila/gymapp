@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { officialSchedule } from '@/components/student/studentData'
-import { isKidsProgram } from '@/components/leads/leadAutomation'
+import { isKidsProgram, toLocalDateKey } from '@/components/leads/leadAutomation'
 import { syncToGoogleCalendar } from '../../../../../lib/googleCalendar'
 
 const getEnv = () => {
@@ -45,6 +45,12 @@ export async function POST(request: Request) {
   const officialSlot = officialSchedule.find((slot) => slot.id === slotCode)
   if (!officialSlot) {
     return NextResponse.json({ error: 'Sessão inválida.' }, { status: 400 })
+  }
+
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  if (dateKey < toLocalDateKey(tomorrow)) {
+    return NextResponse.json({ error: 'A aula experimental só pode ser marcada a partir de amanhã.' }, { status: 400 })
   }
 
   const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)
