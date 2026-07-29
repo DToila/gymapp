@@ -74,12 +74,12 @@ export async function POST(request: Request) {
   }
 
   const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)
-  const { error } = await adminClient.from('leads').insert([payload])
+  const { data, error } = await adminClient.from('leads').insert([payload]).select('id').single()
 
   if (error) {
     console.error('register-lead: insert failed', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, leadId: data.id })
 }

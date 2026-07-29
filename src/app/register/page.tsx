@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import GBLogo from "@/components/GBLogo";
 import { toLocalDateKey } from "@/components/leads/leadAutomation";
+import PublicTrialPicker from "@/components/register/PublicTrialPicker";
 
 type HeardFromOption =
   | ""
@@ -72,6 +73,9 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [step, setStep] = useState<"form" | "booking" | "done">("form");
+  const [bookingLeadId, setBookingLeadId] = useState<string | null>(null);
+  const [bookingAge, setBookingAge] = useState<number | null>(null);
 
   const isUnder18 = useMemo(() => {
     const age = getAge(formData.dataNascimento);
@@ -123,14 +127,34 @@ export default function RegisterPage() {
         throw new Error(data?.error || "Não foi possível enviar o pedido.");
       }
 
-      setSuccessMessage("Pedido enviado! Entraremos em contacto em breve.");
-      setFormData(initialForm);
+      setBookingLeadId(data.leadId);
+      setBookingAge(age ?? 0);
+      setStep("booking");
     } catch (submissionError: any) {
       console.error("Registration error:", submissionError);
       setError(submissionError?.message || "Não foi possível enviar o pedido. Tenta novamente.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleBooked = (session: { dateKey: string; startTime: string; endTime: string }) => {
+    const dateLabel = new Date(`${session.dateKey}T00:00:00`).toLocaleDateString("pt-PT", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+    });
+    setSuccessMessage(
+      `Pedido enviado e aula experimental marcada para ${dateLabel} às ${session.startTime}! Entraremos em contacto para confirmar.`
+    );
+    setStep("done");
+    setFormData(initialForm);
+  };
+
+  const handleSkipBooking = () => {
+    setSuccessMessage("Pedido enviado! Entraremos em contacto em breve para marcar a aula experimental.");
+    setStep("done");
+    setFormData(initialForm);
   };
 
   return (
@@ -178,16 +202,36 @@ export default function RegisterPage() {
           ← Voltar
         </button>
 
+        {step === "done" ? (
+          <div>
+            <div className="mb-6">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">Aluno Novo</p>
+              <h2 className="text-3xl font-black leading-tight text-white sm:text-4xl">Pedido Enviado</h2>
+            </div>
+            <div className="mb-4 max-w-xl rounded-xl border border-[#1f4d33] bg-[#112117] px-4 py-3 text-sm text-green-300">
+              {successMessage}
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/login')}
+              className="mt-2 rounded-xl bg-[#c81d25] px-4 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-[#a8141c]"
+            >
+              Voltar ao Login
+            </button>
+          </div>
+        ) : step === "booking" && bookingLeadId ? (
+          <PublicTrialPicker
+            leadId={bookingLeadId}
+            age={bookingAge ?? 0}
+            onBooked={handleBooked}
+            onSkip={handleSkipBooking}
+          />
+        ) : (
+        <div>
         <div className="mb-6">
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">Aluno Novo</p>
           <h2 className="text-3xl font-black leading-tight text-white sm:text-4xl">Nova Inscrição</h2>
         </div>
-
-        {successMessage ? (
-          <div className="mb-4 rounded-xl border border-[#1f4d33] bg-[#112117] px-4 py-3 text-sm text-green-300">
-            {successMessage}
-          </div>
-        ) : null}
 
         {error ? (
           <div className="mb-4 rounded-xl border border-[#5b1f24] bg-[#2a1214] px-4 py-3 text-sm text-rose-300">{error}</div>
@@ -361,9 +405,11 @@ export default function RegisterPage() {
             disabled={isSubmitting}
             className="mt-2 w-full rounded-xl bg-[#c81d25] px-4 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-[#a8141c] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "A Enviar..." : "Enviar Pedido"}
+            {isSubmitting ? "A Enviar..." : "Enviar e Marcar Aula Experimental"}
           </button>
         </form>
+        </div>
+        )}
       </div>
     </div>
   );

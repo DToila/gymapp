@@ -36,6 +36,27 @@ export function isKidsProgram(program: LeadClassType): boolean {
   return program === 'GBK';
 }
 
+// MC (3-5), PC1 (6-8) and PC2 (9-12) each have a dedicated slot, but PC1 and
+// PC2 actually train together at the same time (18:15, every weekday) along
+// with Juniors (13-15, no dedicated slot) — so for trial-booking purposes
+// ages 6-15 share the same pool of sessions. Returns null for adults (16+),
+// who aren't restricted to a specific kids sub-group.
+export function suggestKidsSubgroupForAge(age: number): string[] | null {
+  if (age >= 3 && age <= 5) return ['MC'];
+  if (age >= 6 && age <= 15) return ['PC1', 'PC2'];
+  return null;
+}
+
+export function getTrialSlotsForAge(age: number): OfficialScheduleClass[] {
+  const kidsGroups = suggestKidsSubgroupForAge(age);
+  if (kidsGroups) {
+    return officialSchedule.filter(
+      (slot) => slot.program === 'GBK' && slot.kidsGroup && kidsGroups.includes(slot.kidsGroup)
+    );
+  }
+  return officialSchedule.filter((slot) => slot.program === 'GB1' || slot.program === 'GB2');
+}
+
 // ─── Upcoming session dates for a weekly slot ────────────────────────────────
 
 const DAY_KEY_TO_JS_DAY: Record<OfficialScheduleClass['dayOfWeek'], number> = {
