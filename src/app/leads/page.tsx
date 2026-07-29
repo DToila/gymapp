@@ -695,6 +695,17 @@ export default function LeadsPage() {
                       className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
                     />
                   </div>
+                  {selectedLead.mensagem_inicial ? (
+                    <div className="sm:col-span-2">
+                      <label className="mb-1 block text-xs font-medium text-zinc-400">Mensagem Inicial (formulário)</label>
+                      <textarea
+                        rows={2}
+                        value={selectedLead.mensagem_inicial || ''}
+                        onChange={(e) => updateLeadField('mensagem_inicial', e.target.value || null)}
+                        className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

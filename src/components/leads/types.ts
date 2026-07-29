@@ -14,7 +14,8 @@ export type LeadContactSource =
   | 'Outros'
   | 'Alunos GBCQ'
   | 'WhatsApp'
-  | 'Telefone';
+  | 'Telefone'
+  | 'Site Wix';
 
 export type LeadClassType = 'GBK' | 'GB1' | 'GB2';
 
@@ -63,6 +64,7 @@ export interface Lead {
   como_soube?: HeardFromOption | null;
   nome_pai?: string | null;
   nome_mae?: string | null;
+  mensagem_inicial?: string | null;
 }
 
 export const LEAD_SOURCES: LeadContactSource[] = [
@@ -73,6 +75,7 @@ export const LEAD_SOURCES: LeadContactSource[] = [
   'Alunos GBCQ',
   'WhatsApp',
   'Telefone',
+  'Site Wix',
 ];
 
 export const LEAD_CLASS_TYPES: LeadClassType[] = ['GBK', 'GB1', 'GB2'];
