@@ -8,6 +8,7 @@ import LeadsKanban from '@/components/leads/LeadsKanban';
 import TrialBookingPicker from '@/components/leads/TrialBookingPicker';
 import { saveTrialFeedback, toLocalDateKey } from '@/components/leads/leadAutomation';
 import {
+  HEARD_FROM_OPTIONS,
   Lead,
   LEAD_CLASS_TYPES,
   LEAD_SOURCES,
@@ -697,6 +698,89 @@ export default function LeadsPage() {
                       className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[#222] bg-[#0f0f0f] p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">Detalhes de Registo</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">NIF</label>
+                    <input
+                      value={selectedLead.nif || ''}
+                      onChange={(e) => updateLeadField('nif', e.target.value || null)}
+                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Sexo</label>
+                    <select
+                      value={selectedLead.sexo || ''}
+                      onChange={(e) => updateLeadField('sexo', (e.target.value || null) as Lead['sexo'])}
+                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                    >
+                      <option value="">-</option>
+                      <option value="M">M</option>
+                      <option value="F">F</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Morada</label>
+                    <input
+                      value={selectedLead.morada || ''}
+                      onChange={(e) => updateLeadField('morada', e.target.value || null)}
+                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Código Postal</label>
+                    <input
+                      value={selectedLead.codigo_postal || ''}
+                      onChange={(e) => updateLeadField('codigo_postal', e.target.value || null)}
+                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Contacto de Emergência</label>
+                    <input
+                      value={selectedLead.contacto_emergencia || ''}
+                      onChange={(e) => updateLeadField('contacto_emergencia', e.target.value || null)}
+                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-zinc-400">Como soube da GBCQ</label>
+                    <select
+                      value={selectedLead.como_soube || ''}
+                      onChange={(e) => updateLeadField('como_soube', (e.target.value || null) as Lead['como_soube'])}
+                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                    >
+                      <option value="">-</option>
+                      {HEARD_FROM_OPTIONS.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {(typeof selectedLead.age === 'number' && selectedLead.age < 18) || selectedLead.nome_pai || selectedLead.nome_mae ? (
+                    <>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-zinc-400">Nome do Pai</label>
+                        <input
+                          value={selectedLead.nome_pai || ''}
+                          onChange={(e) => updateLeadField('nome_pai', e.target.value || null)}
+                          className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-zinc-400">Nome da Mãe</label>
+                        <input
+                          value={selectedLead.nome_mae || ''}
+                          onChange={(e) => updateLeadField('nome_mae', e.target.value || null)}
+                          className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
+                        />
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
 

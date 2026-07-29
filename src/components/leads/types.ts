@@ -18,6 +18,15 @@ export type LeadContactSource =
 
 export type LeadClassType = 'GBK' | 'GB1' | 'GB2';
 
+export type HeardFromOption =
+  | 'Website'
+  | 'Social Media'
+  | 'Outras academias GB'
+  | 'Alunos GBCQ'
+  | 'Visibilidade Rua'
+  | 'Flyer'
+  | 'Outro';
+
 export type NotEnrolledReasonCode =
   | 'Sem tempo'
   | 'Muito caro'
@@ -47,6 +56,14 @@ export interface Lead {
   trial_feedback?: string | null;
   trial_feedback_at?: string | null;
   trial_feedback_by?: string | null;
+  nif?: string | null;
+  sexo?: 'M' | 'F' | null;
+  morada?: string | null;
+  codigo_postal?: string | null;
+  contacto_emergencia?: string | null;
+  como_soube?: HeardFromOption | null;
+  nome_pai?: string | null;
+  nome_mae?: string | null;
 }
 
 export const LEAD_SOURCES: LeadContactSource[] = [
@@ -60,6 +77,16 @@ export const LEAD_SOURCES: LeadContactSource[] = [
 ];
 
 export const LEAD_CLASS_TYPES: LeadClassType[] = ['GBK', 'GB1', 'GB2'];
+
+export const HEARD_FROM_OPTIONS: HeardFromOption[] = [
+  'Website',
+  'Social Media',
+  'Outras academias GB',
+  'Alunos GBCQ',
+  'Visibilidade Rua',
+  'Flyer',
+  'Outro',
+];
 
 export const LEAD_STATUSES: LeadStatus[] = [
   'Por contactar',

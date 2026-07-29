@@ -94,20 +94,6 @@ export default function RegisterPage() {
     try {
       const age = getAge(formData.dataNascimento);
 
-      const registrationNotes = [
-        `NIF: ${formData.nif.trim() || '-'}`,
-        `Sexo: ${formData.sexo}`,
-        `Morada: ${formData.morada.trim() || '-'}`,
-        `Código Postal: ${formData.codigoPostal.trim() || '-'}`,
-        `Contacto de Emergência: ${formData.contactoEmergencia.trim() || '-'}`,
-        `Como soube da GBCQ: ${formData.comoSoube || '-'}`,
-        formData.comoSoube === "Outro" ? `Como soube (outro): ${formData.comoSoubeOutro.trim() || '-'}` : null,
-        isUnder18 ? `Nome do Pai: ${formData.nomePai.trim() || '-'}` : null,
-        isUnder18 ? `Nome da Mãe: ${formData.nomeMae.trim() || '-'}` : null,
-      ]
-        .filter(Boolean)
-        .join(" | ");
-
       const payload: any = {
         name: formData.nome.trim(),
         contact_source: "Website",
@@ -116,9 +102,20 @@ export default function RegisterPage() {
         phone: formData.telemovel.trim() || null,
         class_type: isUnder18 ? "GBK" : "GB1",
         age: age ?? null,
-        notes: registrationNotes || null,
         status: "Por contactar",
         enrolled: false,
+        nif: formData.nif.trim() || null,
+        sexo: formData.sexo,
+        morada: formData.morada.trim() || null,
+        codigo_postal: formData.codigoPostal.trim() || null,
+        contacto_emergencia: formData.contactoEmergencia.trim() || null,
+        como_soube: formData.comoSoube || null,
+        nome_pai: isUnder18 ? formData.nomePai.trim() || null : null,
+        nome_mae: isUnder18 ? formData.nomeMae.trim() || null : null,
+        notes:
+          formData.comoSoube === "Outro" && formData.comoSoubeOutro.trim()
+            ? `Como soube (outro): ${formData.comoSoubeOutro.trim()}`
+            : null,
       };
 
       const { error: insertError } = await supabase.from("leads").insert([payload]);
