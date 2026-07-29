@@ -4,7 +4,6 @@ import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import GBLogo from "@/components/GBLogo";
-import { supabase } from "../../../lib/supabase";
 import { toLocalDateKey } from "@/components/leads/leadAutomation";
 
 type HeardFromOption =
@@ -118,10 +117,16 @@ export default function RegisterPage() {
             : null,
       };
 
-      const { error: insertError } = await supabase.from("leads").insert([payload]);
+      const response = await fetch("/api/public/register-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-      if (insertError) {
-        throw insertError;
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Não foi possível enviar o pedido.");
       }
 
       setSuccessMessage("Pedido enviado! Entraremos em contacto em breve.");
