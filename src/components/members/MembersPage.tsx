@@ -11,7 +11,6 @@ import MembersTabs from './MembersTabs';
 import QuickViewsDropdown from './QuickViewsDropdown';
 import { AdultsFiltersBar, KidsFiltersBar } from './FiltersBar';
 import MembersTable from './MembersTable';
-import RequestsList from './RequestsList';
 import RowActionsMenu from './RowActionsMenu';
 import TeacherSidebar from './TeacherSidebar';
 import AddMemberModal, { AddMemberFormData } from './AddMemberModal';
@@ -64,7 +63,6 @@ function mapDbMember(member: any): any {
     enrolledAt: (member.created_at || '').split('T')[0] || '',
     dateOfBirth: member.date_of_birth,
     lastAttendanceAt: undefined,
-    requestStatus: status === 'Pending' ? 'Pending' : undefined,
     group: undefined
   };
 }
@@ -155,7 +153,6 @@ export default function MembersPage() {
     source: '',
   });
   const [allMembers, setAllMembers] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
 
   const updateNewMemberForDateOfBirth = (dateOfBirth: string) => {
     setNewMember((prev) => {
@@ -220,15 +217,12 @@ export default function MembersPage() {
         };
       });
 
-      const pendente = withBehavior.filter((m) => m.status === 'Pending');
       const nonPending = withBehavior.filter((m) => m.status !== 'Pending');
 
       setAllMembers(nonPending.length > 0 ? nonPending : mockMembers);
-      setRequests(pendente);
     } catch (error) {
       console.error('Erro loading members page data:', error);
       setAllMembers(mockMembers);
-      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -344,17 +338,7 @@ export default function MembersPage() {
     return result;
   }, [kidsSource, search, kidsFilters, quickView]);
 
-  const filteredRequests = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return requests
-      .filter((member) => {
-        if (!q) return true;
-        return `${member.name} ${member.email || ''} ${member.phone || ''}`.toLowerCase().includes(q);
-      })
-      .sort((a, b) => new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime());
-  }, [requests, search]);
-
-  const currentRows = activeTab === 'adults' ? filteredAdults : activeTab === 'kids' ? filteredKids : filteredRequests;
+  const currentRows = activeTab === 'adults' ? filteredAdults : filteredKids;
   const paginatedRows = useMemo(() => {
     const start = (page - 1) * pageSize;
     return currentRows.slice(start, start + pageSize);
@@ -430,7 +414,7 @@ export default function MembersPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0b0b0b 0%, #101010 100%)', color: '#f0f0f0', display: 'flex' }}>
-      <TeacherSidebar ativo="members" requestsCount={filteredRequests.length} onAddMember={() => setShowAddModal(true)} />
+      <TeacherSidebar ativo="members" onAddMember={() => setShowAddModal(true)} />
       <div className="flex-1 p-3 sm:p-5 lg:p-7">
       <div className="mx-auto max-w-[1280px]">
         {/* Hero */}
@@ -470,27 +454,23 @@ export default function MembersPage() {
         {activeTab === 'adults' && <AdultsFiltersBar value={adultsFilters} onChange={setAdultsFilters} />}
         {activeTab === 'kids' && <KidsFiltersBar value={kidsFilters} onChange={setKidsFilters} />}
 
-        {activeTab === 'requests' ? (
-          <RequestsList items={filteredRequests} search={search} />
-        ) : (
-          <MembersTable
-            mode={activeTab}
-            rows={paginatedRows}
-            loading={loading}
-            page={page}
-            pageSize={pageSize}
-            totalItems={currentRows.length}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-            onRowClick={(member) => router.push(`/members/${member.id}`)}
-            onClearFilters={() => {
-              setSearch('');
-              setQuickView('recent');
-              setAdultsFilters(initialAdultsFilters);
-              setKidsFilters(initialKidsFilters);
-            }}
-          />
-        )}
+        <MembersTable
+          mode={activeTab}
+          rows={paginatedRows}
+          loading={loading}
+          page={page}
+          pageSize={pageSize}
+          totalItems={currentRows.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          onRowClick={(member) => router.push(`/members/${member.id}`)}
+          onClearFilters={() => {
+            setSearch('');
+            setQuickView('recent');
+            setAdultsFilters(initialAdultsFilters);
+            setKidsFilters(initialKidsFilters);
+          }}
+        />
       </div>
       </div>
 

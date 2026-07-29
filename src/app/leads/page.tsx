@@ -68,6 +68,7 @@ export default function LeadsPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importData, setImportData] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
@@ -386,6 +387,27 @@ export default function LeadsPage() {
       setFormError(err instanceof Error ? err.message : 'Falhado to save lead');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteLead = async () => {
+    if (!selectedLead || isCreatingLead) return;
+    const confirmed = window.confirm(`Eliminar o lead "${selectedLead.name}"? Esta ação não pode ser revertida.`);
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setFormError(null);
+    try {
+      const { error: deleteError } = await supabase.from('leads').delete().eq('id', selectedLead.id);
+      if (deleteError) throw deleteError;
+
+      setLeads((prev) => prev.filter((item) => item.id !== selectedLead.id));
+      closeLeadDrawer();
+    } catch (err) {
+      console.error('Erro deleting lead:', err);
+      setFormError(err instanceof Error ? err.message : 'Falhado ao eliminar lead');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -884,8 +906,8 @@ export default function LeadsPage() {
               </div>
 
               <div className="mt-6 flex gap-3 border-t border-[#222] pt-6">
-                <button 
-                  onClick={saveLead} 
+                <button
+                  onClick={saveLead}
                   disabled={saving}
                   className="flex-1 rounded-xl bg-[#c81d25] px-4 py-2 font-semibold text-white hover:bg-[#b01720] transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -894,6 +916,15 @@ export default function LeadsPage() {
                 <button onClick={closeLeadDrawer} className="flex-1 rounded-xl border border-[#222] px-4 py-2 font-semibold text-white hover:bg-[#161616] transition">
                   Fechar
                 </button>
+                {!isCreatingLead ? (
+                  <button
+                    onClick={deleteLead}
+                    disabled={deleting}
+                    className="rounded-xl border border-[#5b1f24] bg-[#2a1214] px-4 py-2 font-semibold text-rose-300 transition hover:bg-[#3a1619] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deleting ? 'A eliminar...' : 'Eliminar'}
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>

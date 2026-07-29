@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import GBLogo from "@/components/GBLogo";
 import { supabase } from "../../../lib/supabase";
+import { toLocalDateKey } from "@/components/leads/leadAutomation";
 
 type HeardFromOption =
   | ""
@@ -91,7 +92,10 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
+      const age = getAge(formData.dataNascimento);
+
       const registrationNotes = [
+        `NIF: ${formData.nif.trim() || '-'}`,
         `Sexo: ${formData.sexo}`,
         `Morada: ${formData.morada.trim() || '-'}`,
         `Código Postal: ${formData.codigoPostal.trim() || '-'}`,
@@ -106,19 +110,18 @@ export default function RegisterPage() {
 
       const payload: any = {
         name: formData.nome.trim(),
-        date_of_birth: formData.dataNascimento || null,
-        nif: formData.nif.trim() || null,
+        contact_source: "Website",
+        contact_date: toLocalDateKey(new Date()),
         email: formData.email.trim(),
         phone: formData.telemovel.trim() || null,
-        status: "pendente",
-        belt_level: "White Cinto",
-        family_discount: false,
-        fee: 0,
-        payment_type: "Dinheiro",
-        ref: registrationNotes || null,
+        class_type: isUnder18 ? "GBK" : "GB1",
+        age: age ?? null,
+        notes: registrationNotes || null,
+        status: "Por contactar",
+        enrolled: false,
       };
 
-      const { error: insertError } = await supabase.from("members").insert([payload]);
+      const { error: insertError } = await supabase.from("leads").insert([payload]);
 
       if (insertError) {
         throw insertError;

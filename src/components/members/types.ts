@@ -1,4 +1,4 @@
-export type MembersTab = 'adults' | 'kids' | 'requests';
+export type MembersTab = 'adults' | 'kids';
 
 export type MemberStatus = 'Active' | 'Paused' | 'Unpaid' | 'Pending';
 export type PaymentMethod = 'Direct Debit' | 'Cash' | 'MBWay' | 'Other';
@@ -22,7 +22,6 @@ export interface Member {
   enrolledAt: string;
   dateOfBirth?: string;
   lastAttendanceAt?: string;
-  requestStatus?: 'Pending' | 'In review' | 'Rejected';
 }
 
 export type QuickView = 'recent' | 'unpaid' | 'birthdays' | 'newThisMonth' | 'inactive';
