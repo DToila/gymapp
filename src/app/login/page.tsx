@@ -210,6 +210,26 @@ function LoginForm() {
                 {role === 'teacher' ? 'Professor' : 'Aluno'}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => router.push('/register')}
+              style={{
+                width: '100%',
+                borderRadius: '16px',
+                border: '1px solid rgba(255,255,255,0.18)',
+                background: 'rgba(255,255,255,0.10)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                padding: '18px 24px',
+                fontSize: '16px',
+                fontWeight: 600,
+                color: 'white',
+                cursor: 'pointer',
+                textAlign: 'center',
+              }}
+            >
+              Aluno Novo
+            </button>
           </div>
         </div>
 

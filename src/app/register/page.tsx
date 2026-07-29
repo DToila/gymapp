@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import GBLogo from "@/components/GBLogo";
 import { supabase } from "../../../lib/supabase";
 
@@ -62,6 +63,10 @@ const getAge = (dateOfBirth: string): number | null => {
 
   return age;
 };
+
+const inputClass =
+  "w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-[#c81d25]";
+const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -129,299 +134,192 @@ export default function RegisterPage() {
     }
   };
 
-  const commonInputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "12px 14px",
-    background: "#111111",
-    border: "1px solid #2a2a2a",
-    color: "#f0f0f0",
-    fontSize: "13px",
-    fontFamily: '"Barlow", sans-serif',
-    outline: "none",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontSize: "11px",
-    color: "#888888",
-    marginBottom: "6px",
-    letterSpacing: "1px",
-    textTransform: "uppercase",
-    fontWeight: 600,
-  };
-
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        minHeight: "100vh",
-        background: "#0a0a0a",
-      }}
-    >
-      <div
-        style={{
-          backgroundImage: "url(/jiu-jitsu-bg.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "64px 56px",
-        }}
-      >
+    <div className="grid min-h-screen grid-cols-1 bg-[#0b0b0b] lg:grid-cols-2">
+      {/* ── Photo hero ── */}
+      <div className="relative flex min-h-[260px] flex-col justify-between overflow-hidden p-8 sm:p-10 lg:min-h-screen lg:p-14">
+        <Image
+          src="/Gracie%20Barra.jpg"
+          alt="Gracie Barra"
+          fill
+          priority
+          className="object-cover object-center"
+        />
         <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(160deg, rgba(204,0,0,0.1), rgba(0,0,0,0.95))",
-          }}
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(160deg, rgba(200,29,37,0.12) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.92) 100%)' }}
         />
 
-        <div style={{ position: "relative", zIndex: 10 }}>
-          <div style={{ marginBottom: "16px" }}>
-            <GBLogo size={54} />
-          </div>
-          <div
-            style={{
-              fontFamily: '"Barlow Condensed", sans-serif',
-              fontSize: "14px",
-              fontWeight: 700,
-              color: "white",
-              letterSpacing: "4px",
-              marginBottom: "8px",
-            }}
-          >
-            GRACIE BARRA
-          </div>
-          <div
-            style={{
-              fontSize: "11px",
-              letterSpacing: "3px",
-              color: "rgba(255, 255, 255, 0.35)",
-            }}
-          >
-            CARNAXIDE E QUEIJAS
+        <div className="relative z-10 flex items-center gap-3">
+          <GBLogo size={44} />
+          <div>
+            <p className="text-sm font-bold tracking-[0.2em] text-white">GRACIE BARRA</p>
+            <p className="text-xs tracking-[0.18em] text-white/45">CARNAXIDE &amp; QUEIJAS</p>
           </div>
         </div>
 
-        <div style={{ position: "relative", zIndex: 10 }}>
-          <div
-            style={{
-              fontFamily: '"Barlow Condensed", sans-serif',
-              fontSize: "76px",
-              fontWeight: 900,
-              lineHeight: 1.1,
-              color: "white",
-              letterSpacing: "-2px",
-              marginBottom: "24px",
-            }}
-          >
+        <div className="relative z-10">
+          <h1 className="text-4xl font-black leading-[1.05] text-white sm:text-5xl lg:text-6xl">
             JIU JITSU
             <br />
-            <span style={{ color: "#CC0000" }}>PARA</span>
+            <span className="text-[#c81d25]">PARA</span>
             <br />
             TODOS.
-          </div>
+          </h1>
         </div>
       </div>
 
-      <div
-        style={{
-          background: "#0a0a0a",
-          borderLeft: "1px solid #2a2a2a",
-          display: "flex",
-          flexDirection: "column",
-          padding: "64px 56px",
-          overflowY: "auto",
-        }}
-      >
+      {/* ── Form panel ── */}
+      <div className="flex flex-col p-6 sm:p-10 lg:p-14">
         <button
-          onClick={() => router.push("/")}
-          style={{
-            alignSelf: "flex-start",
-            background: "none",
-            border: "none",
-            color: "#CC0000",
-            fontSize: "14px",
-            cursor: "pointer",
-            marginBottom: "24px",
-            fontFamily: '"Barlow", sans-serif',
-            padding: 0,
-          }}
+          type="button"
+          onClick={() => router.push('/login')}
+          className="mb-6 self-start text-sm font-medium text-[#c81d25] transition hover:text-[#ef3a43]"
         >
           ← Voltar
         </button>
 
-        <div style={{ marginBottom: "28px" }}>
-          <h1
-            style={{
-              fontFamily: '"Barlow Condensed", sans-serif',
-              fontSize: "42px",
-              fontWeight: 900,
-              letterSpacing: "4px",
-              color: "#f0f0f0",
-              margin: 0,
-            }}
-          >
-            NOVA INSCRIÇÃO
-          </h1>
+        <div className="mb-6">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">Aluno Novo</p>
+          <h2 className="text-3xl font-black leading-tight text-white sm:text-4xl">Nova Inscrição</h2>
         </div>
 
-        {successMessage && (
-          <div
-            style={{
-              padding: "12px 14px",
-              background: "rgba(204,0,0,0.1)",
-              border: "1px solid rgba(204,0,0,0.4)",
-              color: "#f0f0f0",
-              marginBottom: "16px",
-              fontSize: "13px",
-            }}
-          >
+        {successMessage ? (
+          <div className="mb-4 rounded-xl border border-[#1f4d33] bg-[#112117] px-4 py-3 text-sm text-green-300">
             {successMessage}
           </div>
-        )}
+        ) : null}
 
-        {error && (
-          <div
-            style={{
-              padding: "12px 14px",
-              background: "rgba(255,0,0,0.1)",
-              border: "1px solid rgba(255,0,0,0.35)",
-              color: "#ff8a8a",
-              marginBottom: "16px",
-              fontSize: "13px",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        {error ? (
+          <div className="mb-4 rounded-xl border border-[#5b1f24] bg-[#2a1214] px-4 py-3 text-sm text-rose-300">{error}</div>
+        ) : null}
 
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
+        <form onSubmit={handleSubmit} className="grid max-w-xl gap-4">
           <div>
-            <label style={labelStyle}>Nome</label>
+            <label className={labelClass}>Nome</label>
             <input
               type="text"
               value={formData.nome}
               onChange={(e) => handleFieldChange("nome", e.target.value)}
               required
-              style={commonInputStyle}
+              className={inputClass}
             />
           </div>
 
-          <div>
-            <label style={labelStyle}>Data de Nascimento</label>
-            <input
-              type="date"
-              value={formData.dataNascimento}
-              onChange={(e) => handleFieldChange("dataNascimento", e.target.value)}
-              required
-              style={commonInputStyle}
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Data de Nascimento</label>
+              <input
+                type="date"
+                value={formData.dataNascimento}
+                onChange={(e) => handleFieldChange("dataNascimento", e.target.value)}
+                required
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>NIF</label>
+              <input
+                type="text"
+                value={formData.nif}
+                onChange={(e) => handleFieldChange("nif", e.target.value)}
+                required
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <div>
-            <label style={labelStyle}>NIF</label>
-            <input
-              type="text"
-              value={formData.nif}
-              onChange={(e) => handleFieldChange("nif", e.target.value)}
-              required
-              style={commonInputStyle}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Sexo</label>
-            <div style={{ display: "flex", gap: "18px", alignItems: "center", color: "#f0f0f0", fontSize: "13px" }}>
-              <label style={{ display: "flex", gap: "6px", alignItems: "center", cursor: "pointer" }}>
+            <label className={labelClass}>Sexo</label>
+            <div className="flex items-center gap-5 text-sm text-zinc-200">
+              <label className="flex cursor-pointer items-center gap-2">
                 <input
                   type="radio"
                   name="sexo"
                   value="M"
                   checked={formData.sexo === "M"}
                   onChange={(e) => handleFieldChange("sexo", e.target.value as "M" | "F")}
-                  style={{ accentColor: "#CC0000" }}
+                  className="accent-[#c81d25]"
                 />
                 M
               </label>
-              <label style={{ display: "flex", gap: "6px", alignItems: "center", cursor: "pointer" }}>
+              <label className="flex cursor-pointer items-center gap-2">
                 <input
                   type="radio"
                   name="sexo"
                   value="F"
                   checked={formData.sexo === "F"}
                   onChange={(e) => handleFieldChange("sexo", e.target.value as "M" | "F")}
-                  style={{ accentColor: "#CC0000" }}
+                  className="accent-[#c81d25]"
                 />
                 F
               </label>
             </div>
           </div>
 
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleFieldChange("email", e.target.value)}
-              required
-              style={commonInputStyle}
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Email</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleFieldChange("email", e.target.value)}
+                required
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Telemóvel</label>
+              <input
+                type="text"
+                value={formData.telemovel}
+                onChange={(e) => handleFieldChange("telemovel", e.target.value)}
+                required
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Morada</label>
+              <input
+                type="text"
+                value={formData.morada}
+                onChange={(e) => handleFieldChange("morada", e.target.value)}
+                required
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Código Postal</label>
+              <input
+                type="text"
+                value={formData.codigoPostal}
+                onChange={(e) => handleFieldChange("codigoPostal", e.target.value)}
+                required
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <div>
-            <label style={labelStyle}>Telemóvel</label>
-            <input
-              type="text"
-              value={formData.telemovel}
-              onChange={(e) => handleFieldChange("telemovel", e.target.value)}
-              required
-              style={commonInputStyle}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Morada</label>
-            <input
-              type="text"
-              value={formData.morada}
-              onChange={(e) => handleFieldChange("morada", e.target.value)}
-              required
-              style={commonInputStyle}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Código Postal</label>
-            <input
-              type="text"
-              value={formData.codigoPostal}
-              onChange={(e) => handleFieldChange("codigoPostal", e.target.value)}
-              required
-              style={commonInputStyle}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Contacto de Emergência</label>
+            <label className={labelClass}>Contacto de Emergência</label>
             <input
               type="text"
               value={formData.contactoEmergencia}
               onChange={(e) => handleFieldChange("contactoEmergencia", e.target.value)}
               required
-              style={commonInputStyle}
+              className={inputClass}
             />
           </div>
 
           <div>
-            <label style={labelStyle}>Como soubeste da GBCQ</label>
+            <label className={labelClass}>Como soubeste da GBCQ</label>
             <select
               value={formData.comoSoube}
               onChange={(e) => handleFieldChange("comoSoube", e.target.value as HeardFromOption)}
-              style={commonInputStyle}
+              className={inputClass}
             >
               <option value="">Selecionar (opcional)</option>
               <option value="Website">Website</option>
@@ -434,74 +332,49 @@ export default function RegisterPage() {
             </select>
           </div>
 
-          {formData.comoSoube === "Outro" && (
+          {formData.comoSoube === "Outro" ? (
             <div>
-              <label style={labelStyle}>Outro (opcional)</label>
+              <label className={labelClass}>Outro (opcional)</label>
               <input
                 type="text"
                 value={formData.comoSoubeOutro}
                 onChange={(e) => handleFieldChange("comoSoubeOutro", e.target.value)}
-                style={commonInputStyle}
+                className={inputClass}
               />
             </div>
-          )}
+          ) : null}
 
-          {isUnder18 && (
-            <>
+          {isUnder18 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label style={labelStyle}>Nome do Pai</label>
+                <label className={labelClass}>Nome do Pai</label>
                 <input
                   type="text"
                   value={formData.nomePai}
                   onChange={(e) => handleFieldChange("nomePai", e.target.value)}
                   required
-                  style={commonInputStyle}
+                  className={inputClass}
                 />
               </div>
-
               <div>
-                <label style={labelStyle}>Nome da Mãe</label>
+                <label className={labelClass}>Nome da Mãe</label>
                 <input
                   type="text"
                   value={formData.nomeMae}
                   onChange={(e) => handleFieldChange("nomeMae", e.target.value)}
                   required
-                  style={commonInputStyle}
+                  className={inputClass}
                 />
               </div>
-            </>
-          )}
+            </div>
+          ) : null}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            style={{
-              width: "100%",
-              padding: "14px 16px",
-              background: isSubmitting ? "#6a6a6a" : "#CC0000",
-              color: "white",
-              fontFamily: '"Barlow Condensed", sans-serif',
-              fontSize: "16px",
-              fontWeight: 800,
-              letterSpacing: "4px",
-              textTransform: "uppercase",
-              border: "1px solid #CC0000",
-              cursor: isSubmitting ? "not-allowed" : "pointer",
-              transition: "all 0.2s",
-              marginTop: "8px",
-            }}
-            onMouseEnter={(e) => {
-              if (!isSubmitting) {
-                e.currentTarget.style.background = "#990000";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isSubmitting) {
-                e.currentTarget.style.background = "#CC0000";
-              }
-            }}
+            className="mt-2 w-full rounded-xl bg-[#c81d25] px-4 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-[#a8141c] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isSubmitting ? "A ENVIAR..." : "ENVIAR PEDIDO"}
+            {isSubmitting ? "A Enviar..." : "Enviar Pedido"}
           </button>
         </form>
       </div>
