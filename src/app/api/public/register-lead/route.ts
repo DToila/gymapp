@@ -71,7 +71,6 @@ export async function POST(request: Request) {
     como_soube: comoSoube,
     nome_pai: body.nome_pai ? String(body.nome_pai).trim() : null,
     nome_mae: body.nome_mae ? String(body.nome_mae).trim() : null,
-    notes: body.notes ? String(body.notes).trim() : null,
   }
 
   const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)

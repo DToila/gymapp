@@ -43,7 +43,6 @@ export interface Lead {
   phone?: string;
   email?: string;
   class_type: LeadClassType;
-  notes?: string;
   next_contact_date?: string;
   followup_note?: string;
   status: LeadStatus;

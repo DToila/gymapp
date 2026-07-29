@@ -85,9 +85,6 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
               </p>
             )}
 
-            {lead.notes && (
-              <p className="text-sm text-zinc-500 mt-1.5 truncate">{lead.notes}</p>
-            )}
           </div>
         ))}
       </div>
@@ -103,7 +100,6 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
               <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Telefone</th>
               <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">E-mail</th>
               <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Aula</th>
-              <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Obs.</th>
               <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Prox. Contacto</th>
               <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Follow-up</th>
               <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-300 whitespace-nowrap">Estado</th>
@@ -129,7 +125,6 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
                 <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.phone || '-'}</td>
                 <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.email || '-'}</td>
                 <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">{lead.class_type}</td>
-                <td className="px-2 py-2 text-zinc-300 whitespace-nowrap max-w-xs truncate">{lead.notes || '-'}</td>
                 <td className="px-2 py-2 text-zinc-300 whitespace-nowrap">
                   <div className="flex items-center gap-1">
                     <span>{lead.next_contact_date || '-'}</span>

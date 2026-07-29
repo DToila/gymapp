@@ -27,7 +27,6 @@ interface RegisterFormData {
   codigoPostal: string;
   contactoEmergencia: string;
   comoSoube: HeardFromOption;
-  comoSoubeOutro: string;
   nomePai: string;
   nomeMae: string;
 }
@@ -43,7 +42,6 @@ const initialForm: RegisterFormData = {
   codigoPostal: "",
   contactoEmergencia: "",
   comoSoube: "",
-  comoSoubeOutro: "",
   nomePai: "",
   nomeMae: "",
 };
@@ -111,10 +109,6 @@ export default function RegisterPage() {
         como_soube: formData.comoSoube || null,
         nome_pai: isUnder18 ? formData.nomePai.trim() || null : null,
         nome_mae: isUnder18 ? formData.nomeMae.trim() || null : null,
-        notes:
-          formData.comoSoube === "Outro" && formData.comoSoubeOutro.trim()
-            ? `Como soube (outro): ${formData.comoSoubeOutro.trim()}`
-            : null,
       };
 
       const response = await fetch("/api/public/register-lead", {
@@ -336,18 +330,6 @@ export default function RegisterPage() {
               <option value="Outro">Outro</option>
             </select>
           </div>
-
-          {formData.comoSoube === "Outro" ? (
-            <div>
-              <label className={labelClass}>Outro (opcional)</label>
-              <input
-                type="text"
-                value={formData.comoSoubeOutro}
-                onChange={(e) => handleFieldChange("comoSoubeOutro", e.target.value)}
-                className={inputClass}
-              />
-            </div>
-          ) : null}
 
           {isUnder18 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -24,7 +24,6 @@ const emptyLead = (): Lead => ({
   phone: '',
   email: '',
   class_type: 'GB1',
-  notes: '',
   next_contact_date: '',
   followup_note: '',
   status: 'Por contactar',
@@ -338,7 +337,6 @@ export default function LeadsPage() {
       name: selectedLead.name.trim(),
       phone: (selectedLead.phone || '').trim(),
       email: (selectedLead.email || '').trim(),
-      notes: selectedLead.notes?.trim() || '',
       followup_note: selectedLead.followup_note?.trim() || '',
       not_enrolled_reason_text: selectedLead.not_enrolled_reason_text?.trim() || '',
       next_contact_date: selectedLead.next_contact_date || '',
@@ -441,8 +439,7 @@ export default function LeadsPage() {
           contact_source: 'Outros',
           contact_date: new Date().toISOString().slice(0, 10),
           class_type: (parts[3] || 'GB1') as any,
-          notes: parts[4] || '',
-          next_contact_date: parts[5] || '',
+          next_contact_date: parts[4] || '',
           followup_note: '',
           status: 'Por contactar',
           trial_date: '',
@@ -860,15 +857,6 @@ export default function LeadsPage() {
                       <p className="mt-1 text-[11px] text-emerald-400">Sessão específica agendada via calendário.</p>
                     ) : null}
                   </div>
-                  <div className="sm:col-span-2">
-                    <label className="mb-1 block text-xs font-medium text-zinc-400">Observacoes</label>
-                    <textarea
-                      rows={3}
-                      value={selectedLead.notes || ''}
-                      onChange={(e) => updateLeadField('notes', e.target.value)}
-                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
-                    />
-                  </div>
                 </div>
 
                 {isCreatingLead ? (
@@ -1096,7 +1084,7 @@ export default function LeadsPage() {
                 value={importData}
                 onChange={(e) => setImportData(e.target.value)}
                 disabled={importing}
-                placeholder="Nome&#10;Telefone&#10;Email&#10;Aula&#10;Observações&#10;...&#10;&#10;Pode colar dados do Excel/Google Sheets aqui."
+                placeholder="Nome&#10;Telefone&#10;Email&#10;Aula&#10;Proximo Contacto&#10;&#10;Pode colar dados do Excel/Google Sheets aqui."
                 className="w-full h-48 rounded-xl border border-[#222] bg-[#0d0d0d] px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#c81d25] resize-none"
               />
             </div>
