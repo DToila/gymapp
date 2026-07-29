@@ -7,44 +7,18 @@ import GBLogo from "@/components/GBLogo";
 import { toLocalDateKey } from "@/components/leads/leadAutomation";
 import PublicTrialPicker from "@/components/register/PublicTrialPicker";
 
-type HeardFromOption =
-  | ""
-  | "Website"
-  | "Social Media"
-  | "Outras academias GB"
-  | "Alunos GBCQ"
-  | "Visibilidade Rua"
-  | "Flyer"
-  | "Outro";
-
 interface RegisterFormData {
   nome: string;
   dataNascimento: string;
-  nif: string;
-  sexo: "M" | "F";
   email: string;
   telemovel: string;
-  morada: string;
-  codigoPostal: string;
-  contactoEmergencia: string;
-  comoSoube: HeardFromOption;
-  nomePai: string;
-  nomeMae: string;
 }
 
 const initialForm: RegisterFormData = {
   nome: "",
   dataNascimento: "",
-  nif: "",
-  sexo: "M",
   email: "",
   telemovel: "",
-  morada: "",
-  codigoPostal: "",
-  contactoEmergencia: "",
-  comoSoube: "",
-  nomePai: "",
-  nomeMae: "",
 };
 
 const getAge = (dateOfBirth: string): number | null => {
@@ -106,14 +80,6 @@ export default function RegisterPage() {
         age: age ?? null,
         status: "Por contactar",
         enrolled: false,
-        nif: formData.nif.trim() || null,
-        sexo: formData.sexo,
-        morada: formData.morada.trim() || null,
-        codigo_postal: formData.codigoPostal.trim() || null,
-        contacto_emergencia: formData.contactoEmergencia.trim() || null,
-        como_soube: formData.comoSoube || null,
-        nome_pai: isUnder18 ? formData.nomePai.trim() || null : null,
-        nome_mae: isUnder18 ? formData.nomeMae.trim() || null : null,
       };
 
       const response = await fetch("/api/public/register-lead", {
@@ -259,55 +225,15 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>Data de Nascimento</label>
-              <input
-                type="date"
-                value={formData.dataNascimento}
-                onChange={(e) => handleFieldChange("dataNascimento", e.target.value)}
-                required
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>NIF</label>
-              <input
-                type="text"
-                value={formData.nif}
-                onChange={(e) => handleFieldChange("nif", e.target.value)}
-                required
-                className={inputClass}
-              />
-            </div>
-          </div>
-
           <div>
-            <label className={labelClass}>Sexo</label>
-            <div className="flex items-center gap-5 text-sm text-zinc-200">
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="sexo"
-                  value="M"
-                  checked={formData.sexo === "M"}
-                  onChange={(e) => handleFieldChange("sexo", e.target.value as "M" | "F")}
-                  className="accent-[#c81d25]"
-                />
-                M
-              </label>
-              <label className="flex cursor-pointer items-center gap-2">
-                <input
-                  type="radio"
-                  name="sexo"
-                  value="F"
-                  checked={formData.sexo === "F"}
-                  onChange={(e) => handleFieldChange("sexo", e.target.value as "M" | "F")}
-                  className="accent-[#c81d25]"
-                />
-                F
-              </label>
-            </div>
+            <label className={labelClass}>Data de Nascimento</label>
+            <input
+              type="date"
+              value={formData.dataNascimento}
+              onChange={(e) => handleFieldChange("dataNascimento", e.target.value)}
+              required
+              className={inputClass}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -333,82 +259,9 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>Morada</label>
-              <input
-                type="text"
-                value={formData.morada}
-                onChange={(e) => handleFieldChange("morada", e.target.value)}
-                required
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Código Postal</label>
-              <input
-                type="text"
-                value={formData.codigoPostal}
-                onChange={(e) => handleFieldChange("codigoPostal", e.target.value)}
-                required
-                className={inputClass}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Contacto de Emergência</label>
-            <input
-              type="text"
-              value={formData.contactoEmergencia}
-              onChange={(e) => handleFieldChange("contactoEmergencia", e.target.value)}
-              required
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Como soubeste da GBCQ</label>
-            <select
-              value={formData.comoSoube}
-              onChange={(e) => handleFieldChange("comoSoube", e.target.value as HeardFromOption)}
-              className={inputClass}
-            >
-              <option value="">Selecionar (opcional)</option>
-              <option value="Website">Website</option>
-              <option value="Social Media">Social Media</option>
-              <option value="Outras academias GB">Outras academias GB</option>
-              <option value="Alunos GBCQ">Alunos GBCQ</option>
-              <option value="Visibilidade Rua">Visibilidade Rua</option>
-              <option value="Flyer">Flyer</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </div>
-
-          {isUnder18 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelClass}>Nome do Pai</label>
-                <input
-                  type="text"
-                  value={formData.nomePai}
-                  onChange={(e) => handleFieldChange("nomePai", e.target.value)}
-                  required
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Nome da Mãe</label>
-                <input
-                  type="text"
-                  value={formData.nomeMae}
-                  onChange={(e) => handleFieldChange("nomeMae", e.target.value)}
-                  required
-                  className={inputClass}
-                />
-              </div>
-            </div>
-          ) : null}
+          <p className="text-xs text-zinc-500">
+            Os restantes dados (NIF, morada, contacto de emergência, etc.) são preenchidos na academia, no dia da aula.
+          </p>
 
           <button
             type="submit"

@@ -1,0 +1,72 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const getEnv = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SECRET_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return { error: 'Missing Supabase environment variables on the server.' }
+  }
+
+  return { supabaseUrl, serviceRoleKey }
+}
+
+const HEARD_FROM_OPTIONS = [
+  'Website',
+  'Social Media',
+  'Outras academias GB',
+  'Alunos GBCQ',
+  'Visibilidade Rua',
+  'Flyer',
+  'Outro',
+]
+
+// Public, unauthenticated endpoint — fills in the rest of a lead's
+// registration details (found via /api/public/find-lead) once the person is
+// physically at the academy, instead of asking for everything up front.
+export async function POST(request: Request) {
+  const env = getEnv()
+  if ('error' in env) {
+    console.error('complete-lead: missing env', env.error)
+    return NextResponse.json({ error: 'Server misconfigured.' }, { status: 500 })
+  }
+
+  const body = await request.json().catch(() => null)
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
+  }
+
+  const leadId = String(body.leadId || '').trim()
+  if (!leadId) {
+    return NextResponse.json({ error: 'Lead não identificado.' }, { status: 400 })
+  }
+
+  const sexo = body.sexo === 'M' || body.sexo === 'F' ? body.sexo : null
+  const comoSoube = HEARD_FROM_OPTIONS.includes(body.como_soube) ? body.como_soube : null
+
+  const updatePayload = {
+    nif: body.nif ? String(body.nif).trim() : null,
+    sexo,
+    morada: body.morada ? String(body.morada).trim() : null,
+    codigo_postal: body.codigo_postal ? String(body.codigo_postal).trim() : null,
+    contacto_emergencia: body.contacto_emergencia ? String(body.contacto_emergencia).trim() : null,
+    como_soube: comoSoube,
+    nome_pai: body.nome_pai ? String(body.nome_pai).trim() : null,
+    nome_mae: body.nome_mae ? String(body.nome_mae).trim() : null,
+  }
+
+  const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)
+  const { error } = await adminClient.from('leads').update(updatePayload).eq('id', leadId)
+
+  if (error) {
+    console.error('complete-lead: update failed', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}

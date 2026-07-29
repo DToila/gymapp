@@ -128,7 +128,17 @@ export default function SettingsPage() {
             </div>
 
             {/* QR Code Section */}
-            <QRCodeCard />
+            <QRCodeCard
+              path="/register"
+              title="Marcar Aula Experimental — QR Code"
+              description="Aponte a câmara do telemóvel para marcar uma aula experimental. Para o site, redes sociais ou um poster fora da academia."
+            />
+
+            <QRCodeCard
+              path="/register/complete"
+              title="Completar Inscrição — QR Code"
+              description="Para colocar dentro da academia — quem já marcou a aula experimental usa este código para completar os restantes dados do registo."
+            />
 
             {/* Pricing Rules Section */}
             <div className="rounded-2xl border border-[#222] bg-[#121212] p-6">
