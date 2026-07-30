@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Lead, LeadStatus } from './types';
 
 const COLUMNS: {
@@ -91,6 +91,8 @@ interface LeadsKanbanProps {
 export default function LeadsKanban({ leads, onCardClick, onStatusChange }: LeadsKanbanProps) {
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null);
+  const [activeMobileIndex, setActiveMobileIndex] = useState(0);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
 
   const handleDragStart = (e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -122,105 +124,151 @@ export default function LeadsKanban({ leads, onCardClick, onStatusChange }: Lead
     setDragOverStatus(null);
   };
 
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2" style={{ minHeight: '420px' }}>
-      {COLUMNS.map(({ status, label, textColor, badgeBg, avatarBg, highlightBorder }) => {
-        const columnLeads = leads.filter((l) => l.status === status);
-        const isOver = dragOverStatus === status;
+  const scrollToColumn = (index: number) => {
+    const container = mobileScrollRef.current;
+    const child = container?.children[index] as HTMLElement | undefined;
+    child?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+  };
 
-        return (
-          <div
-            key={status}
-            className={`flex flex-col rounded-xl border transition-colors ${
-              isOver
-                ? `${highlightBorder} bg-white/[0.03]`
-                : 'border-transparent'
-            }`}
-            onDragOver={(e) => handleDragOver(e, status)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, status)}
-          >
-            {/* Column header */}
-            <div className="flex items-center justify-between mb-2 px-1 pt-1">
-              <span className={`text-xs font-bold truncate ${textColor}`}>{label}</span>
-              <span className={`ml-1 shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-full ${badgeBg} ${textColor}`}>
-                {columnLeads.length}
-              </span>
+  const handleMobileScroll = () => {
+    const container = mobileScrollRef.current;
+    if (!container || container.clientWidth === 0) return;
+    const index = Math.round(container.scrollLeft / container.clientWidth);
+    setActiveMobileIndex(Math.min(Math.max(index, 0), COLUMNS.length - 1));
+  };
+
+  const renderColumn = ({ status, label, textColor, badgeBg, avatarBg, highlightBorder }: (typeof COLUMNS)[number]) => {
+    const columnLeads = leads.filter((l) => l.status === status);
+    const isOver = dragOverStatus === status;
+
+    return (
+      <div
+        key={status}
+        className={`flex h-full flex-col rounded-xl border transition-colors ${
+          isOver ? `${highlightBorder} bg-white/[0.03]` : 'border-transparent'
+        }`}
+        onDragOver={(e) => handleDragOver(e, status)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, status)}
+      >
+        {/* Column header */}
+        <div className="mb-2 flex items-center justify-between px-1 pt-1">
+          <span className={`text-xs font-bold truncate ${textColor}`}>{label}</span>
+          <span className={`ml-1 shrink-0 rounded-full px-1.5 py-0.5 text-xs font-bold ${badgeBg} ${textColor}`}>
+            {columnLeads.length}
+          </span>
+        </div>
+
+        {/* Cards */}
+        <div className="flex flex-1 flex-col gap-2 p-1">
+          {columnLeads.length === 0 ? (
+            <div
+              className={`flex flex-1 items-center justify-center rounded-lg border border-dashed p-4 text-center text-xs text-zinc-700 transition-colors ${
+                isOver ? 'border-zinc-500 text-zinc-500' : 'border-[#222]'
+              }`}
+            >
+              {isOver ? 'Soltar aqui' : 'Sem leads'}
             </div>
+          ) : (
+            columnLeads.map((lead) => {
+              const overdue = lead.next_contact_date && lead.next_contact_date < todayKey();
+              const isDragging = draggedLeadId === lead.id;
 
-            {/* Cards */}
-            <div className="flex flex-col gap-2 flex-1 p-1">
-              {columnLeads.length === 0 ? (
+              return (
                 <div
-                  className={`rounded-lg border border-dashed p-4 text-center text-xs text-zinc-700 flex-1 flex items-center justify-center transition-colors ${
-                    isOver ? 'border-zinc-500 text-zinc-500' : 'border-[#222]'
+                  key={lead.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, lead)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => onCardClick(lead)}
+                  className={`cursor-grab select-none rounded-xl border border-[#222] bg-[#161616] p-3 transition-all active:cursor-grabbing hover:border-[#333] hover:bg-[#1d1d1d] ${
+                    isDragging ? 'scale-95 opacity-40' : ''
                   }`}
                 >
-                  {isOver ? 'Soltar aqui' : 'Sem leads'}
-                </div>
-              ) : (
-                columnLeads.map((lead) => {
-                  const overdue = lead.next_contact_date && lead.next_contact_date < todayKey();
-                  const isDragging = draggedLeadId === lead.id;
-
-                  return (
+                  {/* Avatar + name */}
+                  <div className="mb-2 flex items-center gap-2">
                     <div
-                      key={lead.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, lead)}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => onCardClick(lead)}
-                      className={`rounded-xl border border-[#222] bg-[#161616] p-3 cursor-grab active:cursor-grabbing hover:bg-[#1d1d1d] hover:border-[#333] transition-all select-none ${
-                        isDragging ? 'opacity-40 scale-95' : ''
-                      }`}
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${avatarBg}`}
                     >
-                      {/* Avatar + name */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${avatarBg}`}
-                        >
-                          {initials(lead.name || '?')}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-white truncate leading-snug">
-                            {lead.name || '(sem nome)'}
-                          </p>
-                          <p className="text-[10px] text-zinc-600 mt-0.5">{lead.contact_date || '—'}</p>
-                        </div>
-                      </div>
-
-                      {/* Contact details */}
-                      <div className="space-y-1">
-                        {lead.email && (
-                          <p className="text-[10px] text-zinc-500 truncate">{lead.email}</p>
-                        )}
-                        {lead.phone && (
-                          <p className="text-[10px] text-zinc-400">{lead.phone}</p>
-                        )}
-                      </div>
-
-                      {/* Chips */}
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        <span className="text-[10px] text-zinc-600 bg-[#111] border border-[#2a2a2a] rounded-full px-1.5 py-0.5">
-                          {lead.contact_source}
-                        </span>
-                        <span className="text-[10px] text-zinc-600 bg-[#111] border border-[#2a2a2a] rounded-full px-1.5 py-0.5">
-                          {lead.class_type}
-                        </span>
-                      </div>
-
-                      {/* Overdue */}
-                      {overdue && (
-                        <p className="mt-1.5 text-[10px] text-red-400 font-medium">⚠ Follow-up em atraso</p>
-                      )}
+                      {initials(lead.name || '?')}
                     </div>
-                  );
-                })
-              )}
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold leading-snug text-white">
+                        {lead.name || '(sem nome)'}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-zinc-600">{lead.contact_date || '—'}</p>
+                    </div>
+                  </div>
+
+                  {/* Contact details */}
+                  <div className="space-y-1">
+                    {lead.email && <p className="truncate text-[10px] text-zinc-500">{lead.email}</p>}
+                    {lead.phone && <p className="text-[10px] text-zinc-400">{lead.phone}</p>}
+                  </div>
+
+                  {/* Chips */}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <span className="rounded-full border border-[#2a2a2a] bg-[#111] px-1.5 py-0.5 text-[10px] text-zinc-600">
+                      {lead.contact_source}
+                    </span>
+                    <span className="rounded-full border border-[#2a2a2a] bg-[#111] px-1.5 py-0.5 text-[10px] text-zinc-600">
+                      {lead.class_type}
+                    </span>
+                  </div>
+
+                  {/* Overdue */}
+                  {overdue && <p className="mt-1.5 text-[10px] font-medium text-red-400">⚠ Follow-up em atraso</p>}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {/* Mobile (<sm): one column per screen, scroll-snap, with a tab indicator above */}
+      <div className="sm:hidden">
+        <div className="mb-2 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {COLUMNS.map(({ status, label, textColor, badgeBg }, index) => {
+            const count = leads.filter((l) => l.status === status).length;
+            const isActive = index === activeMobileIndex;
+            return (
+              <button
+                key={status}
+                type="button"
+                onClick={() => scrollToColumn(index)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2.5 text-xs font-semibold transition-colors ${
+                  isActive ? `border-[#c81d25] bg-[rgba(200,29,37,0.1)] ${textColor}` : 'border-[#222] text-zinc-500'
+                }`}
+              >
+                {label}
+                <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${badgeBg} ${textColor}`}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          ref={mobileScrollRef}
+          onScroll={handleMobileScroll}
+          className="flex snap-x snap-mandatory overflow-x-auto"
+          style={{ minHeight: '420px' }}
+        >
+          {COLUMNS.map((col) => (
+            <div key={col.status} className="w-full shrink-0 snap-center px-1">
+              {renderColumn(col)}
             </div>
-          </div>
-        );
-      })}
-    </div>
+          ))}
+        </div>
+      </div>
+
+      {/* sm and up: side-by-side grid */}
+      <div className="hidden gap-2 sm:grid sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7" style={{ minHeight: '420px' }}>
+        {COLUMNS.map((col) => renderColumn(col))}
+      </div>
+    </>
   );
 }

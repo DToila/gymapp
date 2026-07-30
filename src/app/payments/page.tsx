@@ -798,7 +798,7 @@ export default function PaymentsPage() {
     <div className="flex min-h-screen bg-[#0b0b0b]">
       <TeacherSidebar ativo="payments" />
 
-      <main className="flex-1 p-3 sm:p-5 lg:p-7 space-y-5">
+      <main className="flex-1 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7 space-y-5">
         {/* Hero */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

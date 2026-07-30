@@ -45,7 +45,7 @@ export default function MemberProfilePage() {
       <main className="flex-1 overflow-y-auto">
         {loading ? (
           /* Skeleton — layout stays, only content pulses */
-          <div className="max-w-5xl mx-auto p-6 animate-pulse">
+          <div className="max-w-5xl mx-auto p-3 pt-16 sm:p-6 sm:pt-16 lg:pt-6 animate-pulse">
             <div className="flex items-center justify-between mb-6">
               <div className="h-9 w-24 rounded-xl bg-zinc-800" />
               <div className="h-9 w-32 rounded-xl bg-zinc-800" />
@@ -59,7 +59,7 @@ export default function MemberProfilePage() {
                     <div className="h-5 w-20 rounded-full bg-zinc-800" />
                     <div className="h-5 w-16 rounded-full bg-zinc-800" />
                   </div>
-                  <div className="grid grid-cols-3 gap-6 mt-4">
+                  <div className="grid grid-cols-2 gap-6 mt-4 sm:grid-cols-3">
                     {Array.from({ length: 6 }).map((_, i) => (
                       <div key={i} className="space-y-1">
                         <div className="h-3 w-12 rounded bg-zinc-800" />
@@ -71,13 +71,13 @@ export default function MemberProfilePage() {
               </div>
             </div>
             <div className="h-20 rounded-2xl bg-zinc-800/50 mb-4" />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="h-64 rounded-2xl bg-zinc-800/50" />
               <div className="h-64 rounded-2xl bg-zinc-800/50" />
             </div>
           </div>
         ) : !member ? (
-          <div className="p-6">
+          <div className="p-3 pt-16 sm:p-6 sm:pt-16 lg:pt-6">
             <button
               onClick={() => router.push('/members')}
               className="flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-800 bg-zinc-900 text-sm text-zinc-400 hover:text-zinc-200 transition-colors mb-6"

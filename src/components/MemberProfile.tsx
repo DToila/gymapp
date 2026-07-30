@@ -583,7 +583,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const selectCls = inputCls + " cursor-pointer";
 
   return (
-    <div className="min-h-screen bg-[#0b0b0b] text-white p-6">
+    <div className="min-h-screen bg-[#0b0b0b] text-white p-3 pt-16 sm:p-6 sm:pt-16 lg:pt-6">
         <div className="max-w-5xl mx-auto">
 
           {/* Top bar: Voltar + Editar/Guardar/Cancelar */}
@@ -756,7 +756,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   {/* Morada */}
                   <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
                     <div className="text-xs font-semibold text-zinc-600 mb-2">Morada</div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="col-span-2">
                         <div className="text-xs font-medium text-zinc-500 mb-1">Rua</div>
                         {isEditing ? (
@@ -787,7 +787,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   {/* Contacto de Emergência */}
                   <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
                     <div className="text-xs font-semibold text-zinc-600 mb-2">Contacto de Emergência</div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <div className="text-xs font-medium text-zinc-500 mb-1">Nome</div>
                         {isEditing ? (
@@ -811,7 +811,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
                     <div className="text-[9px] font-bold uppercase tracking-widest text-[#444] mb-1">Faturação</div>
                     <div className="text-[9px] text-[#444] mb-2">Preencher se diferente do membro</div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <div className="text-xs font-medium text-zinc-500 mb-1">Nome Faturação</div>
                         {isEditing ? (

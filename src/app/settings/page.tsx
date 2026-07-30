@@ -29,7 +29,7 @@ export default function SettingsPage() {
     <div className="flex min-h-screen bg-[#0b0b0b]">
       <TeacherSidebar ativo="settings" />
 
-      <main className="flex-1 p-3 sm:p-5 lg:p-7">
+      <main className="flex-1 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
         {/* Hero */}
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -71,7 +71,7 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Morada</label>
                     <input
@@ -92,7 +92,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Telemóvel</label>
                     <input
@@ -148,7 +148,7 @@ export default function SettingsPage() {
                 {/* Adult Pricing */}
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-300 mb-3 uppercase tracking-wide">Adult Prices</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Débito Direto (€)</label>
                       <input
@@ -173,7 +173,7 @@ export default function SettingsPage() {
                 {/* Crianças Pricing */}
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-300 mb-3 uppercase tracking-wide">Crianças Prices</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Débito Direto (€)</label>
                       <input
@@ -198,7 +198,7 @@ export default function SettingsPage() {
                 {/* Discounts */}
                 <div className="border-t border-[#222] pt-6">
                   <h3 className="text-sm font-semibold text-zinc-300 mb-3 uppercase tracking-wide">Discounts</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs text-zinc-400 uppercase tracking-wide mb-2">Desconto Familiar (€)</label>
                       <input

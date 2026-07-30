@@ -9,9 +9,9 @@ export default function StaffSettingsPage() {
     <div className="flex min-h-screen bg-[#0b0b0b]">
       <TeacherSidebar ativo="settings" role="admin" />
 
-      <main className="ml-[260px] flex-1 overflow-auto p-8">
+      <main className="flex-1 overflow-auto p-3 pt-16 sm:p-5 sm:pt-16 lg:p-8">
         <div className="mx-auto max-w-5xl space-y-6">
-          <div className="flex items-center justify-between border-b border-[#222] pb-4">
+          <div className="flex flex-col gap-3 border-b border-[#222] pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white">Gestão de Acessos</h1>
               <p className="mt-1 text-sm text-zinc-500">Adicione pessoas reais, atribua roles e remova acessos quando necessário.</p>

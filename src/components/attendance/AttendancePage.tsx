@@ -392,7 +392,7 @@ export default function AttendancePage() {
                 event.stopPropagation();
                 setBehavior(person.id, option.value);
               }}
-              className={`grid h-7 w-7 place-items-center rounded-md border text-[13px] transition ${
+              className={`grid h-9 w-9 place-items-center rounded-md border text-[13px] transition ${
                 isActive
                   ? 'border-[#c81d25] bg-[rgba(200,29,37,0.2)] shadow-[0_0_0_1px_rgba(200,29,37,0.2)]'
                   : 'border-[#2a2a2a] bg-[#161616] hover:border-[#3a3a3a]'
@@ -473,7 +473,7 @@ export default function AttendancePage() {
     <div className="flex min-h-screen bg-[linear-gradient(180deg,#0b0b0b_0%,#101010_100%)] text-zinc-100">
       <TeacherSidebar ativo="attendance" />
 
-      <main className="flex-1 p-3 sm:p-5 lg:p-7">
+      <main className="flex-1 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
         <div className="mx-auto max-w-[1320px]">
           {/* Hero */}
           <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

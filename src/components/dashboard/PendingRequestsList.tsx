@@ -30,13 +30,13 @@ export default function PendingRequestsList({ requests }: { requests: RequestIte
             <div className="flex gap-2">
               <button
                 onClick={() => handleApproveRequest(pedido.id)}
-                className="grid h-7 w-7 place-items-center rounded-md border border-[#1f3a26] bg-[#112018] text-[#22c55e]"
+                className="grid h-11 w-11 place-items-center rounded-md border border-[#1f3a26] bg-[#112018] text-[#22c55e]"
               >
                 ✓
               </button>
               <button
                 onClick={() => handleRejectRequest(pedido.id)}
-                className="grid h-7 w-7 place-items-center rounded-md border border-[#3a1d1d] bg-[#221414] text-[#ef4444]"
+                className="grid h-11 w-11 place-items-center rounded-md border border-[#3a1d1d] bg-[#221414] text-[#ef4444]"
               >
                 ✕
               </button>

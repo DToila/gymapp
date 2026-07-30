@@ -131,7 +131,7 @@ export default function StudentSidebar({ ativo, memberName = 'Aluno' }: StudentS
           </div>
           <button
             onClick={() => setDrawerOpen(false)}
-            className="rounded-lg p-1.5 text-zinc-500 hover:bg-[#1e1e1e] hover:text-zinc-200"
+            className="rounded-lg p-2.5 text-zinc-500 hover:bg-[#1e1e1e] hover:text-zinc-200"
           >
             <X size={18} />
           </button>

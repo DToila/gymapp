@@ -415,7 +415,7 @@ export default function MembersPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #0b0b0b 0%, #101010 100%)', color: '#f0f0f0', display: 'flex' }}>
       <TeacherSidebar ativo="members" onAddMember={() => setShowAddModal(true)} />
-      <div className="flex-1 p-3 sm:p-5 lg:p-7">
+      <div className="flex-1 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
       <div className="mx-auto max-w-[1280px]">
         {/* Hero */}
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
