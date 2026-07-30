@@ -29,7 +29,7 @@ export default function SettingsPage() {
     <div className="flex min-h-screen bg-[#0b0b0b]">
       <TeacherSidebar ativo="settings" />
 
-      <main className="flex-1 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
+      <main className="flex-1 min-w-0 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
         {/* Hero */}
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

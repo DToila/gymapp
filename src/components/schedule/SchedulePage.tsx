@@ -557,7 +557,7 @@ export default function SchedulePage() {
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
       <TeacherSidebar ativo="schedule" onLogout={() => router.push('/')} />
 
-      <main className="flex-1 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
+      <main className="flex-1 min-w-0 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
         <div className="mx-auto max-w-[1320px]">
           {/* Hero */}
           <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

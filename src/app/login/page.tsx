@@ -118,7 +118,7 @@ function LoginForm() {
           position: 'absolute',
           zIndex: 20,
           /* Position: center when no mode, top-left when mode selected */
-          top: hasMode ? '20px' : '36%',
+          top: hasMode ? '20px' : '28%',
           left: hasMode ? '20px' : '50%',
           transform: hasMode ? 'translate(0,0)' : 'translate(-50%,-50%)',
           transition: `top ${EASE}, left ${EASE}, transform ${EASE}`,
@@ -168,7 +168,7 @@ function LoginForm() {
       <div
         className="absolute bottom-0 left-0 right-0 z-10"
         style={{
-          height: hasMode ? '70vh' : '30vh',
+          height: hasMode ? '70vh' : '42vh',
           transition: `height ${EASE}`,
           background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.88) 60%, rgba(0,0,0,0.96) 100%)',
           display: 'flex',

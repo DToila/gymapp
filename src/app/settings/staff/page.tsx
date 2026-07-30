@@ -9,7 +9,7 @@ export default function StaffSettingsPage() {
     <div className="flex min-h-screen bg-[#0b0b0b]">
       <TeacherSidebar ativo="settings" role="admin" />
 
-      <main className="flex-1 overflow-auto p-3 pt-16 sm:p-5 sm:pt-16 lg:p-8">
+      <main className="flex-1 min-w-0 overflow-auto p-3 pt-16 sm:p-5 sm:pt-16 lg:p-8">
         <div className="mx-auto max-w-5xl space-y-6">
           <div className="flex flex-col gap-3 border-b border-[#222] pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
