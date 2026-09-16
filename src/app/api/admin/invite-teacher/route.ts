@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createSupabaseServerClient } from '../../../../../lib/supabaseServer'
 
+// The one account that can manage everyone else's access (create, edit any
+// role, remove people). Every other 'admin' can only edit their own profile
+// row — plain role checks alone can't express "one specific admin outranks
+// the other admins", so this is intentionally a hardcoded identity check
+// rather than another value in the role enum.
+const OWNER_EMAIL = 'diogo.t.candeias@gmail.com'
+
+const isOwnerEmail = (email: string | null | undefined) => (email || '').toLowerCase() === OWNER_EMAIL
+
 type AppRole = 'admin' | 'staff' | 'coach'
 
 type AdminUser = {
@@ -96,7 +105,7 @@ const ensureAdmin = async () => {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
-  return { user }
+  return { user, isOwner: isOwnerEmail(user.email) }
 }
 
 const findUserByEmail = async (adminClient: any, email: string) => {
@@ -109,13 +118,16 @@ const findUserByEmail = async (adminClient: any, email: string) => {
   return { existingUser }
 }
 
+// The `profiles` table has no `email` column — email lives only on the
+// Supabase Auth user record (auth.users), fetched separately below via
+// admin.listUsers() and merged in. Selecting/writing `profiles.email`
+// fails with "column profiles.email does not exist".
 const upsertProfile = async (
   adminClient: any,
-  params: { id: string; email: string; fullName: string; role: AppRole }
+  params: { id: string; fullName: string; role: AppRole }
 ) => {
   const profilePayload = {
     id: params.id,
-    email: params.email,
     full_name: params.fullName || null,
     role: params.role,
   }
@@ -143,17 +155,20 @@ export async function GET() {
   const adminClient = createClient(env.supabaseUrl, env.serviceRoleKey)
   const { data, error } = await adminClient
     .from('profiles')
-    .select('id, email, full_name, role, created_at')
+    .select('id, full_name, role, created_at')
     .order('created_at', { ascending: false })
+
+  const listed = await adminClient.auth.admin.listUsers()
+  if (listed.error) {
+    return NextResponse.json({ error: listed.error.message }, { status: 500 })
+  }
+  const emailById = new Map<string, string | null>(
+    (listed.data.users || []).map((user: { id: string; email?: string | null }) => [user.id, user.email || null])
+  )
 
   if (error) {
     if (!isProfilesTableMissingError(error)) {
       return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    const listed = await adminClient.auth.admin.listUsers()
-    if (listed.error) {
-      return NextResponse.json({ error: listed.error.message }, { status: 500 })
     }
 
     const fallbackItems: AdminUser[] = (listed.data.users || []).map((user) => ({
@@ -164,10 +179,24 @@ export async function GET() {
       created_at: user.created_at || new Date().toISOString(),
     }))
 
-    return NextResponse.json({ items: fallbackItems })
+    const scopedFallback = access.isOwner ? fallbackItems : fallbackItems.filter((item) => item.id === access.user.id)
+    return NextResponse.json({ items: scopedFallback, isOwner: access.isOwner })
   }
 
-  return NextResponse.json({ items: data || [] })
+  const items: AdminUser[] = (data || []).map((profile: { id: string; full_name: string | null; role: AppRole; created_at: string }) => ({
+    id: profile.id,
+    email: emailById.get(profile.id) || null,
+    full_name: profile.full_name,
+    role: profile.role,
+    created_at: profile.created_at,
+  }))
+
+  // Non-owner admins only ever see their own row here — they can only act on
+  // themselves anyway (see PUT below), so there's no reason to hand them
+  // everyone else's email/role over the wire.
+  const scopedItems = access.isOwner ? items : items.filter((item) => item.id === access.user.id)
+
+  return NextResponse.json({ items: scopedItems, isOwner: access.isOwner })
 }
 
 export async function POST(request: Request) {
@@ -178,6 +207,10 @@ export async function POST(request: Request) {
 
   const access = await ensureAdmin()
   if ('error' in access) return access.error
+
+  if (!access.isOwner) {
+    return NextResponse.json({ error: 'Only the account owner can create new access.' }, { status: 403 })
+  }
 
   const body = await request.json().catch(() => null)
   const email = normalizeEmail(String(body?.email || ''))
@@ -217,7 +250,6 @@ export async function POST(request: Request) {
 
       const profileUpsert = await upsertProfile(adminClient, {
         id: existingUser.id,
-        email,
         fullName,
         role: roleValue as AppRole,
       })
@@ -248,7 +280,6 @@ export async function POST(request: Request) {
 
     const profileUpsert = await upsertProfile(adminClient, {
       id: createdId,
-      email,
       fullName,
       role: roleValue as AppRole,
     })
@@ -279,7 +310,6 @@ export async function POST(request: Request) {
 
   const profileUpsert = await upsertProfile(adminClient, {
     id: invitedUserId,
-    email,
     fullName,
     role: roleValue as AppRole,
   })
@@ -322,11 +352,30 @@ export async function PUT(request: Request) {
   }
 
   const existingUser = lookup.existingUser
+  const targetIdForCheck = existingUser?.id || targetId
+
+  if (!access.isOwner && targetIdForCheck !== access.user.id) {
+    return NextResponse.json({ error: 'You can only edit your own profile.' }, { status: 403 })
+  }
+
+  // Non-owners can rename themselves or change their own password, but can
+  // never change their own role — that would be a self-escalation path.
+  // Always keep whatever role they already have instead of trusting the
+  // submitted value.
+  let effectiveRole = roleValue as AppRole
+  if (!access.isOwner) {
+    const { data: ownProfile } = await adminClient
+      .from('profiles')
+      .select('role')
+      .eq('id', access.user.id)
+      .maybeSingle()
+    effectiveRole = (ownProfile?.role && isRole(ownProfile.role) ? ownProfile.role : null) || effectiveRole
+  }
 
   if (existingUser) {
     const updates: Parameters<typeof adminClient.auth.admin.updateUserById>[1] = {
-      app_metadata: { role: roleValue },
-      user_metadata: { role: roleValue, full_name: fullName || null },
+      app_metadata: { role: effectiveRole },
+      user_metadata: { role: effectiveRole, full_name: fullName || null },
     }
 
     if (password) {
@@ -342,9 +391,8 @@ export async function PUT(request: Request) {
 
     const profileUpsert = await upsertProfile(adminClient, {
       id: existingUser.id,
-      email,
       fullName,
-      role: roleValue as AppRole,
+      role: effectiveRole,
     })
 
     if ('error' in profileUpsert) {
@@ -357,9 +405,8 @@ export async function PUT(request: Request) {
   if (targetId) {
     const profileUpsert = await upsertProfile(adminClient, {
       id: targetId,
-      email,
       fullName,
-      role: roleValue as AppRole,
+      role: effectiveRole,
     })
 
     if ('error' in profileUpsert) {
@@ -380,6 +427,10 @@ export async function DELETE(request: Request) {
 
   const access = await ensureAdmin()
   if ('error' in access) return access.error
+
+  if (!access.isOwner) {
+    return NextResponse.json({ error: 'Only the account owner can remove access.' }, { status: 403 })
+  }
 
   const body = await request.json().catch(() => null)
   const email = normalizeEmail(String(body?.email || ''))

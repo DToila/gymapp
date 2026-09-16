@@ -22,7 +22,7 @@ const formatDateLabel = (dateValue: string): string => {
 export default function AnnouncementsPanel({
   maxVisible = 3,
   canCreate = true,
-  currentUserName = 'Professor',
+  currentUserName = 'Instrutor',
   currentUserId = 'local-user',
 }: {
   maxVisible?: number;

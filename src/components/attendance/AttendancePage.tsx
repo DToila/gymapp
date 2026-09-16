@@ -473,7 +473,7 @@ export default function AttendancePage() {
     <div className="flex min-h-screen bg-[linear-gradient(180deg,#0b0b0b_0%,#101010_100%)] text-zinc-100">
       <TeacherSidebar ativo="attendance" />
 
-      <main className="flex-1 min-w-0 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
+      <main className="flex-1 min-w-0 p-3 pt-16 pb-20 sm:p-5 sm:pt-16 sm:pb-5 lg:p-7">
         <div className="mx-auto max-w-[1320px]">
           {/* Hero */}
           <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -673,6 +673,10 @@ export default function AttendancePage() {
           </section>
         </div>
       </main>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#222] bg-[#111]/95 px-4 py-3 text-center text-sm text-zinc-300 backdrop-blur sm:hidden">
+        {rightList.length} de {scopedPeople.length} marcados <span className="text-emerald-400">· Guardado automaticamente</span>
+      </div>
     </div>
   );
 }

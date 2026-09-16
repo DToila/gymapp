@@ -15,13 +15,14 @@ type RoleAssignment = {
 const roleLabels: Record<AppRole, string> = {
   admin: 'Administrador',
   staff: 'Staff',
-  coach: 'Professor',
+  coach: 'Instrutor',
 };
 
 const roleOptions: AppRole[] = ['coach', 'staff', 'admin'];
 
 export default function RoleManagementSection() {
   const [assignments, setAssignments] = useState<RoleAssignment[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export default function RoleManagementSection() {
       }
 
       setAssignments(Array.isArray(json?.items) ? json.items : []);
+      setIsOwner(Boolean(json?.isOwner));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load role assignments.');
     } finally {
@@ -150,19 +152,25 @@ export default function RoleManagementSection() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Acesso & Roles</h2>
-          <p className="mt-1 text-sm text-zinc-500">Adicione pessoas reais ao sistema e defina o seu acesso.</p>
+          <h2 className="text-xl font-semibold text-white">{isOwner ? 'Acesso & Roles' : 'O Meu Perfil'}</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            {isOwner
+              ? 'Adicione pessoas reais ao sistema e defina o seu acesso.'
+              : 'Atualize o seu nome e a sua password de acesso.'}
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            resetForm();
-            setShowForm((value) => !value);
-          }}
-          className="rounded-lg bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b01720]"
-        >
-          {showForm ? 'Fechar' : '+ Adicionar acesso'}
-        </button>
+        {isOwner ? (
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setShowForm((value) => !value);
+            }}
+            className="rounded-lg bg-[#c81d25] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#b01720]"
+          >
+            {showForm ? 'Fechar' : '+ Adicionar acesso'}
+          </button>
+        ) : null}
       </div>
 
       {error ? (
@@ -199,17 +207,23 @@ export default function RoleManagementSection() {
             </div>
             <div>
               <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Função</label>
-              <select
-                value={form.role}
-                onChange={(e) => setForm((current) => ({ ...current, role: e.target.value as AppRole }))}
-                className="w-full rounded-lg border border-[#222] bg-[#121212] px-3 py-2.5 text-white focus:border-[#c81d25] focus:outline-none"
-              >
-                {roleOptions.map((role) => (
-                  <option key={role} value={role}>
-                    {roleLabels[role]}
-                  </option>
-                ))}
-              </select>
+              {isOwner ? (
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm((current) => ({ ...current, role: e.target.value as AppRole }))}
+                  className="w-full rounded-lg border border-[#222] bg-[#121212] px-3 py-2.5 text-white focus:border-[#c81d25] focus:outline-none"
+                >
+                  {roleOptions.map((role) => (
+                    <option key={role} value={role}>
+                      {roleLabels[role]}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="w-full rounded-lg border border-[#1a1a1a] bg-[#0c0c0c] px-3 py-2.5 text-zinc-400">
+                  {roleLabels[form.role]} <span className="text-xs text-zinc-600">(só o Diogo pode alterar)</span>
+                </div>
+              )}
             </div>
             <div>
               <label className="mb-2 block text-xs uppercase tracking-wide text-zinc-400">Password temporária (opcional)</label>
@@ -266,13 +280,15 @@ export default function RoleManagementSection() {
                   >
                     Editar
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleRemove(assignment)}
-                    className="rounded-lg border border-[#c81d25]/40 px-3 py-1.5 text-xs font-semibold text-[#fda4af] transition hover:bg-[#1f1214]"
-                  >
-                    Remover
-                  </button>
+                  {isOwner ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleRemove(assignment)}
+                      className="rounded-lg border border-[#c81d25]/40 px-3 py-1.5 text-xs font-semibold text-[#fda4af] transition hover:bg-[#1f1214]"
+                    >
+                      Remover
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))}

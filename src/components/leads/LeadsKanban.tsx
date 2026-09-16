@@ -82,17 +82,32 @@ function initials(name: string) {
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
+// Swipe left = advance to the next pipeline stage, swipe right = go back —
+// mirrors the mobile stage-tabs order above, which is already the order
+// staff see and think in. Below this distance it's treated as an
+// accidental/undecided drag and snaps back instead of committing.
+const SWIPE_COMMIT_THRESHOLD = 90;
+
 interface LeadsKanbanProps {
   leads: Lead[];
   onCardClick: (lead: Lead) => void;
   onStatusChange: (lead: Lead, newStatus: LeadStatus) => void;
 }
 
+interface SwipeState {
+  leadId: string;
+  deltaX: number;
+  animating: boolean;
+}
+
 export default function LeadsKanban({ leads, onCardClick, onStatusChange }: LeadsKanbanProps) {
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null);
   const [activeMobileIndex, setActiveMobileIndex] = useState(0);
+  const [swipe, setSwipe] = useState<SwipeState | null>(null);
   const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const swipeStartRef = useRef<{ x: number; y: number; leadId: string } | null>(null);
+  const swipeMovedRef = useRef(false);
 
   const handleDragStart = (e: React.DragEvent, lead: Lead) => {
     setDraggedLeadId(lead.id);
@@ -137,9 +152,72 @@ export default function LeadsKanban({ leads, onCardClick, onStatusChange }: Lead
     setActiveMobileIndex(Math.min(Math.max(index, 0), COLUMNS.length - 1));
   };
 
-  const renderColumn = ({ status, label, textColor, badgeBg, avatarBg, highlightBorder }: (typeof COLUMNS)[number]) => {
+  const handleCardTouchStart = (e: React.TouchEvent, lead: Lead) => {
+    const touch = e.touches[0];
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY, leadId: lead.id };
+    swipeMovedRef.current = false;
+    setSwipe({ leadId: lead.id, deltaX: 0, animating: false });
+  };
+
+  const handleCardTouchMove = (e: React.TouchEvent, lead: Lead, columnIndex: number) => {
+    const start = swipeStartRef.current;
+    if (!start || start.leadId !== lead.id) return;
+    const touch = e.touches[0];
+    const rawDeltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+
+    // A clearer vertical drag than horizontal is the user scrolling the
+    // column, not swiping the card — let touch-action: pan-y handle it and
+    // stop tracking so the card doesn't fight the scroll.
+    if (Math.abs(deltaY) > Math.abs(rawDeltaX) && Math.abs(deltaY) > 12) {
+      swipeStartRef.current = null;
+      setSwipe(null);
+      return;
+    }
+
+    if (Math.abs(rawDeltaX) > 10) swipeMovedRef.current = true;
+
+    const targetIndex = rawDeltaX < 0 ? columnIndex + 1 : columnIndex - 1;
+    const hasTarget = targetIndex >= 0 && targetIndex < COLUMNS.length;
+    // Rubber-band resistance at the ends of the pipeline (no "next" after
+    // Não Inscrito, no "previous" before Por Contactar).
+    const deltaX = hasTarget ? rawDeltaX : rawDeltaX * 0.25;
+
+    setSwipe({ leadId: lead.id, deltaX, animating: false });
+  };
+
+  const handleCardTouchEnd = (lead: Lead, columnIndex: number) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+
+    setSwipe((current) => {
+      if (!start || !current || current.leadId !== lead.id) return null;
+
+      const { deltaX } = current;
+      const targetIndex = deltaX < 0 ? columnIndex + 1 : columnIndex - 1;
+      const hasTarget = targetIndex >= 0 && targetIndex < COLUMNS.length;
+
+      if (hasTarget && Math.abs(deltaX) > SWIPE_COMMIT_THRESHOLD) {
+        const flyoutX = deltaX < 0 ? -480 : 480;
+        window.setTimeout(() => {
+          onStatusChange(lead, COLUMNS[targetIndex].status);
+          setSwipe(null);
+        }, 180);
+        return { leadId: lead.id, deltaX: flyoutX, animating: true };
+      }
+
+      window.setTimeout(() => setSwipe(null), 200);
+      return { leadId: lead.id, deltaX: 0, animating: true };
+    });
+  };
+
+  const renderColumn = (
+    { status, label, textColor, badgeBg, avatarBg, highlightBorder }: (typeof COLUMNS)[number],
+    swipeEnabled = false
+  ) => {
     const columnLeads = leads.filter((l) => l.status === status);
     const isOver = dragOverStatus === status;
+    const columnIndex = COLUMNS.findIndex((c) => c.status === status);
 
     return (
       <div
@@ -173,15 +251,40 @@ export default function LeadsKanban({ leads, onCardClick, onStatusChange }: Lead
             columnLeads.map((lead) => {
               const overdue = lead.next_contact_date && lead.next_contact_date < todayKey();
               const isDragging = draggedLeadId === lead.id;
+              const isSwiping = swipeEnabled && swipe?.leadId === lead.id;
+              const deltaX = isSwiping ? swipe!.deltaX : 0;
+              const nextCol = COLUMNS[columnIndex + 1];
+              const prevCol = COLUMNS[columnIndex - 1];
+              const revealCol = deltaX < 0 ? nextCol : deltaX > 0 ? prevCol : null;
 
-              return (
+              const card = (
                 <div
                   key={lead.id}
                   draggable
                   onDragStart={(e) => handleDragStart(e, lead)}
                   onDragEnd={handleDragEnd}
-                  onClick={() => onCardClick(lead)}
-                  className={`cursor-grab select-none rounded-xl border border-[#222] bg-[#161616] p-3 transition-all active:cursor-grabbing hover:border-[#333] hover:bg-[#1d1d1d] ${
+                  onTouchStart={swipeEnabled ? (e) => handleCardTouchStart(e, lead) : undefined}
+                  onTouchMove={swipeEnabled ? (e) => handleCardTouchMove(e, lead, columnIndex) : undefined}
+                  onTouchEnd={swipeEnabled ? () => handleCardTouchEnd(lead, columnIndex) : undefined}
+                  onClick={() => {
+                    if (swipeMovedRef.current) {
+                      swipeMovedRef.current = false;
+                      return;
+                    }
+                    onCardClick(lead);
+                  }}
+                  style={
+                    isSwiping
+                      ? {
+                          transform: `translateX(${deltaX}px)`,
+                          transition: swipe!.animating ? 'transform 0.18s ease-out' : undefined,
+                          touchAction: 'pan-y',
+                        }
+                      : swipeEnabled
+                        ? { touchAction: 'pan-y' }
+                        : undefined
+                  }
+                  className={`relative cursor-grab select-none rounded-xl border border-[#222] bg-[#161616] p-3 transition-colors active:cursor-grabbing hover:border-[#333] hover:bg-[#1d1d1d] ${
                     isDragging ? 'scale-95 opacity-40' : ''
                   }`}
                 >
@@ -218,6 +321,24 @@ export default function LeadsKanban({ leads, onCardClick, onStatusChange }: Lead
 
                   {/* Overdue */}
                   {overdue && <p className="mt-1.5 text-[10px] font-medium text-red-400">⚠ Follow-up em atraso</p>}
+                </div>
+              );
+
+              if (!swipeEnabled) return card;
+
+              return (
+                <div key={lead.id} className="relative overflow-hidden rounded-xl">
+                  {/* Colored reveal behind the card, showing the stage it will move to */}
+                  {revealCol && (
+                    <div
+                      className={`absolute inset-0 flex items-center rounded-xl px-4 text-xs font-bold ${revealCol.badgeBg} ${revealCol.textColor} ${
+                        deltaX < 0 ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {deltaX < 0 ? `${revealCol.label} →` : `← ${revealCol.label}`}
+                    </div>
+                  )}
+                  {card}
                 </div>
               );
             })
@@ -259,7 +380,7 @@ export default function LeadsKanban({ leads, onCardClick, onStatusChange }: Lead
         >
           {COLUMNS.map((col) => (
             <div key={col.status} className="w-full shrink-0 snap-center px-1">
-              {renderColumn(col)}
+              {renderColumn(col, true)}
             </div>
           ))}
         </div>

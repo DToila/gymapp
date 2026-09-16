@@ -41,7 +41,24 @@ export default function StudentPaymentsPage() {
 
         <div className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)] lg:col-span-2">
           <p className="mb-3 text-xl font-semibold text-zinc-100">History</p>
-          <div className="overflow-x-auto">
+
+          {/* Mobile card list */}
+          <div className="space-y-2 sm:hidden">
+            {history.map((row) => (
+              <div key={row.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#1f1f1f] bg-[#161616] px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-zinc-100">{row.month}</p>
+                  <span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-xs ${row.status === 'Pago' ? 'border-[#1f4d33] bg-[rgba(22,163,74,0.12)] text-green-300' : 'border-[#5b1f24] bg-[rgba(239,68,68,0.15)] text-rose-300'}`}>
+                    {row.status}
+                  </span>
+                </div>
+                <span className="shrink-0 text-base font-semibold text-white">{row.amount}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-left text-sm">
               <thead className="text-xs uppercase tracking-wide text-zinc-500">
                 <tr>

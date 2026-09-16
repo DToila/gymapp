@@ -1,4 +1,4 @@
-# GymApp - Modern Gym Membership Management System
+# GBCQ - Modern Gym Membership Management System
 
 A professional web application for managing gym memberships with separate portals for teachers and students.
 
@@ -76,4 +76,4 @@ MIT License - feel free to use this project
 
 ## Support
 
-For issues or questions, please contact support@gymapp.com
+For issues or questions, please contact support@gbcq.com

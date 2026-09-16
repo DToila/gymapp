@@ -96,6 +96,7 @@ export default function SchedulePage() {
   const [initialPlanSnapshot, setInitialPlanSnapshot] = useState('');
   const [toast, setToast] = useState<ToastState>(null);
   const [selectedMonday, setSelectedMonday] = useState<Date | null>(null);
+  const [selectedDayKey, setSelectedDayKey] = useState<DayKey>(() => dayNumberToKey(new Date().getDay()) || 'SEG');
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const getWeekMonday = (date: Date): Date => {
@@ -659,55 +660,122 @@ export default function SchedulePage() {
             </div>
 
             {scheduleView === 'grid' ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-7">
-                {DAY_ORDER.map(({ key, label }) => {
-                  const rows = classesByDay[key] || [];
-                  return (
-                    <article key={key} className="h-full rounded-2xl border border-[#222] bg-[#161616] shadow-[0_10px_24px_rgba(0,0,0,0.34)]">
-                      <div className="sticky top-0 z-10 rounded-t-2xl border-b border-[#262626] bg-[#1a1a1a] px-3 py-2.5">
-                        <p className="text-sm font-semibold tracking-wide text-zinc-200">{label}</p>
-                      </div>
-                      <div className="space-y-2 p-3">
-                        {rows.length === 0 ? (
-                          <p className="rounded-xl border border-[#262626] bg-[#121212] px-3 py-2 text-sm text-zinc-500">Sem aulas</p>
-                        ) : (
-                          rows.map((item) => (
-                            <button
-                              type="button"
-                              key={item.id}
-                              className="relative w-full rounded-xl border border-[#262626] bg-[#121212] px-3 py-2 text-left transition hover:bg-white/5"
-                              title={`${item.level} • ${item.type}${item.notes ? ` • ${item.notes}` : ''}`}
-                              onClick={() => {
-                                openClassPlanEditor(item, key, label);
-                              }}
-                            >
-                              {planExistsMap[
-                                planExistsKey(slotIdByCode[item.id] || item.id, weekDatesByDay[key].dateKey)
-                              ] ? (
-                                <span className="absolute right-2 top-2 inline-block h-2 w-2 rounded-full bg-[#c81d25]" />
-                              ) : null}
-                              <div className="mb-1 flex items-center justify-between gap-2">
-                                <span className="rounded-full border border-[#333] bg-[#111] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-300">
-                                  {item.room}
-                                </span>
-                                <span className="text-xs font-medium text-zinc-200">{item.time.replace('-', '–')}</span>
-                              </div>
-                              <p className="text-xs text-zinc-400">
-                                {item.level} • {item.type}
-                                {item.type === 'Sparring' ? (
-                                  <span className="ml-1 rounded-full border border-[#5b1f24] bg-[rgba(91,31,36,0.25)] px-1.5 py-0.5 text-[10px] text-rose-300">
-                                    Sparring
-                                  </span>
+              <>
+                {/* Mobile (<sm): one day at a time, navigated via horizontal tabs */}
+                <div className="sm:hidden">
+                  <div className="mb-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {DAY_ORDER.map(({ key, label }) => {
+                      const isActive = selectedDayKey === key;
+                      const dateLabel = weekDatesByDay[key].dateKey
+                        ? new Date(`${weekDatesByDay[key].dateKey}T12:00:00`).getDate()
+                        : '';
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setSelectedDayKey(key)}
+                          className={`shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
+                            isActive
+                              ? 'border-[#c81d25] bg-[#c81d25] text-white'
+                              : 'border-[#2a2a2a] bg-[#161616] text-zinc-400'
+                          }`}
+                        >
+                          {label} {dateLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="space-y-2">
+                    {(classesByDay[selectedDayKey] || []).length === 0 ? (
+                      <p className="rounded-xl border border-[#262626] bg-[#121212] px-3 py-3 text-sm text-zinc-500">Sem aulas</p>
+                    ) : (
+                      (classesByDay[selectedDayKey] || []).map((item) => (
+                        <button
+                          type="button"
+                          key={item.id}
+                          className="relative flex w-full items-center gap-3 rounded-xl border border-[#262626] bg-[#161616] px-3 py-3 text-left transition active:bg-white/5"
+                          onClick={() => {
+                            const dayMeta = DAY_ORDER.find((d) => d.key === selectedDayKey)!;
+                            openClassPlanEditor(item, selectedDayKey, dayMeta.label);
+                          }}
+                        >
+                          {planExistsMap[
+                            planExistsKey(slotIdByCode[item.id] || item.id, weekDatesByDay[selectedDayKey].dateKey)
+                          ] ? (
+                            <span className="absolute right-3 top-3 inline-block h-2 w-2 rounded-full bg-[#c81d25]" />
+                          ) : null}
+                          <span className="shrink-0 rounded-full border border-[#333] bg-[#111] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-300">
+                            {item.room}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-semibold text-zinc-100">
+                              {item.level} • {item.type}
+                            </span>
+                            {item.type === 'Sparring' ? (
+                              <span className="mt-1 inline-block rounded-full border border-[#5b1f24] bg-[rgba(91,31,36,0.25)] px-1.5 py-0.5 text-[10px] text-rose-300">
+                                Sparring
+                              </span>
+                            ) : null}
+                          </span>
+                          <span className="shrink-0 text-sm font-medium text-zinc-200">{item.time.replace('-', '–')}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* sm and up: full weekly grid */}
+                <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-7">
+                  {DAY_ORDER.map(({ key, label }) => {
+                    const rows = classesByDay[key] || [];
+                    return (
+                      <article key={key} className="h-full rounded-2xl border border-[#222] bg-[#161616] shadow-[0_10px_24px_rgba(0,0,0,0.34)]">
+                        <div className="sticky top-0 z-10 rounded-t-2xl border-b border-[#262626] bg-[#1a1a1a] px-3 py-2.5">
+                          <p className="text-sm font-semibold tracking-wide text-zinc-200">{label}</p>
+                        </div>
+                        <div className="space-y-2 p-3">
+                          {rows.length === 0 ? (
+                            <p className="rounded-xl border border-[#262626] bg-[#121212] px-3 py-2 text-sm text-zinc-500">Sem aulas</p>
+                          ) : (
+                            rows.map((item) => (
+                              <button
+                                type="button"
+                                key={item.id}
+                                className="relative w-full rounded-xl border border-[#262626] bg-[#121212] px-3 py-2 text-left transition hover:bg-white/5"
+                                title={`${item.level} • ${item.type}${item.notes ? ` • ${item.notes}` : ''}`}
+                                onClick={() => {
+                                  openClassPlanEditor(item, key, label);
+                                }}
+                              >
+                                {planExistsMap[
+                                  planExistsKey(slotIdByCode[item.id] || item.id, weekDatesByDay[key].dateKey)
+                                ] ? (
+                                  <span className="absolute right-2 top-2 inline-block h-2 w-2 rounded-full bg-[#c81d25]" />
                                 ) : null}
-                              </p>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                                <div className="mb-1 flex items-center justify-between gap-2">
+                                  <span className="rounded-full border border-[#333] bg-[#111] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-300">
+                                    {item.room}
+                                  </span>
+                                  <span className="text-xs font-medium text-zinc-200">{item.time.replace('-', '–')}</span>
+                                </div>
+                                <p className="text-xs text-zinc-400">
+                                  {item.level} • {item.type}
+                                  {item.type === 'Sparring' ? (
+                                    <span className="ml-1 rounded-full border border-[#5b1f24] bg-[rgba(91,31,36,0.25)] px-1.5 py-0.5 text-[10px] text-rose-300">
+                                      Sparring
+                                    </span>
+                                  ) : null}
+                                </p>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </>
             ) : (
               <>
                 <div className="rounded-xl border border-[#232323] bg-[#161616] p-3 lg:p-4">

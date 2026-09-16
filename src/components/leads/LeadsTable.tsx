@@ -27,7 +27,7 @@ export default function LeadsTable({ leads, onRowClick }: LeadsTableProps) {
     return 'bg-[#26201b] text-[#fdba74] border-[#3d2f23]';
   };
 
-  const isOverdue = (date?: string) => {
+  const isOverdue = (date?: string | null) => {
     if (!date) return false;
     const today = new Date().toISOString().slice(0, 10);
     return date < today;

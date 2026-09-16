@@ -2,6 +2,7 @@ export type SidebarItemKey = 'dashboard' | 'members' | 'attendance' | 'leads' | 
 
 export interface NoteItem {
   id: string;
+  memberId: string;
   name: string;
   audience: 'Kid' | 'Adult';
   preview: string;

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { defaultAcademySettings, defaultPricingRules } from '@/components/settings/mockData';
 import RoleManagementSection from '@/components/settings/RoleManagementSection';
+import NotificationsCard from '@/components/settings/NotificationsCard';
 import QRCodeCard from '@/components/settings/QRCodeCard';
 import { AcademySettings, PricingRules } from '@/components/settings/types';
 
@@ -126,6 +127,8 @@ export default function SettingsPage() {
             <div className="rounded-2xl border border-[#222] bg-[#121212] p-6">
               <RoleManagementSection />
             </div>
+
+            <NotificationsCard />
 
             {/* QR Code Section */}
             <QRCodeCard

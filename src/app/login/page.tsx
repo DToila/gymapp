@@ -1,11 +1,11 @@
 "use client";
 
-import Image from 'next/image';
-import { FormEvent, Suspense, useEffect, useState } from 'react';
+import { FormEvent, Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
 import { getMemberByEmail } from '../../../lib/database';
 import { writeStudentSessionId } from '@/components/student/studentSession';
+import AuthHero from '@/components/auth/AuthHero';
 
 type AppRole = 'admin' | 'staff' | 'coach';
 type LoginMode = 'teacher' | 'student' | null;
@@ -22,8 +22,6 @@ const roleFromMetadata = (metadata: unknown): AppRole | null => {
 const roleFromUser = (user: { user_metadata?: unknown; app_metadata?: unknown }): AppRole | null =>
   roleFromMetadata(user.user_metadata) || roleFromMetadata(user.app_metadata);
 
-const EASE = '0.5s cubic-bezier(0.32,0.72,0,1)';
-
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();
 
 const getSafeNextPath = (value: string | null): string | null => {
@@ -35,31 +33,26 @@ const getSafeNextPath = (value: string | null): string | null => {
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 };
 
+const inputClass =
+  "w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-3 py-2.5 text-sm text-zinc-100 outline-none transition focus:border-[#c81d25]";
+const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500";
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<LoginMode>(null);
-  const [formVisible, setFormVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const hasMode = mode !== null;
   const isTeacher = mode === 'teacher';
 
-  useEffect(() => {
-    if (mode !== null) {
-      const t = setTimeout(() => setFormVisible(true), 150);
-      return () => clearTimeout(t);
-    }
-    setFormVisible(false);
-    return undefined;
-  }, [mode]);
-
   const handleBack = () => {
-    setFormVisible(false);
-    setTimeout(() => { setMode(null); setEmail(''); setPassword(''); setError(''); }, 220);
+    setMode(null);
+    setEmail('');
+    setPassword('');
+    setError('');
   };
 
   const handleTeacherLogin = async (e: FormEvent) => {
@@ -95,244 +88,109 @@ function LoginForm() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-black">
+    <div className="grid h-[100svh] grid-cols-1 grid-rows-[auto_1fr] overflow-hidden bg-[#0b0b0b] lg:h-auto lg:min-h-screen lg:grid-cols-2 lg:grid-rows-1 lg:overflow-visible">
+      <AuthHero />
 
-      {/* ── Full-screen photo ── */}
-      <div className="absolute inset-0">
-        <Image
-          src="/Gracie%20Barra.jpg"
-          alt="Gracie Barra"
-          fill
-          priority
-          className="object-cover object-center"
-        />
-        {/* Overlay darkens gradually from nothing to dark at bottom */}
-        <div className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.92) 100%)' }}
-        />
-      </div>
+      {/* ── Content panel ── */}
+      <div className="flex min-h-0 flex-col overflow-y-auto p-6 sm:p-10 lg:p-14">
+        {mode ? (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="mb-6 self-start text-sm font-medium text-[#c81d25] transition hover:text-[#ef3a43]"
+          >
+            ← Voltar
+          </button>
+        ) : null}
 
-      {/* ── Logo + Name — animates from center to top-left ── */}
-      <div
-        style={{
-          position: 'absolute',
-          zIndex: 20,
-          /* Position: center when no mode, top-left when mode selected */
-          top: hasMode ? '20px' : '28%',
-          left: hasMode ? '20px' : '50%',
-          transform: hasMode ? 'translate(0,0)' : 'translate(-50%,-50%)',
-          transition: `top ${EASE}, left ${EASE}, transform ${EASE}`,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: hasMode ? '10px' : '14px', transition: `gap ${EASE}` }}>
-          {/* Logo — shrinks */}
-          <div style={{
-            transition: `width ${EASE}, height ${EASE}`,
-            width: hasMode ? '36px' : '56px',
-            height: hasMode ? '36px' : '56px',
-            flexShrink: 0,
-          }}>
-            <Image src="/gb-logo.png" alt="GB" width={56} height={56} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </div>
-          {/* Name — shrinks */}
-          <div style={{ overflow: 'hidden' }}>
-            <p style={{
-              fontWeight: 700,
-              color: 'white',
-              letterSpacing: '0.18em',
-              margin: 0,
-              whiteSpace: 'nowrap',
-              fontSize: hasMode ? '13px' : '22px',
-              transition: `font-size ${EASE}`,
-              lineHeight: 1.2,
-            }}>
-              GRACIE BARRA
-            </p>
-            <p style={{
-              color: 'rgba(255,255,255,0.5)',
-              letterSpacing: '0.22em',
-              margin: 0,
-              whiteSpace: 'nowrap',
-              fontSize: hasMode ? '9px' : '12px',
-              transition: `font-size ${EASE}, opacity ${EASE}`,
-              opacity: hasMode ? 0.6 : 1,
-              lineHeight: 1.4,
-            }}>
-              CARNAXIDE &amp; QUEIJAS
-            </p>
-          </div>
-        </div>
-      </div>
+        {!mode ? (
+          <div>
+            <div className="mb-8">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">Entrar</p>
+              <h2 className="text-4xl font-black leading-tight text-white sm:text-5xl lg:hidden">Bem-vindo</h2>
+              <h2 className="hidden text-4xl font-black leading-tight text-white sm:text-5xl lg:block">
+                Bem-vindo à <span className="text-[#c81d25]">Gracie Barra</span>
+                <br />
+                Carnaxide &amp; Queijas
+              </h2>
+            </div>
 
-      {/* ── Bottom panel — gradient, animates height ── */}
-      <div
-        className="absolute bottom-0 left-0 right-0 z-10"
-        style={{
-          height: hasMode ? '70vh' : '42vh',
-          transition: `height ${EASE}`,
-          background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.88) 60%, rgba(0,0,0,0.96) 100%)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          padding: '0 24px 48px',
-        }}
-      >
-        {/* Role buttons */}
-        <div style={{
-          opacity: hasMode ? 0 : 1,
-          transform: hasMode ? 'translateY(10px)' : 'translateY(0)',
-          transition: `opacity 0.2s ease, transform 0.2s ease`,
-          pointerEvents: hasMode ? 'none' : 'auto',
-          position: hasMode ? 'absolute' : 'relative',
-          width: 'calc(100% - 48px)',
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {(['teacher', 'student'] as const).map((role) => (
+            <div className="grid max-w-xl gap-3">
               <button
-                key={role}
                 type="button"
-                onClick={() => setMode(role)}
-                style={{
-                  width: '100%',
-                  borderRadius: '16px',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  background: 'rgba(255,255,255,0.10)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  padding: '18px 24px',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  color: 'white',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                }}
+                onClick={() => setMode('teacher')}
+                className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-4 py-3.5 text-left text-sm font-bold uppercase tracking-widest text-white transition hover:border-[#c81d25]"
               >
-                {role === 'teacher' ? 'Professor' : 'Aluno'}
+                Instrutor
               </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => router.push('/register')}
-              style={{
-                width: '100%',
-                borderRadius: '16px',
-                border: '1px solid rgba(255,255,255,0.18)',
-                background: 'rgba(255,255,255,0.10)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                padding: '18px 24px',
-                fontSize: '16px',
-                fontWeight: 600,
-                color: 'white',
-                cursor: 'pointer',
-                textAlign: 'center',
-              }}
-            >
-              Aluno Novo
-            </button>
+              <button
+                type="button"
+                onClick={() => setMode('student')}
+                className="w-full rounded-xl border border-[#2a2a2a] bg-[#141414] px-4 py-3.5 text-left text-sm font-bold uppercase tracking-widest text-white transition hover:border-[#c81d25]"
+              >
+                Aluno
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/register')}
+                className="mt-2 w-full rounded-xl bg-[#c81d25] px-4 py-3.5 text-left text-sm font-bold uppercase tracking-widest text-white transition hover:bg-[#a8141c]"
+              >
+                Aluno Novo
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div>
+            <div className="mb-6">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                {isTeacher ? 'Instrutor' : 'Aluno'}
+              </p>
+              <h2 className="text-3xl font-black leading-tight text-white sm:text-4xl">Entrar</h2>
+            </div>
 
-        {/* Form */}
-        <div style={{
-          opacity: formVisible ? 1 : 0,
-          transform: formVisible ? 'translateY(0)' : 'translateY(18px)',
-          transition: 'opacity 0.3s ease, transform 0.3s ease',
-          pointerEvents: formVisible ? 'auto' : 'none',
-        }}>
-          <p style={{ margin: '0 0 4px', fontSize: '11px', fontWeight: 600, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>
-            {isTeacher ? 'Professor' : 'Aluno'}
-          </p>
-          <h2 style={{ margin: '0 0 20px', fontSize: '30px', fontWeight: 700, color: 'white' }}>Entrar</h2>
+            {error ? (
+              <div className="mb-4 max-w-xl rounded-xl border border-[#5b1f24] bg-[#2a1214] px-4 py-3 text-sm text-rose-300">
+                {error}
+              </div>
+            ) : null}
 
-          <form onSubmit={isTeacher ? handleTeacherLogin : handleStudentLogin}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                placeholder="Email"
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  borderRadius: '16px',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.10)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  padding: '16px 20px',
-                  fontSize: '16px',
-                  color: 'white',
-                  outline: 'none',
-                }}
-              />
-              {isTeacher && (
+            <form onSubmit={isTeacher ? handleTeacherLogin : handleStudentLogin} className="grid max-w-xl gap-4">
+              <div>
+                <label className={labelClass}>Email</label>
                 <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoComplete="current-password"
-                  placeholder="Palavra-passe"
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    borderRadius: '16px',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    background: 'rgba(255,255,255,0.10)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    padding: '16px 20px',
-                    fontSize: '16px',
-                    color: 'white',
-                    outline: 'none',
-                  }}
+                  autoComplete="email"
+                  className={inputClass}
                 />
-              )}
+              </div>
 
-              {error && (
-                <p style={{ margin: 0, padding: '10px 16px', borderRadius: '12px', background: 'rgba(200,29,37,0.3)', color: '#fca5a5', fontSize: '14px' }}>
-                  {error}
-                </p>
-              )}
+              {isTeacher ? (
+                <div>
+                  <label className={labelClass}>Palavra-passe</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className={inputClass}
+                  />
+                </div>
+              ) : null}
 
               <button
                 type="submit"
                 disabled={isLoading}
-                style={{
-                  width: '100%', borderRadius: '16px',
-                  border: 'none',
-                  background: '#c81d25',
-                  padding: '17px 24px',
-                  fontSize: '16px', fontWeight: 600,
-                  color: 'white', cursor: 'pointer',
-                  marginTop: '4px',
-                  opacity: isLoading ? 0.6 : 1,
-                }}
+                className="mt-2 w-full rounded-xl bg-[#c81d25] px-4 py-3 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-[#a8141c] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? 'A entrar...' : 'Entrar'}
               </button>
-
-              <button
-                type="button"
-                onClick={handleBack}
-                style={{
-                  width: '100%', borderRadius: '16px',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: 'rgba(255,255,255,0.06)',
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  padding: '16px 24px',
-                  fontSize: '16px', fontWeight: 500,
-                  color: 'rgba(255,255,255,0.5)',
-                  cursor: 'pointer',
-                }}
-              >
-                Voltar
-              </button>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -342,7 +200,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[100dvh] items-center justify-center bg-black">
+        <div className="grid min-h-screen place-items-center bg-[#0b0b0b]">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
         </div>
       }

@@ -227,7 +227,7 @@ export default function ClassLogPanel({
 
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-zinc-400">Professor</label>
+              <label className="mb-1 block text-xs font-medium text-zinc-400">Instrutor</label>
               <select
                 value={teacherId}
                 onChange={(event) => onChangeTeacher(event.target.value)}
@@ -236,7 +236,7 @@ export default function ClassLogPanel({
                 <option value="">No teacher selected</option>
                 {coaches.map((coach) => (
                   <option key={coach.id} value={coach.id}>
-                    {coach.full_name || 'Unnamed Professor'}
+                    {coach.full_name || 'Unnamed Instrutor'}
                   </option>
                 ))}
               </select>

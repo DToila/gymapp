@@ -68,7 +68,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const [todayRecentAttendance, setTodayRecentAttendance] = useState<AttendanceRecentItem[]>([]);
   const [pendingRequests, setPendingRequests] = useState<RequestItem[]>([]);
   const [currentRole, setCurrentRole] = useState<AppRole>('coach');
-  const [currentName, setCurrentName] = useState('Professor');
+  const [currentName, setCurrentName] = useState('Instrutor');
   const [kpis, setKpis] = useState<KpiItem[]>([]);
   const [unpaidPayments, setUnpaidPayments] = useState<UnpaidPayment[]>([]);
   const [totalUnpaidCount, setTotalUnpaidCount] = useState(0);
@@ -97,7 +97,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       const nameFromProfile = data?.full_name || null;
       const nameFromUserMeta = fullNameFromMetadata(user.user_metadata);
       const nameFromAppMeta = fullNameFromMetadata(user.app_metadata);
-      setCurrentName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Professor');
+      setCurrentName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Instrutor');
     };
 
     loadProfileRole();
@@ -122,6 +122,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
 
         return {
           id: note.id,
+          memberId: note.member_id,
           name: member?.name || 'Unknown Aluno',
           audience,
           preview: `${note.teacher_name}: ${note.note_text}`,

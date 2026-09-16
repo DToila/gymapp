@@ -6,7 +6,6 @@ import {
   insertReminderLog,
   logLeadStatusChange,
 } from '../../../lib/database';
-import { syncToGoogleCalendar } from '../../../lib/googleCalendar';
 import { officialSchedule, OfficialScheduleClass } from '../student/studentData';
 import { DECISION_WAIT_DAYS_DEFAULT, Lead, LeadClassType } from './types';
 
@@ -186,13 +185,20 @@ export async function bookTrialClass(params: {
 
   await logLeadStatusChange(lead.id, 'Aula agendada', changedBy);
 
-  await syncToGoogleCalendar({
-    leadId: lead.id,
-    leadName: lead.name,
-    scheduleId: scheduleSlotRow.id,
-    date: dateKey,
-    time: `${scheduleSlotRow.start_time}-${scheduleSlotRow.end_time}`,
-  });
+  // Routed through an API call (rather than importing lib/googleCalendar.ts
+  // directly) because this function runs in the browser — that library
+  // depends on `googleapis`, which needs Node builtins unavailable there.
+  fetch('/api/internal/sync-calendar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      leadId: lead.id,
+      leadName: lead.name,
+      scheduleId: scheduleSlotRow.id,
+      date: dateKey,
+      time: `${scheduleSlotRow.start_time}-${scheduleSlotRow.end_time}`,
+    }),
+  }).catch((error) => console.error('sync-calendar call failed:', error));
 
   return data as Lead;
 }

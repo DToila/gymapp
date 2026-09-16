@@ -2,10 +2,9 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import GBLogo from "@/components/GBLogo";
 import { toLocalDateKey } from "@/components/leads/leadAutomation";
 import PublicTrialPicker from "@/components/register/PublicTrialPicker";
+import AuthHero from "@/components/auth/AuthHero";
 
 interface RegisterFormData {
   nome: string;
@@ -128,38 +127,7 @@ export default function RegisterPage() {
 
   return (
     <div className="grid min-h-screen grid-cols-1 bg-[#0b0b0b] lg:grid-cols-2">
-      {/* ── Photo hero ── */}
-      <div className="relative flex min-h-[260px] flex-col justify-between overflow-hidden p-8 sm:p-10 lg:min-h-screen lg:p-14">
-        <Image
-          src="/Gracie%20Barra.jpg"
-          alt="Gracie Barra"
-          fill
-          priority
-          className="object-cover object-center"
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(160deg, rgba(200,29,37,0.12) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.92) 100%)' }}
-        />
-
-        <div className="relative z-10 flex items-center gap-3">
-          <GBLogo size={44} />
-          <div>
-            <p className="text-sm font-bold tracking-[0.2em] text-white">GRACIE BARRA</p>
-            <p className="text-xs tracking-[0.18em] text-white/45">CARNAXIDE &amp; QUEIJAS</p>
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <h1 className="text-4xl font-black leading-[1.05] text-white sm:text-5xl lg:text-6xl">
-            JIU JITSU
-            <br />
-            <span className="text-[#c81d25]">PARA</span>
-            <br />
-            TODOS.
-          </h1>
-        </div>
-      </div>
+      <AuthHero />
 
       {/* ── Form panel ── */}
       <div className="flex flex-col p-6 sm:p-10 lg:p-14">

@@ -42,24 +42,30 @@ export default function TeacherSidebar({ ativo, requestsCount = 0, role: rolePro
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
-  const [profileRole, setProfileRole] = useState<AppRole>(() => {
-    if (roleProp) return roleProp;
-    if (typeof window !== 'undefined') {
-      const cached = window.sessionStorage.getItem('cached_profile_role');
-      if (cached && isRole(cached)) return cached;
-    }
-    return 'coach';
-  });
-  const [profileName, setProfileName] = useState('Professor');
+  // Always starts as 'coach' so server-rendered HTML matches the client's
+  // first render — reading sessionStorage here (unavailable during SSR)
+  // used to produce a different role on hydration, which forced React to
+  // discard the server HTML and re-render the whole sidebar from scratch.
+  const [profileRole, setProfileRole] = useState<AppRole>(roleProp || 'coach');
+  const [profileName, setProfileName] = useState('Instrutor');
   const exportTriggerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const cached = window.sessionStorage.getItem('cached_profile_role');
+    if (cached && isRole(cached) && !roleProp) setProfileRole(cached);
+  }, [roleProp]);
 
   useEffect(() => {
     if (roleProp) {
       setProfileRole(roleProp);
       if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', roleProp);
-      return;
     }
+    // Runs even when the caller already knows the role (e.g. DashboardPage
+    // passes `role`) — the name still has to come from here, otherwise the
+    // sidebar was stuck on the "Instrutor" placeholder on every page that
+    // passes a role prop instead of fetching the real name.
     let cancelled = false;
     const loadProfile = async () => {
       try {
@@ -67,14 +73,16 @@ export default function TeacherSidebar({ ativo, requestsCount = 0, role: rolePro
         const user = authData?.user;
         if (!user) return;
         const { data } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).maybeSingle();
-        const resolvedRole =
-          (data?.role && isRole(data.role) ? data.role : null) ||
-          roleFromMetadata(user.user_metadata) ||
-          roleFromMetadata(user.app_metadata) || 'coach';
-        if (!cancelled) setProfileRole(resolvedRole);
-        const name = data?.full_name || fullNameFromMetadata(user.user_metadata) || fullNameFromMetadata(user.app_metadata) || 'Professor';
+        if (!roleProp) {
+          const resolvedRole =
+            (data?.role && isRole(data.role) ? data.role : null) ||
+            roleFromMetadata(user.user_metadata) ||
+            roleFromMetadata(user.app_metadata) || 'coach';
+          if (!cancelled) setProfileRole(resolvedRole);
+          if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', resolvedRole);
+        }
+        const name = data?.full_name || fullNameFromMetadata(user.user_metadata) || fullNameFromMetadata(user.app_metadata) || 'Instrutor';
         if (!cancelled) setProfileName(name);
-        if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', resolvedRole);
       } catch (e) { console.error(e); }
     };
     loadProfile();

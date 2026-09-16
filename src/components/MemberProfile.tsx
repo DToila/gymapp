@@ -396,7 +396,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
       const noteData = {
         member_id: member.id,
         date: new Date().toISOString().split('T')[0],
-        teacher_name: "Professor Silva", // In a real app, this would come from auth
+        teacher_name: "Instrutor Silva", // In a real app, this would come from auth
         note_text: newComment.trim(),
       };
 

@@ -1,6 +1,6 @@
 {
-  "name": "GymApp — Gracie Barra",
-  "short_name": "GymApp",
+  "name": "GBCQ — Gracie Barra",
+  "short_name": "GBCQ",
   "description": "Gestão de membros Gracie Barra Carnaxide & Queijas",
   "start_url": "/dashboard",
   "display": "standalone",

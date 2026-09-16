@@ -1,14 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import SessionTimeoutGuard from "@/components/auth/SessionTimeoutGuard";
 
 export const metadata: Metadata = {
-  title: "GymApp — Gracie Barra",
+  title: "GBCQ — Gracie Barra",
   description: "Gestão de membros Gracie Barra Carnaxide & Queijas",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "GymApp",
+    title: "GBCQ",
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -39,7 +40,10 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/gb-logo.png" />
       </head>
-      <body>{children}</body>
+      <body>
+        <SessionTimeoutGuard />
+        {children}
+      </body>
     </html>
   );
 }

@@ -813,7 +813,7 @@ export default function PaymentsPage() {
         </header>
 
         <div className="space-y-4">
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
             {loading
               ? Array.from({ length: 4 }).map((_, index) => (
                   <div key={`kpi-skeleton-${index}`} className="h-[108px] animate-pulse rounded-2xl border border-[#252525] bg-[#131313]" />
@@ -913,37 +913,62 @@ export default function PaymentsPage() {
                   Não non-DD unpaid members for this month.
                 </div>
               ) : (
-                <div className="mt-4 overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-[#222]">
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Membro</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Type</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor due</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Vencido days</th>
-                        <th className="px-4 py-3 text-right font-semibold text-zinc-300">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {unpaidRows.map((member) => (
-                        <tr key={member.id} className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition">
-                          <td className="px-4 py-3 font-medium text-white">{member.name}</td>
-                          <td className="px-4 py-3 text-zinc-300">{member.type}</td>
-                          <td className="px-4 py-3 text-white">€{Number(member.amount_due || 0).toFixed(2)}</td>
-                          <td className="px-4 py-3 text-[#ef4444]">{member.overdueDays}</td>
-                          <td className="px-4 py-3 text-right">
-                            <button
-                              onClick={() => handleOpenMarkPaid(member)}
-                              className="rounded-lg bg-[#c81d25] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#b01720]"
-                            >
-                              Mark as paid
-                            </button>
-                          </td>
+                <>
+                  {/* Mobile card list */}
+                  <div className="mt-4 space-y-3 sm:hidden">
+                    {unpaidRows.map((member) => (
+                      <div key={member.id} className="rounded-xl border border-[#222] bg-[#161616] p-4">
+                        <div className="mb-2 flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-white">{member.name}</p>
+                            <p className="text-xs text-zinc-500">{member.type}</p>
+                          </div>
+                          <p className="shrink-0 text-lg font-bold text-white">€{Number(member.amount_due || 0).toFixed(2)}</p>
+                        </div>
+                        <p className="mb-3 text-xs text-[#ef4444]">Vencido há {member.overdueDays} dias</p>
+                        <button
+                          onClick={() => handleOpenMarkPaid(member)}
+                          className="w-full rounded-lg bg-[#c81d25] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#b01720]"
+                        >
+                          Mark as paid
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop table */}
+                  <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-[#222] bg-[#121212] sm:block">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#222]">
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Membro</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Type</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor due</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Vencido days</th>
+                          <th className="px-4 py-3 text-right font-semibold text-zinc-300">Ações</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {unpaidRows.map((member) => (
+                          <tr key={member.id} className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition">
+                            <td className="px-4 py-3 font-medium text-white">{member.name}</td>
+                            <td className="px-4 py-3 text-zinc-300">{member.type}</td>
+                            <td className="px-4 py-3 text-white">€{Number(member.amount_due || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-[#ef4444]">{member.overdueDays}</td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => handleOpenMarkPaid(member)}
+                                className="rounded-lg bg-[#c81d25] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#b01720]"
+                              >
+                                Mark as paid
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </section>
           ) : null}
@@ -980,32 +1005,51 @@ export default function PaymentsPage() {
                   Não payments recorded for this month yet.
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-[#222] bg-[#121212]">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-[#222]">
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Membro</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Método</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Pago at</th>
-                        <th className="px-4 py-3 text-left font-semibold text-zinc-300">Notas</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPaidMonthPayments.map((payment) => (
-                        <tr key={payment.id} className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition">
-                          <td className="px-4 py-3 font-medium text-white">
+                <>
+                  {/* Mobile card list */}
+                  <div className="space-y-3 sm:hidden">
+                    {filteredPaidMonthPayments.map((payment) => (
+                      <div key={payment.id} className="rounded-xl border border-[#222] bg-[#161616] p-4">
+                        <div className="mb-1 flex items-start justify-between gap-3">
+                          <p className="truncate font-semibold text-white">
                             {payment.member_id ? memberNameMap.get(payment.member_id) || 'Unknown member' : 'Unknown member'}
-                          </td>
-                          <td className="px-4 py-3 text-white">€{Number(payment.amount || 0).toFixed(2)}</td>
-                          <td className="px-4 py-3 text-zinc-300">{mapMethodLabel(payment.method)}</td>
-                          <td className="px-4 py-3 text-zinc-400">{new Date(payment.paid_at).toLocaleString('en-GB')}</td>
-                          <td className="px-4 py-3 text-zinc-400">{payment.note || '-'}</td>
+                          </p>
+                          <p className="shrink-0 text-lg font-bold text-white">€{Number(payment.amount || 0).toFixed(2)}</p>
+                        </div>
+                        <p className="text-xs text-zinc-400">{mapMethodLabel(payment.method)} • {new Date(payment.paid_at).toLocaleString('en-GB')}</p>
+                        {payment.note ? <p className="mt-1 text-xs text-zinc-500">{payment.note}</p> : null}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop table */}
+                  <div className="hidden overflow-x-auto rounded-2xl border border-[#222] bg-[#121212] sm:block">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#222]">
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Membro</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Valor</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Método</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Pago at</th>
+                          <th className="px-4 py-3 text-left font-semibold text-zinc-300">Notas</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {filteredPaidMonthPayments.map((payment) => (
+                          <tr key={payment.id} className="border-b border-[#0f0f0f] hover:bg-[#0f0f0f] transition">
+                            <td className="px-4 py-3 font-medium text-white">
+                              {payment.member_id ? memberNameMap.get(payment.member_id) || 'Unknown member' : 'Unknown member'}
+                            </td>
+                            <td className="px-4 py-3 text-white">€{Number(payment.amount || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-zinc-300">{mapMethodLabel(payment.method)}</td>
+                            <td className="px-4 py-3 text-zinc-400">{new Date(payment.paid_at).toLocaleString('en-GB')}</td>
+                            <td className="px-4 py-3 text-zinc-400">{payment.note || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </section>
           ) : null}

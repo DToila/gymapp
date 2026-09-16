@@ -5,6 +5,7 @@ import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { supabase } from '../../../lib/supabase';
 import { logLeadStatusChange, ReminderLogRow, getRemindersForDate } from '../../../lib/database';
 import LeadsKanban from '@/components/leads/LeadsKanban';
+import LeadNotes from '@/components/leads/LeadNotes';
 import TrialBookingPicker from '@/components/leads/TrialBookingPicker';
 import { saveTrialFeedback, toLocalDateKey } from '@/components/leads/leadAutomation';
 import {
@@ -24,10 +25,10 @@ const emptyLead = (): Lead => ({
   phone: '',
   email: '',
   class_type: 'GB1',
-  next_contact_date: '',
+  next_contact_date: null,
   followup_note: '',
   status: 'Por contactar',
-  trial_date: '',
+  trial_date: null,
   enrolled: false,
   not_enrolled_reason: undefined,
   not_enrolled_reason_text: '',
@@ -80,6 +81,8 @@ export default function LeadsPage() {
   const [todaysReminders, setTodaysReminders] = useState<ReminderLogRow[]>([]);
   const [isRunningAutomation, setIsRunningAutomation] = useState(false);
   const [automationResult, setAutomationResult] = useState<string | null>(null);
+  const [currentStaffName, setCurrentStaffName] = useState('Instrutor');
+  const [currentStaffEmail, setCurrentStaffEmail] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch leads on component mount
@@ -120,6 +123,25 @@ export default function LeadsPage() {
 
   useEffect(() => {
     loadTodaysReminders();
+  }, []);
+
+  useEffect(() => {
+    const loadCurrentStaff = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      setCurrentStaffName(data?.full_name || user.email || 'Instrutor');
+      setCurrentStaffEmail(user.email || null);
+    };
+
+    loadCurrentStaff();
   }, []);
 
   const runAutomationNow = async () => {
@@ -339,8 +361,12 @@ export default function LeadsPage() {
       email: (selectedLead.email || '').trim(),
       followup_note: selectedLead.followup_note?.trim() || '',
       not_enrolled_reason_text: selectedLead.not_enrolled_reason_text?.trim() || '',
-      next_contact_date: selectedLead.next_contact_date || '',
-      trial_date: selectedLead.trial_date || '',
+      // Postgres `date` columns reject '' (must be null or a real date) —
+      // coercing to '' here used to make the whole update fail with
+      // "invalid input syntax for type date" whenever either field was
+      // unset, regardless of which field the user actually edited.
+      next_contact_date: selectedLead.next_contact_date || null,
+      trial_date: selectedLead.trial_date || null,
     });
 
     checkDedupeWarning(normalized);
@@ -439,10 +465,10 @@ export default function LeadsPage() {
           contact_source: 'Outros',
           contact_date: new Date().toISOString().slice(0, 10),
           class_type: (parts[3] || 'GB1') as any,
-          next_contact_date: parts[4] || '',
+          next_contact_date: parts[4] || null,
           followup_note: '',
           status: 'Por contactar',
-          trial_date: '',
+          trial_date: null,
           enrolled: false,
           not_enrolled_reason: undefined,
           not_enrolled_reason_text: '',
@@ -817,15 +843,15 @@ export default function LeadsPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="sm:col-span-2">
-                    <label className="mb-1 block text-xs font-medium text-zinc-400">Followup</label>
-                    <textarea
-                      rows={3}
-                      value={selectedLead.followup_note || ''}
-                      onChange={(e) => updateLeadField('followup_note', e.target.value)}
-                      className="w-full rounded-xl border border-[#222] bg-[#121212] px-3 py-2 text-white focus:border-[#c81d25] focus:outline-none"
-                    />
-                  </div>
+                  {!isCreatingLead ? (
+                    <div className="sm:col-span-2">
+                      <LeadNotes
+                        leadId={selectedLead.id}
+                        currentStaffName={currentStaffName}
+                        currentStaffEmail={currentStaffEmail}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

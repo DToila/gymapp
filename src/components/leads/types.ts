@@ -44,10 +44,10 @@ export interface Lead {
   phone?: string;
   email?: string;
   class_type: LeadClassType;
-  next_contact_date?: string;
+  next_contact_date?: string | null;
   followup_note?: string;
   status: LeadStatus;
-  trial_date?: string;
+  trial_date?: string | null;
   enrolled: boolean;
   not_enrolled_reason?: NotEnrolledReasonCode;
   not_enrolled_reason_text?: string;

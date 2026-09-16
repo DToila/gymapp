@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendPushToAll } from '../../../../../lib/webPush'
 
 const getEnv = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
@@ -80,6 +81,12 @@ export async function POST(request: Request) {
     console.error('register-lead: insert failed', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await sendPushToAll({
+    title: 'Novo lead',
+    body: `${name} enviou um pedido de inscrição.`,
+    url: '/leads',
+  })
 
   return NextResponse.json({ success: true, leadId: data.id })
 }

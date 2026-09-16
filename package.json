@@ -1,5 +1,5 @@
 {
-  "name": "gymapp",
+  "name": "gbcq",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,12 +12,14 @@
     "@google-cloud/vision": "^5.3.5",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.0",
+    "googleapis": "^173.0.0",
     "lucide-react": "^1.7.0",
     "next": "^14.2.0",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tesseract.js": "^7.0.0",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -25,6 +27,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
+    "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^7.4.0",
     "@typescript-eslint/parser": "^7.4.0",
     "autoprefixer": "^10.4.19",

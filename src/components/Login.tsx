@@ -164,7 +164,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               color: 'var(--text-dim)',
               letterSpacing: '2px'
             }}>
-              GYMAPP · SISTEMA DE GESTÃO
+              GBCQ · SISTEMA DE GESTÃO
             </div>
           </div>
 
@@ -379,7 +379,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             color: 'var(--text-dim)',
             letterSpacing: '2px'
           }}>
-            GYMAPP · SISTEMA DE GESTÃO
+            GBCQ · SISTEMA DE GESTÃO
           </div>
         </div>
 
@@ -425,7 +425,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder={userType === "teacher" ? "professor@gymapp.com" : "aluno@gymapp.com"}
+            placeholder={userType === "teacher" ? "professor@gbcq.com" : "aluno@gbcq.com"}
             required
             style={{
               width: '100%',
