@@ -60,12 +60,6 @@ export interface RequestItem {
   requestedAt: string;
 }
 
-export interface BirthdayItem {
-  id: string;
-  name: string;
-  dateLabel: string;
-}
-
 export interface KpiItem {
   id: string;
   value: string;

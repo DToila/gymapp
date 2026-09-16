@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Lead, LeadStatus } from './types';
+import { toLocalDateKey } from './leadAutomation';
 
 const COLUMNS: {
   status: LeadStatus;
@@ -80,7 +81,7 @@ function initials(name: string) {
   );
 }
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
+const todayKey = () => toLocalDateKey(new Date());
 
 // Swipe left = advance to the next pipeline stage, swipe right = go back —
 // mirrors the mobile stage-tabs order above, which is already the order

@@ -21,7 +21,7 @@ const emptyLead = (): Lead => ({
   id: `lead-${Date.now()}`,
   name: '',
   contact_source: 'Website',
-  contact_date: new Date().toISOString().slice(0, 10),
+  contact_date: toLocalDateKey(new Date()),
   phone: '',
   email: '',
   class_type: 'GB1',
@@ -34,7 +34,7 @@ const emptyLead = (): Lead => ({
   not_enrolled_reason_text: '',
 });
 
-const todayKey = () => new Date().toISOString().slice(0, 10);
+const todayKey = () => toLocalDateKey(new Date());
 
 const applyLeadStatusRules = (lead: Lead): Lead => {
   if (lead.enrolled) {
@@ -463,7 +463,7 @@ export default function LeadsPage() {
           phone: parts[1] || '',
           email: parts[2] || '',
           contact_source: 'Outros',
-          contact_date: new Date().toISOString().slice(0, 10),
+          contact_date: toLocalDateKey(new Date()),
           class_type: (parts[3] || 'GB1') as any,
           next_contact_date: parts[4] || null,
           followup_note: '',

@@ -6,6 +6,7 @@ import StudentShell from './StudentShell';
 import { audienceMatchesStudent } from './studentData';
 import { useStudentMember } from './useStudentMember';
 import { useAnnouncements } from '@/lib/useAnnouncements';
+import { toDateKey } from '@/lib/attendanceState';
 
 const tagChipClass: Record<AnnouncementItem['tag'], string> = {
   URGENT: 'border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] text-[#fda4af]',
@@ -20,7 +21,7 @@ export default function StudentAnnouncementsPage() {
   const [filter, setFilter] = useState<'ALL' | 'KIDS' | 'ADULTS'>('ALL');
 
   const rows = useMemo(() => {
-    const nowKey = new Date().toISOString().split('T')[0];
+    const nowKey = toDateKey(new Date());
 
     return announcements
       .filter((item) => item.approvalStatus === 'approved')

@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import { UnpaidPayment } from './types';
 
-export default function UnpaidPaymentsTable({ rows }: { rows: UnpaidPayment[] }) {
+export default function UnpaidPaymentsTable({ rows, totalCount }: { rows: UnpaidPayment[]; totalCount: number }) {
   const router = useRouter();
+  const remaining = totalCount - rows.length;
 
   const handleSendReminder = (_memberId: string, name: string) => {
     alert(`Reminder sent to ${name}`);
@@ -65,9 +66,11 @@ export default function UnpaidPaymentsTable({ rows }: { rows: UnpaidPayment[] })
           </tbody>
         </table>
       </div>
-      <button className="mt-3 text-sm text-[#c81d25] hover:text-[#ef3a43]" onClick={() => router.push('/payments')}>
-        + 8 more unpaid
-      </button>
+      {remaining > 0 ? (
+        <button className="mt-3 text-sm text-[#c81d25] hover:text-[#ef3a43]" onClick={() => router.push('/payments')}>
+          + {remaining} more unpaid
+        </button>
+      ) : null}
     </Panel>
   );
 }

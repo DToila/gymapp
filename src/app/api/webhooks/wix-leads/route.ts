@@ -173,7 +173,12 @@ export async function POST(request: Request) {
     contact_date: toLocalDateKey(new Date()),
     phone: phone || null,
     email: email || null,
-    class_type: age !== null && age < 18 ? 'GBK' : 'GB1',
+    // 16 matches the threshold used everywhere else age drives this decision
+    // (suggestClassTypesForAge in leadAutomation.ts, getMemberType in
+    // lib/payments.ts, calculateMonthlyFee in lib/types.ts) — this used to
+    // say 18, which classified 16-17 year olds as GBK here while the rest of
+    // the app treated them as adults.
+    class_type: age !== null && age < 16 ? 'GBK' : 'GB1',
     age,
     status: 'Por contactar',
     enrolled: false,

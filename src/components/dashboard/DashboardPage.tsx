@@ -514,7 +514,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
           <div className="space-y-3 lg:col-span-7">
             <AnnouncementsPanel currentUserName={currentName} />
             <RecentNotesList notes={recentNotes} loading={recentNotesLoading} />
-            {!isCoach ? <UnpaidPaymentsTable rows={unpaidPayments} /> : null}
+            {!isCoach ? <UnpaidPaymentsTable rows={unpaidPayments} totalCount={totalUnpaidCount} /> : null}
             {!isCoach ? <LeadsFunnelPanel /> : null}
           </div>
 

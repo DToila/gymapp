@@ -8,6 +8,7 @@ import { useStudentMember } from './useStudentMember';
 import { getAttendanceForMember } from '../../../lib/database';
 import { useEffect } from 'react';
 import { useAnnouncements } from '@/lib/useAnnouncements';
+import { toDateKey } from '@/lib/attendanceState';
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function StudentDashboardPage() {
   }, []);
 
   const studentAnnouncements = useMemo(() => {
-    const nowKey = new Date().toISOString().split('T')[0];
+    const nowKey = toDateKey(new Date());
     return announcements
       .filter((item) => item.expiresAt >= nowKey)
       .filter((item) => audienceMatchesStudent(item, isKid))

@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase'
 import { calculateMonthlyFee, getAgeFromDateOfBirth, Member } from '../../lib/types'
+import { toDateKey } from './attendanceState'
 
 export type PaymentMethod = 'DD' | 'TPA_CARD' | 'TPA_MBWAY' | 'CASH' | 'TB' | 'MB'
 export type DdItemStatus = 'success' | 'failed'
@@ -140,7 +141,7 @@ const monthToEndDate = (month: string): string => {
   const year = Number(yearRaw)
   const monthIndex = Number(monthRaw) - 1
   if (!Number.isFinite(year) || !Number.isFinite(monthIndex) || monthIndex < 0 || monthIndex > 11) {
-    return new Date().toISOString().slice(0, 10)
+    return toDateKey(new Date())
   }
 
   const date = new Date(year, monthIndex + 1, 0)

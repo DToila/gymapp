@@ -98,6 +98,11 @@ export default function SchedulePage() {
   const [selectedMonday, setSelectedMonday] = useState<Date | null>(null);
   const [selectedDayKey, setSelectedDayKey] = useState<DayKey>(() => dayNumberToKey(new Date().getDay()) || 'SEG');
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  // Guards against a slower earlier fetchSlotAndPlan call overwriting the
+  // form with the wrong slot's content when the coach clicks a second slot
+  // before the first one's request resolves — only the request whose token
+  // still matches the latest one issued is allowed to apply its result.
+  const planRequestRef = useRef(0);
 
   const getWeekMonday = (date: Date): Date => {
     const d = new Date(date);
@@ -326,6 +331,7 @@ export default function SchedulePage() {
   }
 
   const fetchSlotAndPlan = async (slotCode: string, dateKey: string) => {
+    const requestToken = ++planRequestRef.current;
     setIsLoadingPlan(true);
     setError(null);
     setPlan(null);
@@ -369,6 +375,11 @@ export default function SchedulePage() {
       const resolvedSlotId = slotDbId;
       const existing = await getClassLog(resolvedSlotId, dateKey);
 
+      // A newer call to fetchSlotAndPlan started while this one was still
+      // awaiting the database — its result belongs to a slot the coach has
+      // already navigated away from, so don't let it overwrite the form.
+      if (planRequestRef.current !== requestToken) return;
+
       setPlan(existing);
 
       const nextTopic = existing?.topic || '';
@@ -396,6 +407,7 @@ export default function SchedulePage() {
       });
     } catch (err: any) {
       console.error('FETCH_SLOT_ERR', err);
+      if (planRequestRef.current !== requestToken) return;
       const message = String(err?.message || 'Could not load class log from the database.');
       setPlan(null);
       setTopic('');
@@ -408,6 +420,7 @@ export default function SchedulePage() {
       setError(message);
       setEditorMode('edit');
     } finally {
+      if (planRequestRef.current !== requestToken) return;
       setIsLoadingPlan(false);
     }
   };

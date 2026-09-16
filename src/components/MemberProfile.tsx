@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Member, calculateMonthlyFee, getBeltOptions, getAgeFromDateOfBirth } from "../../lib/types";
 import { beltStyle } from "@/lib/beltColors";
 import { getAttendanceForMember, getNotesForMember, createNote, setAttendance, getKidBehaviorEvents, upsertKidBehavior, deleteKidBehaviorForDate } from "../../lib/database";
+import { supabase } from "../../lib/supabase";
 import {
   ATTENDANCE_UPDATED_EVENT,
   BEHAVIOR_UPDATED_EVENT,
@@ -16,6 +17,12 @@ import {
   writeAttendanceByDate,
   toDateKey,
 } from "@/lib/attendanceState";
+
+const fullNameFromMetadata = (metadata: unknown): string | null => {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const value = (metadata as { full_name?: unknown }).full_name;
+  return typeof value === 'string' && value.trim() ? value : null;
+};
 
 interface Comment {
   id: string;
@@ -132,6 +139,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [emojiPickerDate, setEmojiPickerDate] = useState<string | null>(null);
   const [reportFromDate, setReportFromDate] = useState<string>('');
   const [reportToDate, setReportToDate] = useState<string>('');
+  const [currentStaffName, setCurrentStaffName] = useState('Instrutor');
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const isPendingMember = (data.status as unknown as string) === 'pendente';
@@ -146,6 +154,20 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     setEditForm(createEditForm(nextData));
     setIsEditing(false);
   }, [member]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadStaffName = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+      if (!user) return;
+      const { data } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
+      const name = data?.full_name || fullNameFromMetadata(user.user_metadata) || fullNameFromMetadata(user.app_metadata) || 'Instrutor';
+      if (!cancelled) setCurrentStaffName(name);
+    };
+    loadStaffName().catch((e) => console.error(e));
+    return () => { cancelled = true; };
+  }, []);
 
   const readLocalBehaviorMap = useCallback((): { [date: string]: BehaviorValue } => {
     const nextMap: { [date: string]: BehaviorValue } = {};
@@ -395,8 +417,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     try {
       const noteData = {
         member_id: member.id,
-        date: new Date().toISOString().split('T')[0],
-        teacher_name: "Instrutor Silva", // In a real app, this would come from auth
+        date: toDateKey(new Date()),
+        teacher_name: currentStaffName,
         note_text: newComment.trim(),
       };
 
@@ -907,7 +929,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                   const attended = attendanceMap[dateStr];
                   const dayBehavior = behaviorMap[dateStr];
-                  const isToday = dateStr === new Date().toISOString().split('T')[0];
+                  const isToday = dateStr === toDateKey(new Date());
 
                   // Determine square color based on behavior (for kids) or attendance (for adults)
                   let squareClass = '';

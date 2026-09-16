@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import AnnouncementsModal from './AnnouncementsModal';
 import { AnnouncementItem } from './types';
 import { useAnnouncements } from '@/lib/useAnnouncements';
+import { toDateKey } from '@/lib/attendanceState';
 
 const tagChipClass: Record<AnnouncementItem['tag'], string> = {
   URGENT: 'border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] text-[#fda4af]',
@@ -48,7 +49,7 @@ export default function AnnouncementsPanel({
     });
   }, [announcements]);
 
-  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const today = useMemo(() => toDateKey(new Date()), []);
 
   const publishedActiveAnnouncements = useMemo(
     () =>

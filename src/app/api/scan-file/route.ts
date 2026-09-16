@@ -63,7 +63,10 @@ const parseDdText = (text: string): Record<string, unknown>[] => {
       swift: '',
       tipo: 'DD',
       ref: '',
-      data: new Date().toISOString().split('T')[0],
+      data: (() => {
+        const now = new Date()
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+      })(),
     })
   }
 

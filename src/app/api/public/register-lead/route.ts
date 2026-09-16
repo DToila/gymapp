@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendPushToAll } from '../../../../../lib/webPush'
+import { toLocalDateKey } from '@/components/leads/leadAutomation'
 
 const getEnv = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   const payload = {
     name,
     contact_source: 'Website',
-    contact_date: String(body.contact_date || new Date().toISOString().slice(0, 10)),
+    contact_date: String(body.contact_date || toLocalDateKey(new Date())),
     email,
     phone: body.phone ? String(body.phone).trim() : null,
     class_type: classType,
