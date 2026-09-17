@@ -554,6 +554,36 @@ export const getTrialBookingsCount = async (scheduleId: string, dateKey: string)
   return count || 0
 }
 
+// Batched sibling of getTrialBookingsCount — the trial-booking picker used to
+// fire one count-only query per candidate session (up to 12 in parallel).
+// This fetches every matching row in one request and counts them client-side
+// per (scheduleId, dateKey) pair instead.
+export const getTrialBookingsCountsForSessions = async (
+  sessions: Array<{ scheduleId: string; dateKey: string }>
+): Promise<Map<string, number>> => {
+  const counts = new Map<string, number>()
+  if (sessions.length === 0) return counts
+
+  const scheduleIds = Array.from(new Set(sessions.map((s) => s.scheduleId)))
+  const dateKeys = Array.from(new Set(sessions.map((s) => s.dateKey)))
+
+  const { data, error } = await supabase
+    .from('leads')
+    .select('trial_schedule_id, trial_date')
+    .in('trial_schedule_id', scheduleIds)
+    .in('trial_date', dateKeys)
+
+  if (error) throw error
+
+  ;(data || []).forEach((row: { trial_schedule_id: string | null; trial_date: string | null }) => {
+    if (!row.trial_schedule_id || !row.trial_date) return
+    const key = `${row.trial_schedule_id}:${row.trial_date}`
+    counts.set(key, (counts.get(key) || 0) + 1)
+  })
+
+  return counts
+}
+
 export const getRemindersForDate = async (dateKey: string): Promise<ReminderLogRow[]> => {
   const { data, error } = await supabase
     .from('reminders_log')

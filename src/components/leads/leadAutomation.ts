@@ -3,6 +3,7 @@ import {
   ScheduleSlotRow,
   ensureScheduleSlots,
   getTrialBookingsCount,
+  getTrialBookingsCountsForSessions,
   insertReminderLog,
   logLeadStatusChange,
 } from '../../../lib/database';
@@ -130,6 +131,25 @@ export async function getSessionCapacityInfo(
     : scheduleSlotRow.trial_capacity_adults ?? null;
   const booked = await getTrialBookingsCount(scheduleSlotRow.id, dateKey);
   return { capacity, booked, full: capacity !== null && booked >= capacity };
+}
+
+// Batched sibling used by the trial-booking picker, which needs capacity for
+// up to a dozen candidate sessions at once — one query instead of one per
+// session.
+export async function getSessionsCapacityInfo(
+  candidates: Array<{ scheduleSlotRow: ScheduleSlotRow; dateKey: string; program: LeadClassType }>
+): Promise<SessionCapacityInfo[]> {
+  const counts = await getTrialBookingsCountsForSessions(
+    candidates.map((c) => ({ scheduleId: c.scheduleSlotRow.id, dateKey: c.dateKey }))
+  );
+
+  return candidates.map(({ scheduleSlotRow, dateKey, program }) => {
+    const capacity = isKidsProgram(program)
+      ? scheduleSlotRow.trial_capacity_kids ?? null
+      : scheduleSlotRow.trial_capacity_adults ?? null;
+    const booked = counts.get(`${scheduleSlotRow.id}:${dateKey}`) || 0;
+    return { capacity, booked, full: capacity !== null && booked >= capacity };
+  });
 }
 
 export async function resolveScheduleSlotRows(slots: OfficialScheduleClass[]): Promise<Record<string, ScheduleSlotRow>> {

@@ -5,27 +5,14 @@ import { useRouter } from 'next/navigation';
 import GBLogo from '@/components/GBLogo';
 import { exportDDTxt, exportDDExcel } from '../../../lib/ddExport';
 import { supabase } from '../../../lib/supabase';
+import { useStaffProfile, type AppRole } from '@/lib/useStaffProfile';
 import {
   LayoutDashboard, Calendar, Users, CheckSquare,
   Megaphone, CreditCard, Settings, Download, UserPlus,
   LogOut, ChevronDown, Menu, X
 } from 'lucide-react';
 
-type AppRole = 'admin' | 'staff' | 'coach';
-
 const isRole = (value: string): value is AppRole => value === 'admin' || value === 'staff' || value === 'coach';
-
-const roleFromMetadata = (metadata: unknown): AppRole | null => {
-  if (!metadata || typeof metadata !== 'object') return null;
-  const roleValue = (metadata as { role?: unknown }).role;
-  return typeof roleValue === 'string' && isRole(roleValue) ? roleValue : null;
-};
-
-const fullNameFromMetadata = (metadata: unknown): string | null => {
-  if (!metadata || typeof metadata !== 'object') return null;
-  const value = (metadata as { full_name?: unknown }).full_name;
-  return typeof value === 'string' && value.trim() ? value : null;
-};
 
 interface TeacherSidebarProps {
   ativo: 'dashboard' | 'schedule' | 'members' | 'attendance' | 'leads' | 'payments' | 'settings';
@@ -50,6 +37,10 @@ export default function TeacherSidebar({ ativo, requestsCount = 0, role: rolePro
   const [profileName, setProfileName] = useState('Instrutor');
   const exportTriggerRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+  // Shared/cached across every page that renders a sidebar — this used to be
+  // its own independent auth.getUser() + profiles fetch here, duplicating
+  // the same round trip each page's own component already makes.
+  const staffProfile = useStaffProfile();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -58,36 +49,11 @@ export default function TeacherSidebar({ ativo, requestsCount = 0, role: rolePro
   }, [roleProp]);
 
   useEffect(() => {
-    if (roleProp) {
-      setProfileRole(roleProp);
-      if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', roleProp);
-    }
-    // Runs even when the caller already knows the role (e.g. DashboardPage
-    // passes `role`) — the name still has to come from here, otherwise the
-    // sidebar was stuck on the "Instrutor" placeholder on every page that
-    // passes a role prop instead of fetching the real name.
-    let cancelled = false;
-    const loadProfile = async () => {
-      try {
-        const { data: authData } = await supabase.auth.getUser();
-        const user = authData?.user;
-        if (!user) return;
-        const { data } = await supabase.from('profiles').select('role, full_name').eq('id', user.id).maybeSingle();
-        if (!roleProp) {
-          const resolvedRole =
-            (data?.role && isRole(data.role) ? data.role : null) ||
-            roleFromMetadata(user.user_metadata) ||
-            roleFromMetadata(user.app_metadata) || 'coach';
-          if (!cancelled) setProfileRole(resolvedRole);
-          if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', resolvedRole);
-        }
-        const name = data?.full_name || fullNameFromMetadata(user.user_metadata) || fullNameFromMetadata(user.app_metadata) || 'Instrutor';
-        if (!cancelled) setProfileName(name);
-      } catch (e) { console.error(e); }
-    };
-    loadProfile();
-    return () => { cancelled = true; };
-  }, [roleProp]);
+    const resolvedRole = roleProp || staffProfile.role;
+    setProfileRole(resolvedRole);
+    setProfileName(staffProfile.name);
+    if (typeof window !== 'undefined') window.sessionStorage.setItem('cached_profile_role', resolvedRole);
+  }, [roleProp, staffProfile.role, staffProfile.name]);
 
   useEffect(() => {
     const handle = (e: MouseEvent) => {

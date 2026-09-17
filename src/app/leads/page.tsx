@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { supabase } from '../../../lib/supabase';
+import { useStaffProfile } from '@/lib/useStaffProfile';
 import { logLeadStatusChange, ReminderLogRow, getRemindersForDate } from '../../../lib/database';
 import LeadsKanban from '@/components/leads/LeadsKanban';
 import LeadNotes from '@/components/leads/LeadNotes';
@@ -79,6 +80,7 @@ export default function LeadsPage() {
   const [savingFeedback, setSavingFeedback] = useState(false);
   const [feedbackSaved, setFeedbackSaved] = useState(false);
   const [todaysReminders, setTodaysReminders] = useState<ReminderLogRow[]>([]);
+  const [todaysRemindersLoading, setTodaysRemindersLoading] = useState(true);
   const [isRunningAutomation, setIsRunningAutomation] = useState(false);
   const [automationResult, setAutomationResult] = useState<string | null>(null);
   const [currentStaffName, setCurrentStaffName] = useState('Instrutor');
@@ -113,11 +115,14 @@ export default function LeadsPage() {
   }, []);
 
   const loadTodaysReminders = async () => {
+    setTodaysRemindersLoading(true);
     try {
       const reminders = await getRemindersForDate(toLocalDateKey(new Date()));
       setTodaysReminders(reminders);
     } catch (err) {
       console.error('Erro loading today reminders:', err);
+    } finally {
+      setTodaysRemindersLoading(false);
     }
   };
 
@@ -125,24 +130,13 @@ export default function LeadsPage() {
     loadTodaysReminders();
   }, []);
 
+  // Shared/cached across every page with a sidebar instead of this page
+  // running its own independent auth.getUser() + profiles fetch.
+  const staffProfile = useStaffProfile();
   useEffect(() => {
-    const loadCurrentStaff = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData?.user;
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      setCurrentStaffName(data?.full_name || user.email || 'Instrutor');
-      setCurrentStaffEmail(user.email || null);
-    };
-
-    loadCurrentStaff();
-  }, []);
+    setCurrentStaffName(staffProfile.name);
+    setCurrentStaffEmail(staffProfile.email);
+  }, [staffProfile.name, staffProfile.email]);
 
   const runAutomationNow = async () => {
     setIsRunningAutomation(true);
@@ -585,7 +579,9 @@ export default function LeadsPage() {
                 </button>
                 {automationResult ? <span className="text-xs text-zinc-400">{automationResult}</span> : null}
               </div>
-              {todaysReminders.length === 0 ? (
+              {todaysRemindersLoading ? (
+                <p className="text-xs text-zinc-600">A carregar lembretes...</p>
+              ) : todaysReminders.length === 0 ? (
                 <p className="text-xs text-zinc-600">Sem lembretes pendentes para hoje.</p>
               ) : (
                 <ul className="space-y-1.5">

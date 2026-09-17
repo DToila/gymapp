@@ -5,7 +5,7 @@ import { ScheduleSlotRow } from '../../../lib/database';
 import {
   UpcomingSession,
   bookTrialClass,
-  getSessionCapacityInfo,
+  getSessionsCapacityInfo,
   getUpcomingSessionsForClassTypes,
   resolveScheduleSlotRows,
   suggestClassTypesForAge,
@@ -50,23 +50,31 @@ export default function TrialBookingPicker({ lead, onBooked, onCancel }: TrialBo
         const upcoming = getUpcomingSessionsForClassTypes(activeTypes, 4).slice(0, 12);
         const slotRowsByCode = await resolveScheduleSlotRows(upcoming.map((session) => session.slot));
 
-        const withCapacity = await Promise.all(
-          upcoming.map(async (session) => {
-            const scheduleSlotRow = slotRowsByCode[session.slot.id];
-            if (!scheduleSlotRow) return null;
-            const capacityInfo = await getSessionCapacityInfo(scheduleSlotRow, session.dateKey, session.slot.program as LeadClassType);
-            return {
-              ...session,
-              scheduleSlotRow,
-              capacity: capacityInfo.capacity,
-              booked: capacityInfo.booked,
-              full: capacityInfo.full,
-            } satisfies SessionWithCapacity;
-          })
+        const resolved = upcoming
+          .map((session) => ({ session, scheduleSlotRow: slotRowsByCode[session.slot.id] }))
+          .filter((entry): entry is { session: UpcomingSession; scheduleSlotRow: ScheduleSlotRow } => Boolean(entry.scheduleSlotRow));
+
+        const capacityInfos = await getSessionsCapacityInfo(
+          resolved.map(({ session, scheduleSlotRow }) => ({
+            scheduleSlotRow,
+            dateKey: session.dateKey,
+            program: session.slot.program as LeadClassType,
+          }))
         );
 
+        const withCapacity = resolved.map(({ session, scheduleSlotRow }, index) => {
+          const capacityInfo = capacityInfos[index];
+          return {
+            ...session,
+            scheduleSlotRow,
+            capacity: capacityInfo.capacity,
+            booked: capacityInfo.booked,
+            full: capacityInfo.full,
+          } satisfies SessionWithCapacity;
+        });
+
         if (!cancelled) {
-          setSessions(withCapacity.filter((session): session is SessionWithCapacity => session !== null));
+          setSessions(withCapacity);
         }
       } catch (err) {
         console.error('Erro loading trial sessions:', err);

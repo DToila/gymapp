@@ -9,6 +9,7 @@ import {
   createManualPayment,
   deleteDdBatch,
   DdBatchItemRow,
+  DdBatchRow,
   getCurrentMonthKey,
   getMembersForPayments,
   getOrCreateDdBatch,
@@ -245,6 +246,7 @@ export default function PaymentsPage() {
   const [paidMonthPayments, setPaidMonthPayments] = useState<PaymentRow[]>([])
   const [latestBatchId, setLatestBatchId] = useState<string | null>(null)
   const [ddItems, setDdItems] = useState<DdBatchItemRow[]>([])
+  const [ddItemsLoading, setDdItemsLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [errorDismissed, setErrorDismissed] = useState(false)
@@ -279,6 +281,7 @@ export default function PaymentsPage() {
     setError(null)
     setErrorDismissed(false)
 
+    let latestBatch: DdBatchRow | null = null
     try {
       const [membersData, monthPayments, monthBatches] = await Promise.all([
         getMembersForPayments(),
@@ -289,24 +292,41 @@ export default function PaymentsPage() {
       setMembers(membersData)
       setCurrentMonthPayments(monthPayments)
 
-      const latestBatch = monthBatches[0] || null
+      latestBatch = monthBatches[0] || null
       setLatestBatchId(latestBatch?.id || null)
-
-      if (latestBatch) {
-        const items = await listDdBatchItems(latestBatch.id)
-        setDdItems(items)
-      } else {
-        setDdItems([])
-      }
     } catch (fetchError) {
       console.error('PAYMENTS_FETCH_ERROR', fetchError)
       setError("Não foi possível carregar pagamentos. Tenta novamente")
-    } finally {
       setLoading(false)
+      setDdItems([])
+      setDdItemsLoading(false)
+      return
+    }
+
+    // "Por Pagar"/"Pago" can render now — DD-batch items only matter for the
+    // DD tab, so fetch them separately instead of making every tab wait for
+    // this extra round trip (previously all three tabs were gated behind it).
+    setLoading(false)
+
+    setDdItemsLoading(true)
+    try {
+      const items = latestBatch ? await listDdBatchItems(latestBatch.id) : []
+      setDdItems(items)
+    } catch (ddError) {
+      console.error('PAYMENTS_DD_ITEMS_ERROR', ddError)
+      setDdItems([])
+    } finally {
+      setDdItemsLoading(false)
     }
   }, [currentMonth])
 
   const refreshPaidMonth = useCallback(async () => {
+    // The default "Pago" month is the same as the current month refreshCore
+    // already fetches — reuse that instead of firing an identical query.
+    if (paidMonth === currentMonth) {
+      setPaidMonthPayments(currentMonthPayments.filter((row) => !row.voided))
+      return
+    }
     try {
       const rows = await getPaymentsForMonth(paidMonth)
       setPaidMonthPayments(rows.filter((row) => !row.voided))
@@ -316,7 +336,7 @@ export default function PaymentsPage() {
       setErrorDismissed(false)
       setPaidMonthPayments([])
     }
-  }, [paidMonth])
+  }, [paidMonth, currentMonth, currentMonthPayments])
 
   useEffect(() => {
     refreshCore()
@@ -1060,7 +1080,14 @@ export default function PaymentsPage() {
             </section>
           ) : null}
 
-          {!loading && activeTab === 'dd' ? (
+          {!loading && ddItemsLoading && activeTab === 'dd' ? (
+            <div className="space-y-3">
+              <div className="h-11 animate-pulse rounded-xl bg-[#131313]" />
+              <div className="h-11 animate-pulse rounded-xl bg-[#131313]" />
+            </div>
+          ) : null}
+
+          {!loading && !ddItemsLoading && activeTab === 'dd' ? (
             <div className="space-y-6">
               <section className="rounded-2xl border border-[#222] bg-[#121212] p-6">
                 <div className="mb-4 flex items-end justify-between gap-4">

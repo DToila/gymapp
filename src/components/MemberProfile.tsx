@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Member, calculateMonthlyFee, getBeltOptions, getAgeFromDateOfBirth } from "../../lib/types";
 import { beltStyle } from "@/lib/beltColors";
 import { getAttendanceForMember, getNotesForMember, createNote, setAttendance, getKidBehaviorEvents, upsertKidBehavior, deleteKidBehaviorForDate } from "../../lib/database";
-import { supabase } from "../../lib/supabase";
+import { useStaffProfile } from "@/lib/useStaffProfile";
 import {
   ATTENDANCE_UPDATED_EVENT,
   BEHAVIOR_UPDATED_EVENT,
@@ -17,12 +17,6 @@ import {
   writeAttendanceByDate,
   toDateKey,
 } from "@/lib/attendanceState";
-
-const fullNameFromMetadata = (metadata: unknown): string | null => {
-  if (!metadata || typeof metadata !== 'object') return null;
-  const value = (metadata as { full_name?: unknown }).full_name;
-  return typeof value === 'string' && value.trim() ? value : null;
-};
 
 interface Comment {
   id: string;
@@ -139,7 +133,9 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
   const [emojiPickerDate, setEmojiPickerDate] = useState<string | null>(null);
   const [reportFromDate, setReportFromDate] = useState<string>('');
   const [reportToDate, setReportToDate] = useState<string>('');
-  const [currentStaffName, setCurrentStaffName] = useState('Instrutor');
+  // Shared/cached across every page with a sidebar instead of this page
+  // running its own independent auth.getUser() + profiles fetch.
+  const { name: currentStaffName } = useStaffProfile();
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const isPendingMember = (data.status as unknown as string) === 'pendente';
@@ -155,19 +151,6 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     setIsEditing(false);
   }, [member]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const loadStaffName = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData?.user;
-      if (!user) return;
-      const { data } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle();
-      const name = data?.full_name || fullNameFromMetadata(user.user_metadata) || fullNameFromMetadata(user.app_metadata) || 'Instrutor';
-      if (!cancelled) setCurrentStaffName(name);
-    };
-    loadStaffName().catch((e) => console.error(e));
-    return () => { cancelled = true; };
-  }, []);
 
   const readLocalBehaviorMap = useCallback((): { [date: string]: BehaviorValue } => {
     const nextMap: { [date: string]: BehaviorValue } = {};

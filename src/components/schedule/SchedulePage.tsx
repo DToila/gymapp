@@ -15,9 +15,7 @@ import {
   getCoachProfiles,
   upsertClassLog,
 } from '../../../lib/database';
-import { supabase } from '../../../lib/supabase';
-
-type AppRole = 'admin' | 'staff' | 'coach';
+import { useStaffProfile, type AppRole } from '@/lib/useStaffProfile';
 
 const DAY_ORDER = [
   { key: 'SEG', label: 'Seg' },
@@ -174,28 +172,12 @@ export default function SchedulePage() {
     getCoachProfiles().then(setCoaches).catch(() => setCoaches([]));
   }, []);
 
+  // Shared/cached across every page with a sidebar instead of this page
+  // running its own independent auth.getUser() + profiles fetch.
+  const staffProfile = useStaffProfile();
   useEffect(() => {
-    const loadProfileRole = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData?.user;
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      const role = data?.role === 'admin' || data?.role === 'staff' || data?.role === 'coach' ? data.role : null;
-      const metadataRole = [user.user_metadata, user.app_metadata]
-        .map((metadata) => (metadata && typeof metadata === 'object' ? (metadata as { role?: unknown }).role : null))
-        .find((value) => value === 'admin' || value === 'staff' || value === 'coach');
-
-      setCurrentRole((role || metadataRole || 'coach') as AppRole);
-    };
-
-    loadProfileRole();
-  }, []);
+    setCurrentRole(staffProfile.role);
+  }, [staffProfile.role]);
 
   useEffect(() => {
     const slotRows = officialSchedule.map((slot) => ({

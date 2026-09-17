@@ -20,20 +20,7 @@ import { getLeadsToContactToday, LeadAwaitingDecision } from '@/components/leads
 import { AppRole, AttendanceRecentItem, KidBehaviorItem, KpiItem, NoteItem, RequestItem, UnpaidPayment } from './types';
 import { ATTENDANCE_UPDATED_EVENT, BEHAVIOR_UPDATED_EVENT, readBehaviorEvents, toDateKey } from '@/lib/attendanceState';
 import { supabase } from '../../../lib/supabase';
-
-const isRole = (value: string): value is AppRole => value === 'admin' || value === 'staff' || value === 'coach';
-
-const roleFromMetadata = (metadata: unknown): AppRole | null => {
-  if (!metadata || typeof metadata !== 'object') return null;
-  const roleValue = (metadata as { role?: unknown }).role;
-  return typeof roleValue === 'string' && isRole(roleValue) ? roleValue : null;
-};
-
-const fullNameFromMetadata = (metadata: unknown): string | null => {
-  if (!metadata || typeof metadata !== 'object') return null;
-  const value = (metadata as { full_name?: unknown }).full_name;
-  return typeof value === 'string' && value.trim() ? value : null;
-};
+import { useStaffProfile } from '@/lib/useStaffProfile';
 
 const getRelativeTime = (isoDate: string): string => {
   const then = new Date(isoDate).getTime();
@@ -82,31 +69,13 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
 
   const isCoach = currentRole === 'coach';
 
+  // Shared/cached across every page with a sidebar instead of this page
+  // running its own independent auth.getUser() + profiles fetch.
+  const staffProfile = useStaffProfile();
   useEffect(() => {
-    const loadProfileRole = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      const user = authData?.user;
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('role, full_name')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      const roleFromProfile = data?.role && isRole(data.role) ? data.role : null;
-      const roleFromUserMeta = roleFromMetadata(user.user_metadata);
-      const roleFromAppMeta = roleFromMetadata(user.app_metadata);
-      setCurrentRole(roleFromProfile || roleFromUserMeta || roleFromAppMeta || 'coach');
-
-      const nameFromProfile = data?.full_name || null;
-      const nameFromUserMeta = fullNameFromMetadata(user.user_metadata);
-      const nameFromAppMeta = fullNameFromMetadata(user.app_metadata);
-      setCurrentName(nameFromProfile || nameFromUserMeta || nameFromAppMeta || 'Instrutor');
-    };
-
-    loadProfileRole();
-  }, []);
+    setCurrentRole(staffProfile.role);
+    setCurrentName(staffProfile.name);
+  }, [staffProfile.role, staffProfile.name]);
 
   const loadDashboardData = useCallback(async (allMembers: Member[]) => {
     setRecentNotesLoading(true);
