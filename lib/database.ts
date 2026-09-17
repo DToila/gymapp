@@ -543,6 +543,32 @@ export const logLeadStatusChange = async (
   }
 }
 
+// Trimmed variant for the Leads Kanban board — it only renders
+// name/email/phone/contact_date/contact_source/class_type/next_contact_date/
+// status, and opening a lead's edit drawer does its own separate getLeadById
+// fetch for the full record (nif, morada, mensagem_inicial, trial_feedback,
+// etc.), so the board never needs those wider columns per row.
+export const getLeadsForList = async () => {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('id, name, email, phone, contact_date, contact_source, class_type, next_contact_date, status')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export const getLeadById = async (id: string) => {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
 export const getLeadStatusHistory = async (leadId: string): Promise<LeadStatusHistoryRow[]> => {
   const { data, error } = await supabase
     .from('lead_status_history')

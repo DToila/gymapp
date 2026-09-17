@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import TeacherSidebar from '@/components/members/TeacherSidebar';
 import { supabase } from '../../../lib/supabase';
 import { useStaffProfile } from '@/lib/useStaffProfile';
-import { logLeadStatusChange, ReminderLogRow, getRemindersForDate } from '../../../lib/database';
+import { logLeadStatusChange, ReminderLogRow, getRemindersForDate, getLeadsForList, getLeadById } from '../../../lib/database';
 import LeadsKanban from '@/components/leads/LeadsKanban';
 import LeadNotes from '@/components/leads/LeadNotes';
 import TrialBookingPicker from '@/components/leads/TrialBookingPicker';
@@ -62,6 +62,7 @@ export default function LeadsPage() {
   const [followupFilter, setFollowupFilter] = useState<'all' | 'overdue'>('all');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isLeadDrawerOpen, setIsLeadDrawerOpen] = useState(false);
+  const [openingLeadId, setOpeningLeadId] = useState<string | null>(null);
   const [isCreatingLead, setIsCreatingLead] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [dedupeWarning, setDedupeWarning] = useState<string | null>(null);
@@ -93,16 +94,8 @@ export default function LeadsPage() {
       try {
         setLoading(true);
         setError(null);
-        const { data, error: fetchError } = await supabase
-          .from('leads')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (fetchError) {
-          throw fetchError;
-        }
-
-        setLeads(data || []);
+        const data = await getLeadsForList();
+        setLeads(data as Lead[]);
       } catch (err) {
         console.error('Erro fetching leads:', err);
         setError(err instanceof Error ? err.message : 'Falhado to load leads');
@@ -291,14 +284,28 @@ export default function LeadsPage() {
     await logLeadStatusChange(lead.id, newStatus).catch((err) => console.error('Erro logging status history:', err));
   };
 
-  const openEditLead = (lead: Lead) => {
+  const openEditLead = async (lead: Lead) => {
     setFormError(null);
     setDedupeWarning(null);
     setIsCreatingLead(false);
-    setSelectedLead({ ...lead });
+    setOpeningLeadId(lead.id);
+    // The Kanban board only holds a trimmed set of columns (see
+    // getLeadsForList) — fetch the full row before editing so fields like
+    // nif/morada/mensagem_inicial/trial_feedback aren't blank in the form
+    // and, critically, don't get silently wiped out on save.
+    let fullLead: Lead = lead;
+    try {
+      const data = await getLeadById(lead.id);
+      if (data) fullLead = data as Lead;
+    } catch (err) {
+      console.error('Erro loading lead detail:', err);
+    } finally {
+      setOpeningLeadId(null);
+    }
+    setSelectedLead({ ...fullLead });
     setIsLeadDrawerOpen(true);
     setIsBookingTrial(false);
-    setFeedbackDraft(lead.trial_feedback || '');
+    setFeedbackDraft(fullLead.trial_feedback || '');
     setFeedbackSaved(false);
   };
 
@@ -484,12 +491,8 @@ export default function LeadsPage() {
       if (insertError) throw insertError;
 
       // Reload leads
-      const { data } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      setLeads(data || []);
+      const data = await getLeadsForList();
+      setLeads(data as Lead[]);
       setImportData('');
       setIsImportModalOpen(false);
     } catch (err) {
@@ -631,7 +634,7 @@ export default function LeadsPage() {
                 <p className="text-[#fca5a5] text-sm mt-1">{error}</p>
               </div>
             ) : (
-              <LeadsKanban leads={filteredLeads} onCardClick={openEditLead} onStatusChange={handleStatusChange} />
+              <LeadsKanban leads={filteredLeads} onCardClick={openEditLead} onStatusChange={handleStatusChange} openingLeadId={openingLeadId} />
             )}
       </main>
 

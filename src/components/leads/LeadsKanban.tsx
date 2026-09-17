@@ -93,6 +93,7 @@ interface LeadsKanbanProps {
   leads: Lead[];
   onCardClick: (lead: Lead) => void;
   onStatusChange: (lead: Lead, newStatus: LeadStatus) => void;
+  openingLeadId?: string | null;
 }
 
 interface SwipeState {
@@ -101,7 +102,7 @@ interface SwipeState {
   animating: boolean;
 }
 
-export default function LeadsKanban({ leads, onCardClick, onStatusChange }: LeadsKanbanProps) {
+export default function LeadsKanban({ leads, onCardClick, onStatusChange, openingLeadId = null }: LeadsKanbanProps) {
   const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null);
   const [activeMobileIndex, setActiveMobileIndex] = useState(0);
@@ -287,7 +288,7 @@ export default function LeadsKanban({ leads, onCardClick, onStatusChange }: Lead
                   }
                   className={`relative cursor-grab select-none rounded-xl border border-[#222] bg-[#161616] p-3 transition-colors active:cursor-grabbing hover:border-[#333] hover:bg-[#1d1d1d] ${
                     isDragging ? 'scale-95 opacity-40' : ''
-                  }`}
+                  } ${openingLeadId === lead.id ? 'pointer-events-none opacity-60' : ''}`}
                 >
                   {/* Avatar + name */}
                   <div className="mb-2 flex items-center gap-2">
