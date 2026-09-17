@@ -305,6 +305,8 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       setTodayCheckedIn(0);
       setTodayTotalMembers(0);
       setTodayRecentAttendance([]);
+    } finally {
+      setTodayAttendanceLoading(false);
     }
   }, []);
 
