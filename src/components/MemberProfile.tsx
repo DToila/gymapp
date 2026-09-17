@@ -188,17 +188,15 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     const startKey = toDateKey(startOfYear);
     const endKey = toDateKey(endOfYear);
 
-    const events = await getKidBehaviorEvents({ fromDateKey: startKey, toDateKey: endKey });
+    const events = await getKidBehaviorEvents({ fromDateKey: startKey, toDateKey: endKey, kidId: member.id });
     const nextMap: { [date: string]: BehaviorValue } = {
       ...readLocalBehaviorMap(),
     };
 
-    events
-      .filter((event) => event.kid_id === member.id)
-      .forEach((event) => {
-        const normalizedDateKey = normalizeDateKey(event.date);
-        nextMap[normalizedDateKey] = event.value;
-      });
+    events.forEach((event) => {
+      const normalizedDateKey = normalizeDateKey(event.date);
+      nextMap[normalizedDateKey] = event.value;
+    });
 
     return nextMap;
   }, [member.id, readLocalBehaviorMap]);
@@ -207,28 +205,27 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
     try {
       if (!silent) setLoading(true);
 
-      // Load attendance
-      const attendanceData = await getAttendanceForMember(member.id);
+      // Attendance, behavior and notes don't depend on each other — fetch
+      // them together instead of one after another.
+      const [attendanceData, behaviorMapResult, notesData] = await Promise.all([
+        getAttendanceForMember(member.id),
+        isKid
+          ? loadKidBehaviorMap().catch((error) => {
+              console.error('Erro loading kid behavior events:', error);
+              return readLocalBehaviorMap();
+            })
+          : Promise.resolve({} as { [date: string]: BehaviorValue }),
+        getNotesForMember(member.id),
+      ]);
+
       const attendanceMapLocal: { [date: string]: boolean } = {};
       attendanceData.forEach(att => {
         attendanceMapLocal[normalizeDateKey(att.date)] = att.attended;
       });
       setAttendanceMap(mergeAttendanceMapForMember(member.id, attendanceMapLocal, readAttendanceByDate()));
 
-      // Load kid behavior if this is a kid
-      if (isKid) {
-        try {
-          setBehaviorMap(await loadKidBehaviorMap());
-        } catch (error) {
-          console.error('Erro loading kid behavior events:', error);
-          setBehaviorMap(readLocalBehaviorMap());
-        }
-      } else {
-        setBehaviorMap({});
-      }
+      setBehaviorMap(behaviorMapResult);
 
-      // Load notes
-      const notesData = await getNotesForMember(member.id);
       const formattedComments: Comment[] = notesData.map(note => ({
         id: note.id,
         teacherName: note.teacher_name,

@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserPlus, CheckSquare } from 'lucide-react';
 import { getAttendanceForDate, getKidBehaviorEvents, getMembers, getRecentTeacherNotes } from '../../../lib/database';
 import { getMembersForPayments, getPaymentsForMonth, getCurrentMonthKey } from '@/lib/payments';
-import { getAgeFromDateOfBirth } from '../../../lib/types';
+import { getAgeFromDateOfBirth, Member } from '../../../lib/types';
 import KpiCard from './KpiCard';
 import RecentNotesList from './RecentNotesList';
 import UnpaidPaymentsTable from './UnpaidPaymentsTable';
@@ -58,14 +58,18 @@ const isRequestMember = (member: { status?: string | null; request_status?: stri
 export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const router = useRouter();
   const formattedDate = new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const [members, setMembers] = useState<Member[]>([]);
+  const [membersLoading, setMembersLoading] = useState(true);
   const [recentNotes, setRecentNotes] = useState<NoteItem[]>([]);
   const [recentNotesLoading, setRecentNotesLoading] = useState(true);
   const [behaviorMode, setBehaviorMode] = useState<'now' | 'month'>('now');
   const [kidsMembers, setKidsMembers] = useState<KidBehaviorItem[]>([]);
   const [kidsBehaviorEvents, setKidsBehaviorEvents] = useState<Array<{ kidId: string; createdAt: string; value: 'GOOD' | 'NEUTRAL' | 'BAD' }>>([]);
+  const [kidsBehaviorLoading, setKidsBehaviorLoading] = useState(true);
   const [todayCheckedIn, setTodayCheckedIn] = useState(0);
   const [todayTotalMembers, setTodayTotalMembers] = useState(0);
   const [todayRecentAttendance, setTodayRecentAttendance] = useState<AttendanceRecentItem[]>([]);
+  const [todayAttendanceLoading, setTodayAttendanceLoading] = useState(true);
   const [pendingRequests, setPendingRequests] = useState<RequestItem[]>([]);
   const [currentRole, setCurrentRole] = useState<AppRole>('coach');
   const [currentName, setCurrentName] = useState('Instrutor');
@@ -74,6 +78,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
   const [totalUnpaidCount, setTotalUnpaidCount] = useState(0);
   const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0);
   const [leadsToContactToday, setLeadsToContactToday] = useState<LeadAwaitingDecision[]>([]);
+  const [leadsToContactLoading, setLeadsToContactLoading] = useState(true);
 
   const isCoach = currentRole === 'coach';
 
@@ -103,12 +108,11 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
     loadProfileRole();
   }, []);
 
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (allMembers: Member[]) => {
     setRecentNotesLoading(true);
     try {
-      const [recent, allMembers, paymentMembers, monthlyPayments] = await Promise.all([
+      const [recent, paymentMembers, monthlyPayments] = await Promise.all([
         getRecentTeacherNotes(5),
-        getMembers(),
         getMembersForPayments(),
         getPaymentsForMonth(getCurrentMonthKey()),
       ]);
@@ -195,10 +199,10 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
     }
   }, []);
 
-  const fetchKidsBehavior = useCallback(async (mode: 'now' | 'month') => {
+  const fetchKidsBehavior = useCallback(async (mode: 'now' | 'month', membersList: Member[]) => {
+    setKidsBehaviorLoading(true);
     try {
-      const members = await getMembers();
-      const realKids: KidBehaviorItem[] = members
+      const realKids: KidBehaviorItem[] = membersList
         .filter((member) => {
           if (!member.date_of_birth) return false;
           const age = getAgeFromDateOfBirth(member.date_of_birth);
@@ -299,18 +303,18 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       console.error('Erro fetching kids behavior:', error);
       setKidsMembers([]);
       setKidsBehaviorEvents([]);
+    } finally {
+      setKidsBehaviorLoading(false);
     }
   }, []);
 
-  const fetchTodayAttendance = useCallback(async () => {
+  const fetchTodayAttendance = useCallback(async (membersList: Member[]) => {
+    setTodayAttendanceLoading(true);
     try {
       const todayKey = toDateKey(new Date());
-      const [members, checkedInIds] = await Promise.all([
-        getMembers(),
-        getAttendanceForDate(todayKey),
-      ]);
+      const checkedInIds = await getAttendanceForDate(todayKey);
 
-      const memberById = new Map(members.map((member) => [member.id, member]));
+      const memberById = new Map(membersList.map((member) => [member.id, member]));
       const recent = checkedInIds
         .map((memberId, index) => {
           const member = memberById.get(memberId);
@@ -325,7 +329,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         .slice(0, 5);
 
       setTodayCheckedIn(checkedInIds.length);
-      setTodayTotalMembers(members.length);
+      setTodayTotalMembers(membersList.length);
       setTodayRecentAttendance(recent);
     } catch (error) {
       console.error('Erro fetching today attendance:', error);
@@ -335,46 +339,73 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
     }
   }, []);
 
+  // `members` is fetched once per refresh cycle here and reused by
+  // loadDashboardData/fetchKidsBehavior/fetchTodayAttendance instead of each
+  // of them independently re-querying the full members table (previously 3x
+  // redundant full-table fetches on every mount and on every focus/visibility
+  // refresh).
+  const membersRef = useRef<Member[]>([]);
   useEffect(() => {
-    loadDashboardData();
-    fetchTodayAttendance();
-  }, [fetchTodayAttendance, loadDashboardData]);
+    membersRef.current = members;
+  }, [members]);
+
+  const refreshMembers = useCallback(async () => {
+    try {
+      const data = await getMembers();
+      setMembers(data);
+      return data;
+    } catch (error) {
+      console.error('Erro fetching members:', error);
+      setMembers([]);
+      return [];
+    } finally {
+      setMembersLoading(false);
+    }
+  }, []);
+
+  const refreshAll = useCallback(async () => {
+    const list = await refreshMembers();
+    await Promise.all([loadDashboardData(list), fetchTodayAttendance(list)]);
+  }, [refreshMembers, loadDashboardData, fetchTodayAttendance]);
+
+  useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
 
   useEffect(() => {
     if (isCoach) return;
+    setLeadsToContactLoading(true);
     getLeadsToContactToday()
       .then(setLeadsToContactToday)
       .catch((error) => {
         console.error('Erro loading leads to contact today:', error);
         setLeadsToContactToday([]);
-      });
+      })
+      .finally(() => setLeadsToContactLoading(false));
   }, [isCoach]);
 
   useEffect(() => {
-    fetchKidsBehavior(behaviorMode);
-  }, [behaviorMode, fetchKidsBehavior]);
+    if (membersLoading) return;
+    fetchKidsBehavior(behaviorMode, membersRef.current);
+  }, [behaviorMode, membersLoading, fetchKidsBehavior]);
 
   useEffect(() => {
     const handleFocus = () => {
-      loadDashboardData();
-      fetchKidsBehavior(behaviorMode);
-      fetchTodayAttendance();
+      refreshAll();
     };
 
     const handleBehaviorUpdated = () => {
-      fetchKidsBehavior(behaviorMode);
+      fetchKidsBehavior(behaviorMode, membersRef.current);
     };
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        loadDashboardData();
-        fetchKidsBehavior(behaviorMode);
-        fetchTodayAttendance();
+        refreshAll();
       }
     };
 
     const handleAttendanceUpdated = () => {
-      fetchTodayAttendance();
+      fetchTodayAttendance(membersRef.current);
     };
 
     window.addEventListener('focus', handleFocus);
@@ -388,28 +419,28 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'kid_behavior_events' },
         () => {
-          fetchKidsBehavior(behaviorMode);
+          fetchKidsBehavior(behaviorMode, membersRef.current);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'attendance' },
         () => {
-          fetchTodayAttendance();
+          fetchTodayAttendance(membersRef.current);
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'members' },
         () => {
-          loadDashboardData();
+          refreshAll();
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'payments' },
         () => {
-          loadDashboardData();
+          loadDashboardData(membersRef.current);
         }
       )
       .subscribe();
@@ -421,7 +452,7 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
       document.removeEventListener('visibilitychange', handleVisibility);
       supabase.removeChannel(channel);
     };
-  }, [behaviorMode, fetchKidsBehavior, fetchTodayAttendance, loadDashboardData]);
+  }, [behaviorMode, fetchKidsBehavior, fetchTodayAttendance, loadDashboardData, refreshAll]);
 
   // Compute KPIs from actual data
   useEffect(() => {
@@ -463,6 +494,8 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
     setKpis(computedKpis);
   }, [todayTotalMembers, kidsBehaviorEvents, totalUnpaidCount, totalUnpaidAmount, pendingRequests]);
 
+  const kpisLoading = membersLoading || todayAttendanceLoading || kidsBehaviorLoading || recentNotesLoading;
+
   return (
     <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
       <TeacherSidebar
@@ -503,9 +536,11 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
         {/* KPIs */}
         {!isCoach ? (
           <section className="mb-5 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
-            {kpis.map((item) => (
-              <KpiCard key={item.id} item={item} />
-            ))}
+            {kpisLoading
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="h-[88px] animate-pulse rounded-xl border border-[#1e1e1e] bg-[#161616]" />
+                ))
+              : kpis.map((item) => <KpiCard key={item.id} item={item} />)}
           </section>
         ) : null}
 
@@ -525,10 +560,11 @@ export default function DashboardPage({ onLogout }: { onLogout?: () => void }) {
               behaviorEvents={kidsBehaviorEvents}
               mode={behaviorMode}
               onModeChange={setBehaviorMode}
+              loading={kidsBehaviorLoading}
             />
-            <AttendancePanel checkedIn={todayCheckedIn} total={todayTotalMembers} recent={todayRecentAttendance} />
-            {!isCoach ? <PendingRequestsList requests={pendingRequests} /> : null}
-            {!isCoach ? <LeadsToContactTodayPanel leads={leadsToContactToday} /> : null}
+            <AttendancePanel checkedIn={todayCheckedIn} total={todayTotalMembers} recent={todayRecentAttendance} loading={todayAttendanceLoading} />
+            {!isCoach ? <PendingRequestsList requests={pendingRequests} loading={recentNotesLoading} /> : null}
+            {!isCoach ? <LeadsToContactTodayPanel leads={leadsToContactToday} loading={leadsToContactLoading} /> : null}
           </div>
         </section>
       </main>

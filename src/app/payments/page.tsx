@@ -663,8 +663,14 @@ export default function PaymentsPage() {
         }))
       )
 
-      for (const item of inserted) {
-        await applyDdEffectsForItem(item)
+      // Different members' rows are fully independent, so process several at
+      // once instead of one at a time — this was the slow part of a DD
+      // upload (previously N sequential round trips for N rows). Capped at 5
+      // concurrent so two rows for the same member (unusual, but possible in
+      // a bad export) can't race each other into creating a duplicate payment.
+      const CONCURRENCY = 5
+      for (let i = 0; i < inserted.length; i += CONCURRENCY) {
+        await Promise.all(inserted.slice(i, i + CONCURRENCY).map((item) => applyDdEffectsForItem(item)))
       }
 
       setLatestBatchId(batch.id)

@@ -26,12 +26,14 @@ export default function KidsBehaviorPanel({
   behaviorEvents,
   mode,
   onModeChange,
+  loading = false,
 }: {
   needsAttention: KidBehaviorItem[];
   greatBehavior: KidBehaviorItem[];
   behaviorEvents: BehaviorEvent[];
   mode: BehaviorMode;
   onModeChange: (mode: BehaviorMode) => void;
+  loading?: boolean;
 }) {
   const router = useRouter();
   const allKids = useMemo(() => {
@@ -107,7 +109,9 @@ export default function KidsBehaviorPanel({
       <div className="grid gap-4 p-4 md:grid-cols-2">
         <div>
           <p className="mb-2 text-sm font-semibold text-[#ef4444]">{needsTitle}</p>
-          {ranked.needsTop.length === 0 ? (
+          {loading ? (
+            <p className="rounded-lg border border-[#252525] bg-[#0f0f0f] p-3 text-sm text-zinc-500">A carregar...</p>
+          ) : ranked.needsTop.length === 0 ? (
             <p className="rounded-lg border border-[#1f2a1f] bg-[#0f1a0f] p-3 text-sm text-[#86efac]">Todos good ✅</p>
           ) : (
             <ul className="space-y-2">
@@ -133,7 +137,9 @@ export default function KidsBehaviorPanel({
 
         <div>
           <p className="mb-2 text-sm font-semibold text-[#22c55e]">{greatTitle}</p>
-          {ranked.greatTop.length === 0 ? (
+          {loading ? (
+            <p className="rounded-lg border border-[#252525] bg-[#0f0f0f] p-3 text-sm text-zinc-500">A carregar...</p>
+          ) : ranked.greatTop.length === 0 ? (
             <p className="rounded-lg border border-[#252525] bg-[#0f0f0f] p-3 text-sm text-zinc-500">Não stars yet</p>
           ) : (
             <ul className="space-y-2">

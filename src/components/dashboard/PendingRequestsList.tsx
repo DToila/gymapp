@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import { RequestItem } from './types';
 
-export default function PendingRequestsList({ requests }: { requests: RequestItem[] }) {
+export default function PendingRequestsList({ requests, loading = false }: { requests: RequestItem[]; loading?: boolean }) {
   const router = useRouter();
 
   const handleApproveRequest = (requestId: string) => {
@@ -19,6 +19,11 @@ export default function PendingRequestsList({ requests }: { requests: RequestIte
 
   return (
     <Panel title="Pedidos Pendentes" icon={<span className="text-[#c81d25]">▣</span>} actionText="Ver tudo" onAction={() => router.push('/members')}>
+      {loading ? (
+        <p className="py-4 text-sm text-zinc-500">A carregar pedidos...</p>
+      ) : requests.length === 0 ? (
+        <p className="py-4 text-sm text-zinc-500">Sem pedidos pendentes.</p>
+      ) : (
       <ul className="space-y-2">
         {requests.map((pedido) => (
           <li key={pedido.id} className="flex items-center gap-3 border-b border-[#1f1f1f] py-2 last:border-b-0">
@@ -44,6 +49,7 @@ export default function PendingRequestsList({ requests }: { requests: RequestIte
           </li>
         ))}
       </ul>
+      )}
     </Panel>
   );
 }

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import Panel from './Panel';
 import { LeadAwaitingDecision } from '@/components/leads/leadAutomation';
 
-export default function LeadsToContactTodayPanel({ leads }: { leads: LeadAwaitingDecision[] }) {
+export default function LeadsToContactTodayPanel({ leads, loading = false }: { leads: LeadAwaitingDecision[]; loading?: boolean }) {
   const router = useRouter();
 
   return (
@@ -14,7 +14,9 @@ export default function LeadsToContactTodayPanel({ leads }: { leads: LeadAwaitin
       actionText="Ver Leads"
       onAction={() => router.push('/leads')}
     >
-      {leads.length === 0 ? (
+      {loading ? (
+        <p className="px-1 py-2 text-sm text-zinc-500">A carregar...</p>
+      ) : leads.length === 0 ? (
         <p className="px-1 py-2 text-sm text-zinc-500">Sem leads à espera de decisão há muito tempo. Tudo em dia.</p>
       ) : (
         <ul className="space-y-2">

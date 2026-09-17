@@ -33,6 +33,7 @@ export default function AnnouncementsPanel({
 }) {
   const {
     announcements,
+    isLoading,
     createAnnouncement,
     updateAnnouncement,
     deleteAnnouncement,
@@ -138,7 +139,9 @@ export default function AnnouncementsPanel({
 
         <div className="p-4">
           <div className="min-h-[220px]">
-            {visible.length === 0 ? (
+            {isLoading ? (
+              <p className="py-4 text-sm text-zinc-500">A carregar anúncios...</p>
+            ) : visible.length === 0 ? (
               <p className="py-4 text-sm text-zinc-500">Não announcements right now.</p>
             ) : (
               <ul className="space-y-2">

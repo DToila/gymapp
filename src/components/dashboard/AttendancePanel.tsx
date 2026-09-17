@@ -3,7 +3,17 @@ import { AttendanceRecentItem } from './types';
 import { useRouter } from 'next/navigation';
 import { toDateKey } from '@/lib/attendanceState';
 
-export default function AttendancePanel({ checkedIn, total, recent }: { checkedIn: number; total: number; recent: AttendanceRecentItem[] }) {
+export default function AttendancePanel({
+  checkedIn,
+  total,
+  recent,
+  loading = false,
+}: {
+  checkedIn: number;
+  total: number;
+  recent: AttendanceRecentItem[];
+  loading?: boolean;
+}) {
   const router = useRouter();
   const progress = total > 0 ? Math.round((checkedIn / total) * 100) : 0;
 
@@ -15,7 +25,7 @@ export default function AttendancePanel({ checkedIn, total, recent }: { checkedI
           style={{ background: `conic-gradient(#c81d25 ${progress}%, #2b2b2b ${progress}% 100%)` }}
         >
           <div className="grid h-24 w-24 place-items-center rounded-full bg-[#111] text-center">
-            <p className="text-3xl font-bold text-white">{checkedIn} / {total}</p>
+            <p className="text-3xl font-bold text-white">{loading ? '–  / –' : `${checkedIn} / ${total}`}</p>
             <p className="text-xs text-zinc-500">Entrou</p>
           </div>
         </div>
@@ -32,14 +42,18 @@ export default function AttendancePanel({ checkedIn, total, recent }: { checkedI
 
         <div className="w-full">
           <p className="mb-2 text-sm text-zinc-400">Recente</p>
-          <ul className="space-y-2 text-sm">
-            {recent.map((item) => (
-              <li key={item.id} className="flex items-center justify-between border-b border-[#1f1f1f] pb-1.5 text-zinc-200 last:border-b-0">
-                <span>{item.name}</span>
-                <span className="text-zinc-500">{item.time}</span>
-              </li>
-            ))}
-          </ul>
+          {loading ? (
+            <p className="text-sm text-zinc-500">A carregar...</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {recent.map((item) => (
+                <li key={item.id} className="flex items-center justify-between border-b border-[#1f1f1f] pb-1.5 text-zinc-200 last:border-b-0">
+                  <span>{item.name}</span>
+                  <span className="text-zinc-500">{item.time}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </Panel>

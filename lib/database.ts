@@ -270,13 +270,29 @@ export const upsertKidBehavior = async ({ kidId, dateKey, value, coachId }: { ki
   return data as KidBehaviorEvent
 }
 
-export const getKidBehaviorEvents = async ({ fromDateKey, toDateKey }: { fromDateKey: string; toDateKey: string }): Promise<KidBehaviorEvent[]> => {
-  const { data, error } = await supabase
+export const getKidBehaviorEvents = async ({
+  fromDateKey,
+  toDateKey,
+  kidId,
+}: {
+  fromDateKey: string
+  toDateKey: string
+  // Scopes the query to one kid (e.g. a single member's profile page) instead
+  // of pulling every kid's events for the date range and filtering client-side.
+  kidId?: string
+}): Promise<KidBehaviorEvent[]> => {
+  let query = supabase
     .from('kid_behavior_events')
     .select('id, kid_id, date, value, coach_id, created_at, updated_at')
     .gte('date', fromDateKey)
     .lte('date', toDateKey)
     .order('date', { ascending: false })
+
+  if (kidId) {
+    query = query.eq('kid_id', kidId)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     console.error('Supabase getKidBehaviorEvents failed', {
@@ -286,6 +302,7 @@ export const getKidBehaviorEvents = async ({ fromDateKey, toDateKey }: { fromDat
       code: error.code,
       fromDateKey,
       toDateKey,
+      kidId,
     })
     throw error
   }

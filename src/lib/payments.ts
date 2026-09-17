@@ -438,30 +438,32 @@ export const deleteDdBatch = async (batchId: string): Promise<void> => {
   // First, get all batch items so we can undo their effects
   const batchItems = await listDdBatchItems(batchId)
   
-  // Undo payment effects for each item
-  for (const item of batchItems) {
-    // If item has a linked payment, void it
-    if (item.payment_id) {
-      try {
-        await voidPayment(item.payment_id)
-      } catch (error) {
-        console.warn(`Failed to void payment ${item.payment_id}:`, error)
+  // Undo payment effects for each item. Each item's void/flag-update only
+  // touches its own payment row or reads the static `batchItems` snapshot
+  // (not state mutated by other iterations), so these are independent and
+  // safe to run concurrently instead of one at a time.
+  await Promise.all(
+    batchItems.map(async (item) => {
+      if (item.payment_id) {
+        try {
+          await voidPayment(item.payment_id)
+        } catch (error) {
+          console.warn(`Failed to void payment ${item.payment_id}:`, error)
+        }
       }
-    }
-    
-    // If item had failed status and member_id, remove the failed flag
-    if (item.status === 'failed' && item.member_id) {
-      try {
-        // Check if there are other failed items for this member
-        const otherFailed = batchItems.some(
-          (row) => row.id !== item.id && row.member_id === item.member_id && row.status === 'failed'
-        )
-        await setDdFailedFlag(item.member_id, batchId.substring(0, 7), !otherFailed)
-      } catch (error) {
-        console.warn(`Failed to update dd_failed flag for member ${item.member_id}:`, error)
+
+      if (item.status === 'failed' && item.member_id) {
+        try {
+          const otherFailed = batchItems.some(
+            (row) => row.id !== item.id && row.member_id === item.member_id && row.status === 'failed'
+          )
+          await setDdFailedFlag(item.member_id, batchId.substring(0, 7), !otherFailed)
+        } catch (error) {
+          console.warn(`Failed to update dd_failed flag for member ${item.member_id}:`, error)
+        }
       }
-    }
-  }
+    })
+  )
   
   // Now delete all batch items
   const { error: itemsError } = await supabase
@@ -652,6 +654,8 @@ export const recomputeMemberPaidThrough = async (memberId: string): Promise<void
     .select('payment_month')
     .eq('member_id', memberId)
     .eq('voided', false)
+    .order('payment_month', { ascending: false })
+    .limit(1)
 
   if (error) {
     if (!isPaymentsTableMissingError(error)) throw error
@@ -704,13 +708,18 @@ export const resetPaidCounterForMonth = async (month: string): Promise<void> => 
   // Recompute paid_through for all affected members
   if (payments && payments.length > 0) {
     const memberIds = Array.from(new Set((payments as Array<{ member_id: string }>).map((p) => p.member_id)))
-    for (const memberId of memberIds) {
-      try {
-        await recomputeMemberPaidThrough(memberId)
-      } catch (error) {
-        console.warn(`Failed to recompute paid_through for member ${memberId}:`, error)
-      }
-    }
+    // Each member's recompute is independent — run them together instead of
+    // one at a time (this used to be the slowest part of resetting a month
+    // with many affected members).
+    await Promise.all(
+      memberIds.map(async (memberId) => {
+        try {
+          await recomputeMemberPaidThrough(memberId)
+        } catch (error) {
+          console.warn(`Failed to recompute paid_through for member ${memberId}:`, error)
+        }
+      })
+    )
   }
 
   // Also update local state if using it
