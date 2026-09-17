@@ -84,6 +84,7 @@ export default function StudentSchedulePage() {
   const [view, setView] = useState<'today' | 'week'>('week');
   const [slotIdByCode, setSlotIdByCode] = useState<Record<string, string>>({});
   const [classLogsByKey, setClassLogsByKey] = useState<Record<string, ClassLogRow>>({});
+  const [logsLoading, setLogsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedClassLog, setSelectedClassLog] = useState<{
     dayKey: DayKey;
@@ -121,6 +122,7 @@ export default function StudentSchedulePage() {
 
   useEffect(() => {
     const loadLogs = async () => {
+      setLogsLoading(true);
       const slots = await getScheduleSlotsByCodes(scheduleItems.map((item) => item.id));
       const nextSlotIdByCode: Record<string, string> = {};
       slots.forEach((slot) => {
@@ -139,10 +141,12 @@ export default function StudentSchedulePage() {
       setLoadError(null);
     };
 
-    loadLogs().catch((error) => {
-      console.error('Erro loading student schedule logs:', error);
-      setLoadError('Could not load class logs from the database. Please refresh or try again later.');
-    });
+    loadLogs()
+      .catch((error) => {
+        console.error('Erro loading student schedule logs:', error);
+        setLoadError('Could not load class logs from the database. Please refresh or try again later.');
+      })
+      .finally(() => setLogsLoading(false));
   }, [scheduleItems, weekDatesByDay]);
 
   const classesByDay = useMemo(() => {
@@ -221,7 +225,9 @@ export default function StudentSchedulePage() {
                 </p>
                 <div className="mt-2 flex items-center justify-between gap-2 text-xs">
                   <span className="rounded-full border border-[#2a2a2a] bg-[#111] px-2 py-0.5 text-zinc-400">Log</span>
-                  <span className="text-zinc-300">{log?.content ? `${log.content.slice(0, 72)}${log.content.length > 72 ? '…' : ''}` : 'Sem log ainda'}</span>
+                  <span className="text-zinc-300">
+                    {logsLoading ? 'A verificar...' : log?.content ? `${log.content.slice(0, 72)}${log.content.length > 72 ? '…' : ''}` : 'Sem log ainda'}
+                  </span>
                 </div>
               </button>
               );
@@ -234,7 +240,6 @@ export default function StudentSchedulePage() {
 
   return (
     <StudentShell
-      ativo="schedule"
       title="Horário"
       subtitle="Gracie Barra Carnaxide e Oeiras"
       rightActions={

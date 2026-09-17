@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import GBLogo from '@/components/GBLogo';
 import { clearStudentSessionId } from './studentSession';
 import {
@@ -12,12 +12,12 @@ import {
 export type StudentNavKey = 'dashboard' | 'schedule' | 'attendance' | 'payments' | 'announcements' | 'profile';
 
 interface StudentSidebarProps {
-  ativo: StudentNavKey;
   memberName?: string;
 }
 
-export default function StudentSidebar({ ativo, memberName = 'Aluno' }: StudentSidebarProps) {
+export default function StudentSidebar({ memberName = 'Aluno' }: StudentSidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function StudentSidebar({ ativo, memberName = 'Aluno' }: StudentS
         <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-600">Menu</p>
 
         {navItems.map((item) => {
-          const isActive = ativo === item.key;
+          const isActive = pathname === item.path || pathname?.startsWith(`${item.path}/`);
           return (
             <div
               key={item.key}

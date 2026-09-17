@@ -14,13 +14,18 @@ const isScheduledFuture = (date: Date): boolean => {
 export default function StudentAttendancePage() {
   const { member } = useStudentMember();
   const [attendanceMap, setAttendanceMap] = useState<Record<string, boolean>>({});
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'month' | 'list'>('month');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
   useEffect(() => {
     if (!member) return;
-    getAttendanceForMember(member.id)
+    setAttendanceLoading(true);
+    // Bound to the selected year instead of the member's entire history —
+    // re-fetches only when the year picker changes, not on month navigation
+    // within the same year.
+    getAttendanceForMember(member.id, { fromDateKey: `${selectedYear}-01-01`, toDateKey: `${selectedYear}-12-31` })
       .then((rows) => {
         const next: Record<string, boolean> = {};
         rows.forEach((row) => {
@@ -28,8 +33,9 @@ export default function StudentAttendancePage() {
         });
         setAttendanceMap(next);
       })
-      .catch((error) => console.error('Erro loading student attendance page:', error));
-  }, [member]);
+      .catch((error) => console.error('Erro loading student attendance page:', error))
+      .finally(() => setAttendanceLoading(false));
+  }, [member, selectedYear]);
 
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
   const firstDay = new Date(selectedYear, selectedMonth, 1).getDay();
@@ -45,7 +51,7 @@ export default function StudentAttendancePage() {
   }, [attendanceMap, selectedMonth, selectedYear]);
 
   return (
-    <StudentShell ativo="attendance" title="Presenças" subtitle="Presenças history and schedule context">
+    <StudentShell title="Presenças" subtitle="Presenças history and schedule context">
       <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -67,7 +73,9 @@ export default function StudentAttendancePage() {
           </div>
         </div>
 
-        {viewMode === 'month' ? (
+        {attendanceLoading ? (
+          <p className="py-6 text-center text-sm text-zinc-500">A carregar presenças...</p>
+        ) : viewMode === 'month' ? (
           <>
             <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-zinc-500">
               {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d) => <div key={d}>{d}</div>)}

@@ -157,13 +157,39 @@ export const getMemberById = async (id: string): Promise<Member | null> => {
   return data || null
 }
 
-// Attendance
-export const getAttendanceForMember = async (memberId: string): Promise<Attendance[]> => {
+// Trimmed variant for the student portal (src/components/student/*) — those
+// pages only read name/email/phone/belt_level/status/fee/date_of_birth, not
+// the billing/IBAN/NIF/emergency-contact columns getMemberById also selects.
+// Students aren't authenticated via real Supabase Auth (just a localStorage
+// id, see studentSession.ts), so this also avoids shipping that data to a
+// client that isn't a real authenticated session.
+export const getStudentMemberById = async (id: string): Promise<Member | null> => {
   const { data, error } = await supabase
+    .from('members')
+    .select('id, name, email, phone, belt_level, status, fee, date_of_birth')
+    .eq('id', id)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return (data as Member) || null
+}
+
+// Attendance
+export const getAttendanceForMember = async (
+  memberId: string,
+  range?: { fromDateKey: string; toDateKey: string }
+): Promise<Attendance[]> => {
+  let query = supabase
     .from('attendance')
     .select('*')
     .eq('member_id', memberId)
     .order('date', { ascending: true })
+
+  if (range) {
+    query = query.gte('date', range.fromDateKey).lte('date', range.toDateKey)
+  }
+
+  const { data, error } = await query
 
   if (error) throw error
   return data || []

@@ -5,8 +5,7 @@ import { AnnouncementItem } from '../dashboard/types';
 import StudentShell from './StudentShell';
 import { audienceMatchesStudent } from './studentData';
 import { useStudentMember } from './useStudentMember';
-import { useAnnouncements } from '@/lib/useAnnouncements';
-import { toDateKey } from '@/lib/attendanceState';
+import { useStudentAnnouncements } from './useStudentAnnouncements';
 
 const tagChipClass: Record<AnnouncementItem['tag'], string> = {
   URGENT: 'border-[#7f1d1d] bg-[rgba(127,29,29,0.28)] text-[#fda4af]',
@@ -17,15 +16,11 @@ const tagChipClass: Record<AnnouncementItem['tag'], string> = {
 
 export default function StudentAnnouncementsPage() {
   const { isKid } = useStudentMember();
-  const { announcements } = useAnnouncements();
+  const { announcements, loading } = useStudentAnnouncements();
   const [filter, setFilter] = useState<'ALL' | 'KIDS' | 'ADULTS'>('ALL');
 
   const rows = useMemo(() => {
-    const nowKey = toDateKey(new Date());
-
     return announcements
-      .filter((item) => item.approvalStatus === 'approved')
-      .filter((item) => item.expiresAt >= nowKey)
       .filter((item) => audienceMatchesStudent(item, isKid))
       .filter((item) => {
         if (filter === 'ALL') return true;
@@ -35,7 +30,7 @@ export default function StudentAnnouncementsPage() {
   }, [announcements, filter, isKid]);
 
   return (
-    <StudentShell ativo="announcements" title="Anúncios" subtitle="Latest student announcements">
+    <StudentShell title="Anúncios" subtitle="Latest student announcements">
       <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
         <div className="mb-3 flex items-center gap-2">
           {(['ALL', 'KIDS', 'ADULTS'] as Array<'ALL' | 'KIDS' | 'ADULTS'>).map((item) => (
@@ -50,7 +45,9 @@ export default function StudentAnnouncementsPage() {
         </div>
 
         <ul className="space-y-2">
-          {rows.length === 0 ? (
+          {loading ? (
+            <li className="rounded-xl border border-[#202020] bg-[#111] px-3 py-3 text-sm text-zinc-500">A carregar...</li>
+          ) : rows.length === 0 ? (
             <li className="rounded-xl border border-[#202020] bg-[#111] px-3 py-3 text-sm text-zinc-500">Não ativo announcements.</li>
           ) : (
             rows.map((item) => (

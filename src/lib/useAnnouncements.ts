@@ -20,7 +20,7 @@ export interface AnnouncementRow {
   rejection_reason: string | null;
 }
 
-const rowToItem = (row: AnnouncementRow): AnnouncementItem => ({
+export const rowToItem = (row: AnnouncementRow): AnnouncementItem => ({
   id: row.id,
   tag: row.tag as any,
   title: row.title,

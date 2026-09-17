@@ -31,7 +31,7 @@ export default function StudentProfilePage() {
   };
 
   return (
-    <StudentShell ativo="profile" title="Perfil" subtitle="Manage your basic account information">
+    <StudentShell title="Perfil" subtitle="Manage your basic account information">
       <section className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div>

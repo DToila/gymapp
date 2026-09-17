@@ -7,20 +7,26 @@ import { audienceMatchesStudent, getTodayClasses, studentSchedule } from './stud
 import { useStudentMember } from './useStudentMember';
 import { getAttendanceForMember } from '../../../lib/database';
 import { useEffect } from 'react';
-import { useAnnouncements } from '@/lib/useAnnouncements';
+import { useStudentAnnouncements } from './useStudentAnnouncements';
 import { toDateKey } from '@/lib/attendanceState';
 
 export default function StudentDashboardPage() {
   const router = useRouter();
   const { member, isKid } = useStudentMember();
-  const { announcements } = useAnnouncements();
+  const { announcements, loading: announcementsLoading } = useStudentAnnouncements();
   const [attendanceMap, setAttendanceMap] = useState<Record<string, boolean>>({});
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [viewMode, setViewMode] = useState<'month' | 'list'>('month');
 
   useEffect(() => {
     if (!member) return;
-    getAttendanceForMember(member.id)
+    setAttendanceLoading(true);
+    // The month navigator below only ever moves within the current year, so
+    // bound the fetch to it instead of pulling the member's entire
+    // attendance history since day one.
+    const year = new Date().getFullYear();
+    getAttendanceForMember(member.id, { fromDateKey: `${year}-01-01`, toDateKey: `${year}-12-31` })
       .then((rows) => {
         const next: Record<string, boolean> = {};
         rows.forEach((row) => {
@@ -28,7 +34,8 @@ export default function StudentDashboardPage() {
         });
         setAttendanceMap(next);
       })
-      .catch((error) => console.error('Erro loading student attendance:', error));
+      .catch((error) => console.error('Erro loading student attendance:', error))
+      .finally(() => setAttendanceLoading(false));
   }, [member]);
 
   const year = new Date().getFullYear();
@@ -74,7 +81,7 @@ export default function StudentDashboardPage() {
   }, [attendanceMap]);
 
   return (
-    <StudentShell ativo="dashboard" title={member?.name || 'Aluno'} subtitle="Aluno area overview">
+    <StudentShell title={member?.name || 'Aluno'} subtitle="Aluno area overview">
       <section className="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
           <p className="mb-2 text-xl font-semibold text-zinc-100">Balance/Estado</p>
@@ -111,8 +118,14 @@ export default function StudentDashboardPage() {
 
         <div className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
           <p className="mb-2 text-xl font-semibold text-zinc-100">Presenças este mês</p>
-          <p className="text-3xl font-bold text-white">{attendanceCount} treinos</p>
-          <p className="mt-1 text-zinc-400">Último treino: {lastAttendance ? new Date(`${lastAttendance}T12:00:00`).toLocaleDateString('en-GB') : '—'}</p>
+          {attendanceLoading ? (
+            <p className="text-zinc-500">A carregar...</p>
+          ) : (
+            <>
+              <p className="text-3xl font-bold text-white">{attendanceCount} treinos</p>
+              <p className="mt-1 text-zinc-400">Último treino: {lastAttendance ? new Date(`${lastAttendance}T12:00:00`).toLocaleDateString('en-GB') : '—'}</p>
+            </>
+          )}
           <button onClick={() => router.push('/student/attendance')} className="mt-3 text-sm font-medium text-[#c81d25] hover:text-[#ef3a43]">Ver calendário</button>
         </div>
       </section>
@@ -131,7 +144,9 @@ export default function StudentDashboardPage() {
               </div>
             </div>
 
-            {viewMode === 'month' ? (
+            {attendanceLoading ? (
+              <p className="py-6 text-center text-sm text-zinc-500">A carregar presenças...</p>
+            ) : viewMode === 'month' ? (
               <>
                 <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-zinc-500">
                   {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d) => <div key={d}>{d}</div>)}
@@ -193,13 +208,19 @@ export default function StudentDashboardPage() {
               <p className="text-xl font-semibold text-zinc-100">Anúncios</p>
               <button onClick={() => router.push('/student/announcements')} className="text-sm text-zinc-400 hover:text-zinc-200">Ver todos</button>
             </div>
-            <ul className="space-y-2">
-              {studentAnnouncements.slice(0, 3).map((item) => (
-                <li key={item.id} className="rounded-xl border border-[#202020] bg-[#111] px-3 py-2">
-                  <p className="truncate text-sm text-zinc-200">{item.pinned ? '📌 ' : ''}{item.title}</p>
-                </li>
-              ))}
-            </ul>
+            {announcementsLoading ? (
+              <p className="py-2 text-sm text-zinc-500">A carregar...</p>
+            ) : studentAnnouncements.length === 0 ? (
+              <p className="py-2 text-sm text-zinc-500">Sem anúncios de momento.</p>
+            ) : (
+              <ul className="space-y-2">
+                {studentAnnouncements.slice(0, 3).map((item) => (
+                  <li key={item.id} className="rounded-xl border border-[#202020] bg-[#111] px-3 py-2">
+                    <p className="truncate text-sm text-zinc-200">{item.pinned ? '📌 ' : ''}{item.title}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </section>

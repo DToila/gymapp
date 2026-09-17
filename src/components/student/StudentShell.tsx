@@ -1,54 +1,32 @@
 "use client";
 
-import { ReactNode, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import StudentSidebar, { StudentNavKey } from './StudentSidebar';
-import { useStudentMember } from './useStudentMember';
+import { ReactNode } from 'react';
 
+// The sidebar/auth-gate frame this used to render now lives in
+// src/app/student/layout.tsx (a real persistent Next.js layout, so it
+// doesn't remount on every navigation). This component is just the
+// per-page header + content wrapper now.
 export default function StudentShell({
-  ativo,
   title,
   subtitle,
   rightActions,
   children,
 }: {
-  ativo: StudentNavKey;
   title: string;
   subtitle?: string;
   rightActions?: ReactNode;
   children: ReactNode;
 }) {
-  const router = useRouter();
-  const { member, loading } = useStudentMember();
-
-  useEffect(() => {
-    if (!loading && !member) {
-      router.push('/');
-    }
-  }, [loading, member, router]);
-
-  if (loading || !member) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0b0b0b] text-zinc-300">
-        A carregar...
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen bg-[#0b0b0b] text-zinc-100">
-      <StudentSidebar ativo={ativo} memberName={member.name} />
-
-      <main className="flex-1 min-w-0 p-3 pt-16 sm:p-5 sm:pt-16 lg:p-7">
-        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-4xl font-black leading-tight text-white">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>}
-          </div>
-          {rightActions && <div className="flex gap-2">{rightActions}</div>}
-        </header>
-        {children}
-      </main>
-    </div>
+    <>
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-4xl font-black leading-tight text-white">{title}</h1>
+          {subtitle && <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>}
+        </div>
+        {rightActions && <div className="flex gap-2">{rightActions}</div>}
+      </header>
+      {children}
+    </>
   );
 }

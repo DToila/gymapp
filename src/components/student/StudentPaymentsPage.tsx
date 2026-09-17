@@ -29,7 +29,7 @@ export default function StudentPaymentsPage() {
   const isPaid = member?.status !== 'Unpaid';
 
   return (
-    <StudentShell ativo="payments" title="Pagamentos" subtitle="Payment status and history">
+    <StudentShell title="Pagamentos" subtitle="Payment status and history">
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)] lg:col-span-1">
           <p className="mb-2 text-xl font-semibold text-zinc-100">Estado</p>
