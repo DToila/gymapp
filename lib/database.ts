@@ -71,6 +71,20 @@ export const getMembers = async (): Promise<Member[]> => {
   return data || []
 }
 
+// Trimmed variant for the Members list page — MembersTable only renders
+// name/belt/status/payment/group/behavior, and opening a member always does
+// its own separate getMemberById fetch for the full record, so the list
+// never needs iban/nif/address/billing/emergency-contact/etc. per row.
+export const getMembersForList = async (): Promise<Member[]> => {
+  const { data, error } = await supabase
+    .from('members')
+    .select('id, name, email, phone, belt_level, status, payment_type, fee, date_of_birth, created_at')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return (data || []) as Member[]
+}
+
 export const createMember = async (member: Omit<Member, 'id' | 'created_at'>): Promise<Member> => {
   const { data, error } = await supabase
     .from('members')
@@ -345,19 +359,16 @@ export const ensureScheduleSlots = async (
 ): Promise<ScheduleSlotRow[]> => {
   if (slots.length === 0) return []
 
-  const { error } = await supabase
+  // Chaining .select() onto .upsert() returns the upserted rows directly —
+  // this used to be a separate .in('code', codes) read straight after,
+  // doubling the round trip every time the Schedule page mounted (it
+  // unconditionally upserts the whole static weekly template on load).
+  const { data, error } = await supabase
     .from('schedule_slots')
     .upsert(slots, { onConflict: 'code' })
+    .select('id, code, day_of_week, start_time, end_time, program, kids_group, gi_type, tags, default_coach_id, trial_capacity_kids, trial_capacity_adults')
 
   if (error) throw error
-
-  const codes = slots.map((slot) => slot.code)
-  const { data, error: readError } = await supabase
-    .from('schedule_slots')
-    .select('id, code, day_of_week, start_time, end_time, program, kids_group, gi_type, tags, default_coach_id, trial_capacity_kids, trial_capacity_adults')
-    .in('code', codes)
-
-  if (readError) throw readError
   return (data || []) as ScheduleSlotRow[]
 }
 

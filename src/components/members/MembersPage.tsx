@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createMember, getKidBehaviorEvents, getMembers } from '../../../lib/database';
+import { createMember, getKidBehaviorEvents, getMembersForList } from '../../../lib/database';
 import { calculateMonthlyFee, getAgeFromDateOfBirth, getBeltOptions } from '../../../lib/types';
 import { mockMembers } from './mockData';
 import { AdultsFilters, KidsFilters, MembersTab, QuickView } from './types';
@@ -172,19 +172,20 @@ export default function MembersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const raw = await getMembers();
       const to = new Date();
       const from = new Date(to);
       from.setDate(from.getDate() - 29);
       const fromDateKey = toDateKey(from);
       const toDate = toDateKey(to);
 
-      let behaviorEvents: Awaited<ReturnType<typeof getKidBehaviorEvents>> = [];
-      try {
-        behaviorEvents = await getKidBehaviorEvents({ fromDateKey, toDateKey: toDate });
-      } catch (error) {
-        console.error('Erro loading 30-day kid behavior events for members page:', error);
-      }
+      // Neither of these depends on the other's result.
+      const [raw, behaviorEvents] = await Promise.all([
+        getMembersForList(),
+        getKidBehaviorEvents({ fromDateKey, toDateKey: toDate }).catch((error) => {
+          console.error('Erro loading 30-day kid behavior events for members page:', error);
+          return [] as Awaited<ReturnType<typeof getKidBehaviorEvents>>;
+        }),
+      ]);
 
       const localBehaviorEvents = readBehaviorEvents().filter(
         (event) => event.dateKey >= fromDateKey && event.dateKey <= toDate
