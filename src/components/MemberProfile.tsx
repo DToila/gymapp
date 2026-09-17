@@ -90,13 +90,16 @@ const createEditForm = (member: MemberDetail): MemberEditForm => ({
   source: member.source || '',
 });
 
+// The status values actually stored/selected vary in casing and language
+// across the app ('Active'/'active'/'Ativo', 'Unpaid'/'Por Pagar', etc.) —
+// normalize before matching so the badge color reflects reality instead of
+// always falling through to the grey default.
 function statusBadgeClass(status: string): string {
-  switch (status) {
-    case 'Ativo': return 'border-green-800 bg-green-900/30 text-green-400';
-    case 'Paused': return 'border-zinc-700 bg-zinc-800/50 text-zinc-400';
-    case 'Por Pagar': return 'border-red-800 bg-red-900/20 text-red-400';
-    default: return 'border-zinc-700 bg-zinc-800/50 text-zinc-400';
-  }
+  const value = (status || '').trim().toLowerCase();
+  if (value === 'paused' || value === 'pausado') return 'border-zinc-700 bg-zinc-800/50 text-zinc-400';
+  if (value === 'unpaid' || value === 'por pagar') return 'border-red-800 bg-red-900/20 text-red-400';
+  if (value === 'pendente' || value === 'pending') return 'border-amber-800 bg-amber-900/20 text-amber-400';
+  return 'border-green-800 bg-green-900/30 text-green-400';
 }
 
 
@@ -624,10 +627,17 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
           </div>
 
           {/* Summary Card */}
-          <div className="rounded-2xl border border-[#222] bg-[#121212] p-6 mb-6">
+          <div className="rounded-2xl border border-[#222] bg-gradient-to-b from-[#161616] to-[#121212] p-6 mb-6 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
             <div className="flex items-start gap-5">
               {/* Avatar */}
-              <div className="w-16 h-16 rounded-full bg-[#1a1a1a] border-2 border-[#c81d25] flex items-center justify-center text-xl font-black text-[#c81d25] shrink-0">
+              <div
+                className="grid h-20 w-20 shrink-0 place-items-center rounded-full text-2xl font-black"
+                style={{
+                  border: `2px solid ${beltStyle(data.beltLevel || data.belt_level || '').borderColor}`,
+                  backgroundColor: '#1a1a1a',
+                  color: beltStyle(data.beltLevel || data.belt_level || '').color,
+                }}
+              >
                 {profileInitials}
               </div>
               <div className="flex-1 min-w-0">
@@ -641,7 +651,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                       className={inputCls + " text-xl font-semibold"}
                     />
                   ) : (
-                    <h1 className="text-2xl font-bold text-white mb-2">
+                    <h1 className="text-3xl font-black leading-tight text-white mb-2">
                       {data.name}
                     </h1>
                   )}
@@ -653,6 +663,11 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                       <span className={`rounded-full px-3 py-0.5 text-[11px] font-bold border ${statusBadgeClass(data.status)}`}>
                         {data.status}
                       </span>
+                      {isKid && age !== null && (
+                        <span className="rounded-full border border-[#2a2a2a] bg-[#161616] px-3 py-0.5 text-[11px] font-bold text-zinc-400">
+                          {age} anos
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -756,8 +771,10 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   </div>
 
                   {/* Morada */}
-                  <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
-                    <div className="text-xs font-semibold text-zinc-600 mb-2">Morada</div>
+                  <div className="col-span-2 border-t border-[#1e1e1e] pt-4 mt-1">
+                    <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                      <span className="text-[#c81d25]">📍</span> Morada
+                    </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="col-span-2">
                         <div className="text-xs font-medium text-zinc-500 mb-1">Rua</div>
@@ -787,8 +804,10 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   </div>
 
                   {/* Contacto de Emergência */}
-                  <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
-                    <div className="text-xs font-semibold text-zinc-600 mb-2">Contacto de Emergência</div>
+                  <div className="col-span-2 border-t border-[#1e1e1e] pt-4 mt-1">
+                    <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                      <span className="text-[#c81d25]">🚨</span> Contacto de Emergência
+                    </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <div className="text-xs font-medium text-zinc-500 mb-1">Nome</div>
@@ -810,9 +829,11 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   </div>
 
                   {/* Faturação */}
-                  <div className="col-span-2 border-t border-[#1e1e1e] pt-3 mt-1">
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#444] mb-1">Faturação</div>
-                    <div className="text-[9px] text-[#444] mb-2">Preencher se diferente do membro</div>
+                  <div className="col-span-2 border-t border-[#1e1e1e] pt-4 mt-1">
+                    <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                      <span className="text-[#c81d25]">🧾</span> Faturação
+                    </div>
+                    <div className="text-[11px] text-zinc-600 mb-2">Preencher se diferente do membro</div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <div className="text-xs font-medium text-zinc-500 mb-1">Nome Faturação</div>
@@ -894,7 +915,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
             {/* Calendar card */}
             <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 relative">
-              <h2 className="text-sm font-semibold text-zinc-200 mb-4 capitalize">
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold capitalize text-zinc-200">
+                <span className="text-[#c81d25]">📅</span>
                 {new Date(year, selectedMonth).toLocaleString("pt-PT", { month: "long", year: 'numeric' })}
               </h2>
               <div className="grid grid-cols-7 gap-1 relative">
@@ -928,7 +950,7 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                     shouldShowEmoji = true;
                     squareClass = 'bg-zinc-600/40 border-zinc-500 text-zinc-400';
                   } else if (!isKid && attended) {
-                    squareClass = 'bg-white/20 border-white/40 text-white';
+                    squareClass = 'bg-green-600/30 border-green-500 text-green-300';
                   } else if (isToday) {
                     squareClass = 'bg-[#141414] border-[#c81d25]/50 text-[#888] hover:bg-[#1e1e1e]';
                   } else {
@@ -989,25 +1011,28 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
             {/* Notas card */}
             <div className="rounded-2xl border border-[#222] bg-[#121212] p-5 flex flex-col" style={{ minHeight: '400px' }}>
-              <h3 className="text-sm font-semibold text-zinc-200 mb-4 shrink-0">
-                Notas
+              <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-200 shrink-0">
+                <span className="text-[#c81d25]">✎</span> Notas
               </h3>
               <div className="flex-1 overflow-y-auto mb-4" style={{ maxHeight: '320px' }}>
                 {comments.length === 0 ? (
                   <p className="text-[#555] text-sm text-center pt-8">Não comments yet. Adicionar the first note!</p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {[...comments].reverse().map((comment) => (
-                      <div key={comment.id} className="border-l-2 border-[#2a2a2a] pl-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#1a1a1a] border border-[#2a2a2a] text-[#888]">
+                      <div key={comment.id} className="rounded-xl border border-[#1f1f1f] bg-[#161616] px-3.5 py-3">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#c81d25]/15 text-[10px] font-bold text-[#f87171]">
+                            {comment.teacherName.charAt(0)}
+                          </span>
+                          <span className="text-xs font-semibold text-zinc-300">
                             {comment.teacherName}
                           </span>
-                          <span className="text-[11px] text-[#444]">
+                          <span className="ml-auto text-[11px] text-zinc-600">
                             {comment.timestamp.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </span>
                         </div>
-                        <p className="text-sm text-[#ccc] leading-relaxed">{comment.message}</p>
+                        <p className="text-sm text-zinc-300 leading-relaxed">{comment.message}</p>
                       </div>
                     ))}
                   </div>
@@ -1035,8 +1060,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
 
           {/* Graduation Report Section */}
           <div className={`rounded-2xl border border-[#222] bg-[#121212] p-5 mt-6 transition-opacity duration-300 ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-            <h3 className="text-sm font-semibold text-zinc-200 mb-5">
-              Relatório de Graduação
+            <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-200">
+              <span className="text-[#c81d25]">🎓</span> Relatório de Graduação
             </h3>
 
             {/* Data Range Filter */}
@@ -1083,7 +1108,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
               return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Total attendance */}
-                  <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                  <div className="relative overflow-hidden rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                    <div className="absolute left-0 top-0 h-full w-[3px] bg-blue-500" />
                     <div className="text-xs font-medium text-zinc-500 mb-3">Total Presenças</div>
                     <div className="text-3xl font-black text-[#f0f0f0] mb-1">
                       {stats.totalAttendance}
@@ -1094,7 +1120,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   </div>
 
                   {/* 30 days attendance */}
-                  <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                  <div className="relative overflow-hidden rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                    <div className="absolute left-0 top-0 h-full w-[3px] bg-amber-500" />
                     <div className="text-xs font-medium text-zinc-500 mb-3">Last 30 Days</div>
                     <div className="text-3xl font-black text-[#f0f0f0] mb-1">
                       {stats.last30DaysAttendance}
@@ -1103,7 +1130,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   </div>
 
                   {/* 90 days attendance */}
-                  <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                  <div className="relative overflow-hidden rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                    <div className="absolute left-0 top-0 h-full w-[3px] bg-green-500" />
                     <div className="text-xs font-medium text-zinc-500 mb-3">Last 90 Days</div>
                     <div className="text-3xl font-black text-[#f0f0f0] mb-1">
                       {stats.last90DaysAttendance}
@@ -1112,7 +1140,8 @@ export default function MemberProfile({ member, onBack, onUpdate }: MemberProfil
                   </div>
 
                   {/* Presenças percentage */}
-                  <div className="rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                  <div className="relative overflow-hidden rounded-xl border border-[#252525] bg-[#0a0a0a] p-4">
+                    <div className="absolute left-0 top-0 h-full w-[3px] bg-[#c81d25]" />
                     <div className="text-xs font-medium text-zinc-500 mb-3">Total Percentage</div>
                     <div className="flex items-baseline gap-2">
                       <div className="text-3xl font-black text-[#c81d25]">
