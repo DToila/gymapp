@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ImageAnnotatorClient } from '@google-cloud/vision'
+import { requireRole } from '../../../../lib/apiAuth'
 
 export const runtime = 'nodejs'
 
@@ -144,6 +145,10 @@ const parseLeadFormText = (text: string): Record<string, unknown> => {
 }
 
 export async function POST(request: NextRequest) {
+  // Only called from /leads and /payments, both admin/staff-only pages.
+  const access = await requireRole(['admin', 'staff'])
+  if ('error' in access) return access.error
+
   try {
     const body: ScanRequest = await request.json()
     const { fileBase64, fileType, prompt: customPrompt } = body

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireRole } from '../../../../../lib/apiAuth'
 
 const getEnv = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
@@ -22,6 +23,9 @@ interface PushSubscriptionJson {
 }
 
 export async function POST(request: Request) {
+  const access = await requireRole(['admin', 'staff', 'coach'])
+  if ('error' in access) return access.error
+
   const env = getEnv()
   if ('error' in env) {
     return NextResponse.json({ error: 'Server misconfigured.' }, { status: 500 })
@@ -49,6 +53,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const access = await requireRole(['admin', 'staff', 'coach'])
+  if ('error' in access) return access.error
+
   const env = getEnv()
   if ('error' in env) {
     return NextResponse.json({ error: 'Server misconfigured.' }, { status: 500 })
