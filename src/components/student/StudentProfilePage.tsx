@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import StudentShell from './StudentShell';
 import { useStudentMember } from './useStudentMember';
 import { updateMember } from '../../../lib/database';
+import GameTagPicker from './GameTagPicker';
 
 export default function StudentProfilePage() {
   const { member, refresh } = useStudentMember();
@@ -66,6 +67,13 @@ export default function StudentProfilePage() {
           </button>
         </div>
       </section>
+
+      {member ? (
+        <section className="mt-4 rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
+          <p className="mb-3 text-xl font-semibold text-zinc-100">O Meu Jogo</p>
+          <GameTagPicker memberId={member.id} />
+        </section>
+      ) : null}
     </StudentShell>
   );
 }

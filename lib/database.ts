@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { Member, Attendance, Note } from './types'
+import { Member, Attendance, Note, GameTag, MemberGameTag } from './types'
 
 export type KidBehaviorValue = 'GOOD' | 'NEUTRAL' | 'BAD'
 
@@ -242,6 +242,34 @@ export const getAttendanceForDate = async (date: string): Promise<string[]> => {
 
   if (error) throw error
   return (data || []).map(row => row.member_id)
+}
+
+// O Meu Jogo (game tags)
+export const getGameTags = async (): Promise<GameTag[]> => {
+  const { data, error } = await supabase
+    .from('game_tags')
+    .select('id, category, label, sort_order')
+    .order('category', { ascending: true })
+    .order('sort_order', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export const getMemberGame = async (memberId: string): Promise<MemberGameTag[]> => {
+  const { data, error } = await supabase
+    .from('member_game')
+    .select('tag_id, priority, game_tags(category, label)')
+    .eq('member_id', memberId)
+    .order('priority', { ascending: true })
+
+  if (error) throw error
+  return (data || []).map((row: any) => ({
+    tag_id: row.tag_id,
+    priority: row.priority,
+    category: row.game_tags.category,
+    label: row.game_tags.label,
+  }))
 }
 
 // Notes

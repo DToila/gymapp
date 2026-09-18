@@ -71,6 +71,33 @@ export interface Note {
   created_at: string;
 }
 
+export type GameTagCategory = 'guardas' | 'passagens' | 'quedas' | 'finalizações' | 'raspagens';
+
+export const GAME_TAG_CATEGORIES: GameTagCategory[] = ['guardas', 'passagens', 'quedas', 'finalizações', 'raspagens'];
+
+export const GAME_TAG_CATEGORY_LABELS: Record<GameTagCategory, string> = {
+  guardas: 'Guardas',
+  passagens: 'Passagens',
+  quedas: 'Quedas',
+  'finalizações': 'Finalizações',
+  raspagens: 'Raspagens',
+};
+
+export interface GameTag {
+  id: string;
+  category: GameTagCategory;
+  label: string;
+  sort_order: number;
+}
+
+// A member's own tag selection, joined with its label/category for display.
+export interface MemberGameTag {
+  tag_id: string;
+  priority: number;
+  category: GameTagCategory;
+  label: string;
+}
+
 export const KIDS_BELT_OPTIONS = [
   'White',
   'Grey/White',

@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import StudentShell from './StudentShell';
 import { audienceMatchesStudent, getTodayClasses, studentSchedule } from './studentData';
 import { useStudentMember } from './useStudentMember';
-import { getAttendanceForMember } from '../../../lib/database';
+import { getAttendanceForMember, getMemberGame } from '../../../lib/database';
 import { useEffect } from 'react';
 import { useStudentAnnouncements } from './useStudentAnnouncements';
 import { toDateKey } from '@/lib/attendanceState';
+import MyGameCard from './MyGameCard';
+import { MemberGameTag } from '../../../lib/types';
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function StudentDashboardPage() {
   const { announcements, loading: announcementsLoading } = useStudentAnnouncements();
   const [attendanceMap, setAttendanceMap] = useState<Record<string, boolean>>({});
   const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [gameTags, setGameTags] = useState<MemberGameTag[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
   const [viewMode, setViewMode] = useState<'month' | 'list'>('month');
 
@@ -36,6 +39,13 @@ export default function StudentDashboardPage() {
       })
       .catch((error) => console.error('Erro loading student attendance:', error))
       .finally(() => setAttendanceLoading(false));
+  }, [member]);
+
+  useEffect(() => {
+    if (!member) return;
+    getMemberGame(member.id)
+      .then(setGameTags)
+      .catch((error) => console.error('Erro loading member game tags:', error));
   }, [member]);
 
   const year = new Date().getFullYear();
@@ -202,6 +212,8 @@ export default function StudentDashboardPage() {
               ))}
             </ul>
           </div>
+
+          <MyGameCard tags={gameTags} />
 
           <div className="rounded-2xl border border-[#222] bg-[#121212] p-4 shadow-[0_8px_22px_rgba(0,0,0,0.35)]">
             <div className="mb-2 flex items-center justify-between">
