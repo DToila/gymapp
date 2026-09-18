@@ -43,7 +43,9 @@ export default function GameTagPicker({ memberId }: { memberId: string }) {
 
   const selectedTagIds = useMemo(() => new Set(selected.map((s) => s.tagId)), [selected]);
   const orderedSelected = useMemo(() => [...selected].sort((a, b) => a.priority - b.priority), [selected]);
-  const canSave = selected.length >= 4 && selected.length <= 5;
+  // 0-5 is always saveable — removing tags (even down past 4, or clearing
+  // everything) has to work. 4+ is just what makes the dashboard card show.
+  const canSave = selected.length <= 5;
 
   const toggleTag = (tagId: string) => {
     setError('');
@@ -78,7 +80,7 @@ export default function GameTagPicker({ memberId }: { memberId: string }) {
 
   const handleSave = async () => {
     if (!canSave) {
-      setError('Escolhe entre 4 e 5 tags antes de guardar.');
+      setError('Máximo de 5 tags.');
       return;
     }
     setSaving(true);
@@ -109,7 +111,8 @@ export default function GameTagPicker({ memberId }: { memberId: string }) {
         Escolhe 4 a 5 técnicas que definem o teu jogo, depois ordena-as por importância (1 = mais importante).
       </p>
       <p className="mb-4 text-xs text-zinc-500">
-        {selected.length}/5 selecionadas{selected.length < 4 ? ' (mínimo 4)' : ''}
+        {selected.length}/5 selecionadas
+        {selected.length < 4 ? ' — escolhe pelo menos 4 para aparecer no dashboard' : ''}
       </p>
 
       {error ? (

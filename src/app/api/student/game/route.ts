@@ -30,8 +30,11 @@ interface GameTagInput {
 }
 
 const validateTags = (tags: unknown): { tags: GameTagInput[] } | { error: string } => {
-  if (!Array.isArray(tags) || tags.length < 4 || tags.length > 5) {
-    return { error: 'Escolhe entre 4 e 5 tags.' }
+  // 0-5 tags are all valid to persist (removing tags, or clearing the set
+  // entirely, has to be saveable) — the dashboard card is what enforces the
+  // "4-5 or don't show it" rule, at read time, not this endpoint.
+  if (!Array.isArray(tags) || tags.length > 5) {
+    return { error: 'Máximo de 5 tags.' }
   }
 
   const parsed: GameTagInput[] = []
